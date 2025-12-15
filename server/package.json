@@ -1,0 +1,39 @@
+{
+    "name": "express-api",
+    "version": "0.0.0",
+    "private": true,
+    "main": "./bin/www",
+    "scripts": {
+        "start": "ts-node ./bin/www",
+        "dev:hot": "nodemon",
+        "start:prod": "node ./dist/bin/www.js",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "cookie-parser": "~1.4.4",
+        "debug": "~2.6.9",
+        "express": "^4.21.1",
+        "hbs": "^4.2.0",
+        "http-errors": "~1.6.3",
+        "morgan": "^1.10.1"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "@stylistic/eslint-plugin": "^5.6.1",
+        "@types/cookie-parser": "^1.4.7",
+        "@types/debug": "^4.1.12",
+        "@types/express": "^5.0.0",
+        "@types/http-errors": "^2.0.4",
+        "@types/morgan": "^1.9.9",
+        "@types/node": "^22.7.5",
+        "@types/node-sass-middleware": "^0.0.35",
+        "eslint": "^9.39.1",
+        "eslint-plugin-n": "^17.23.1",
+        "jiti": "^2.6.1",
+        "nodemon": "^3.1.7",
+        "ts-node": "^10.9.2",
+        "tslib": "^2.8.0",
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.48.1"
+    }
+}

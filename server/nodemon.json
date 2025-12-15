@@ -1,0 +1,5 @@
+{
+    "ext": "*",
+    "ignore": ["tests", "public"],
+    "exec": "set DEBUG=express-api:server & ts-node ./bin/www"
+}

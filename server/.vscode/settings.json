@@ -1,0 +1,18 @@
+{
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "tsconfig.json": "tsconfig.*.json, env.d.ts",
+        "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .prettier*, prettier*, .editorconfig"
+    },
+    "editor.tabSize": 4,
+    "prettier.tabWidth": 4,
+    "editor.formatOnSave": true,
+    "prettier.trailingComma": "all",
+    "eslint.validate": ["javascript", "typescript"],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    }
+}
