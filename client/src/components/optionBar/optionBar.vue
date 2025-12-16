@@ -2,7 +2,7 @@
   <header class="optionBar">
     <div class="optionBarStart">
 
-      <button class="clipboardButton" title="Presse-papiers">
+      <button class="clipboardButton" title="Presse-papiers" type="button">
         <img class="optionBarIcon" :src="clipBoardIcon" alt="Aller au presse papier" />
       </button>
 
@@ -43,6 +43,13 @@
     </div>
 
   </header>
+
+  <div v-if="activeTab === 'text'" class="textOptionsWrapper">
+    <TextOptionBar />
+  </div>
+  <div v-if="activeTab === 'image'" class="imageOptionsWrapper">
+    <ImageOptionBar />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -52,14 +59,13 @@ import imageIcon from "../../assets/optionBarImage/imageIcon.svg";
 import personEditIcon from "../../assets/optionBarImage/personEdit.svg";
 import textIcon from "../../assets/optionBarImage/textField.svg";
 import visibilityIcon from "../../assets/optionBarImage/visibility.svg";
-import IconToggleGroup from './iconToggleGroup.vue';
-import { ref } from 'vue';
+import IconToggleGroup from "./iconToggleGroup.vue";
+import TextOptionBar from "./textOptionBar.vue";
+import ImageOptionBar from "./imageOptionBar.vue";
+import { ref } from 'vue'
 
 const activeTab = ref<'text' | 'image'>('text')
 
-const emit = defineEmits<{
-  toggleClipboard: []
-}>()
 </script>
 
 <style scoped>
