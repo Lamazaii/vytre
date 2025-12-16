@@ -5,10 +5,39 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlserver"
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  title     String
+  version   String
+  blocks    Block[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Block {
+  id           Int      @id @default(autoincrement())
+  text         String
+  step         Int
+  nbOfRepeats  Int
+
+  documentId   Int
+  document     Document @relation(fields: [documentId], references: [id])
+
+  images       Image[]
+}
+
+model Image {
+  id        Int    @id @default(autoincrement())
+  imagePath String
+
+  blockId   Int
+  block     Block @relation(fields: [blockId], references: [id])
 }
