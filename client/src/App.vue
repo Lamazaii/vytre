@@ -2,6 +2,7 @@
 import TitleBar from './components/titleBar/titleBar.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
 import Element from './components/blockElement/element.vue';
+import AddBlockZone from './components/addBlock/addBlockZone.vue';
 </script>
 
 <template>
@@ -10,10 +11,12 @@ import Element from './components/blockElement/element.vue';
 
     <OptionBar />
 
-    
-    <div class = "block">
-      <Element/>
+    <Element/>
+
+    <div class= "addBlock"> 
+        <AddBlockZone />
     </div>
+
   </div>
 
 </template>
@@ -39,11 +42,15 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 90px;
   gap: 50px;
   background-color: #F3F4F6;
   margin: auto;
 }
-.block {
+
+.addBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 </style>
