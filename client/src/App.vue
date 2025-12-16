@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import TitleBar from './components/titleBar/titleBar.vue';
+
 </script>
 
 <template>
   <div class="app">
-      <HelloWorld msg="Vite + Vue" />
+      <TitleBar/>
   </div>
 </template>
 
@@ -17,7 +19,7 @@ html, body {
 }
 
 #app {
-  font-family:'Segoe UI' sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
