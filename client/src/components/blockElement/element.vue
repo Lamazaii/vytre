@@ -40,11 +40,7 @@ watch(nombreRepetitions, (v) => emit('update:modelValue', v))
   gap: 50px;
   align-items: center;
   width: 100%;
-<<<<<<< HEAD
   padding-top: 189px;
-=======
-  padding-top: 90px; /* Careful: distance is calculated relative to the OptionBar */
->>>>>>> origin/Block
   padding-left: 128px;
   padding-right: 140px;
 }
