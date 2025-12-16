@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import TitleBar from './components/titleBar/titleBar.vue';
-import optionBar from './components/optionBar/optionBar.vue';
+import OptionBar from './components/optionBar/optionBar.vue';
+import Element from './components/blockElement/element.vue';
+import AddBlockZone from './components/addBlock/addBlockZone.vue';
 </script>
 
 <template>
   <div class="app">
     <TitleBar/>
 
-    <optionBar />
+    <OptionBar />
+
+    <Element/>
+
+    <div class= "addBlock"> 
+        <AddBlockZone />
+    </div>
+
   </div>
+
 </template>
 
 <style>
@@ -32,9 +42,15 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 90px;
   gap: 50px;
   background-color: #F3F4F6;
   margin: auto;
 }
+
+.addBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 </style>
