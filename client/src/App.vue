@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import TitleBar from './components/titleBar/titleBar.vue';
-import optionBar from './components/optionBar/optionBar.vue';
+import OptionBar from './components/optionBar/optionBar.vue';
+import Element from './components/blockElement/element.vue';
 </script>
 
 <template>
   <div class="app">
     <TitleBar/>
 
-    <optionBar />
+    <OptionBar />
+
+    
+    <div class = "block">
+      <Element/>
+    </div>
   </div>
+
 </template>
 
 <style>
@@ -36,5 +43,7 @@ html, body {
   gap: 50px;
   background-color: #F3F4F6;
   margin: auto;
+}
+.block {
 }
 </style>
