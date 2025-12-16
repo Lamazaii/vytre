@@ -62,3 +62,8 @@ typings/
 
 # build bolder
 dist/
+
+.env
+/src/generated/prisma
+
+/generated/prisma

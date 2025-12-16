@@ -1,0 +1,87 @@
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependency directories
+node_modules/
+.pnp
+.pnp.js
+
+# Production build
+dist/
+build/
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and Editor files
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Yarn
+yarn-error.log
+.yarn-integrity
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma
+prisma/migrations/
+/generated/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Temporary files
+tmp/
+temp/
+
+# Package managers lock files (keep only one type)
+# Décommentez selon votre package manager d'équipe
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

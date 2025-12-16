@@ -1,5 +1,6 @@
 {
     "ext": "*",
     "ignore": ["tests", "public"],
-    "exec": "set DEBUG=express-api:server & ts-node ./bin/www"
+    "exec": "set DEBUG=express-api:server & ts-node ./bin/www",
+    "dev": "set DEBUG=express-api:server && nodemon --exec ts-node ./bin/www"
 }
