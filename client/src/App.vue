@@ -21,6 +21,26 @@ import HelloWorld from './components/HelloWorld.vue'
   will-change: filter;
   transition: filter 300ms;
 }
+
+
+#app {
+  font-family: 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  width: 1468px;
+  height: 717px;
+  max-width: 1468px;
+  max-height: 717px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 90px;
+  gap: 50px;
+  background-color: #F3F4F6;
+  margin: 0 auto;
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
