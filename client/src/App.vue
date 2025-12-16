@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import TitleBar from './components/titleBar/titleBar.vue';
-
+import optionBar from './components/optionBar/optionBar.vue';
 </script>
 
 <template>
   <div class="app">
-      <TitleBar/>
+    <TitleBar/>
+
+    <optionBar />
   </div>
 </template>
 
