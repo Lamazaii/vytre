@@ -9,6 +9,7 @@
       ref="welcomeEl"
       @input="onWelcomeInput"
       @keydown.enter.prevent
+      data-placeholder="Sélectionnez ce bloc pour l'éditer."
     ></p>
 
     <div class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="isTrashActive = !isTrashActive">
@@ -33,27 +34,31 @@ import trashRed from '../../assets/blockImage/trashRed.svg'
 interface Props {
   titre?: string;
   description?: string;
-  texteBouton?: string;
+  active? : boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  titre: "Titre du Bloc Éditable",
-  description: "Ceci est la description du bloc.",
-  texteBouton: "Cliquer ici"
-});
+const emit = defineEmits<{
+  (e: 'modified', value: boolean): void;
+  (e: 'select'): void;
+}>();
+
+const props = defineProps<Props>();
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 
-const welcomeText = ref("Bienvenue. Sélectionnez ce bloc pour l'éditer.")
+const welcomeText = ref(props.description || '')
 const onWelcomeInput = (e: Event) => {
   const el = e.target as HTMLElement
-  welcomeText.value = (el.textContent || '').trimStart()
+  welcomeText.value = (el.textContent || '').trim()
+
+  const isModified = welcomeText.value.length > 0
+  emit('modified', isModified)
 }
 
 const welcomeEl = ref<HTMLElement | null>(null)
 onMounted(() => {
-  if (welcomeEl.value && !welcomeEl.value.textContent) {
-    welcomeEl.value.textContent = welcomeText.value
+  if (welcomeEl.value && props.description) {
+    welcomeEl.value.textContent = props.description
   }
 })
 
@@ -79,6 +84,15 @@ onMounted(() => {
   font-size: 14px;
   color: #000000;
   margin: 0;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.welcomeText[contenteditable="true"]:empty::before {
+  content: attr(data-placeholder);
+  color: #9e9e9e;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 .trashIcon {
