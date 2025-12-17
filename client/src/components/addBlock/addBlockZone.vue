@@ -27,6 +27,7 @@
 
 
 <style scoped>
+/*
 .addBlockZone {
   width: 1000px;  
   height: 100px;
@@ -76,4 +77,5 @@
 .addBlockZone:hover .text {
   color: #DC2626;
 }
+*/
 </style>

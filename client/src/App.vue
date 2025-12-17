@@ -51,9 +51,13 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 
 <template>
   <div class="app">
-    <TitleBar/>
-
-    <OptionBar />
+    <div class="header">
+      <TitleBar/>
+    </div>
+    <div class="OptionBarSpacer">
+      <OptionBar />
+    </div>
+    
 
     <div class = "block">
       <Element
@@ -73,27 +77,36 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
          <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
-    <CopyPastePopup class="popUp"/>
+       <CopyPastePopup class="popUp"/>
   </div>
 
 </template>
 
-<style>
-html, body {
+<style scoped>
+
+:global(body) {
+  margin: 0;
+  padding: 0;
+}
+
+:global(#app) {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
+  display: flex;
+  justify-content: center;
   background-color: #777777;
 }
 
-#app {
+.app {
   font-family: 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  width: 1468px;
+  width: 100%;
+  max-width: 1468px;
   height: 717px;
   display: flex;
   flex-direction: column;
@@ -101,18 +114,33 @@ html, body {
   justify-content: flex-start;
   gap: 50px;
   background-color: #F3F4F6;
-  margin: auto;
+  margin: 0;
+  padding: 0;
+  border: 5px solid #000000;
 }
+
+.OptionBarSpacer {
+  width: auto;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+/*
 
 .addBlock {
   display: flex;
   align-items: center;
   justify-content: center;
 }
+*/
 
+/*
 .popUp {
   display: flex;
   padding-top: 158px;
 }
-
+*/
 </style>

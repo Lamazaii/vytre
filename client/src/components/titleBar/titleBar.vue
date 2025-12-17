@@ -17,44 +17,38 @@
   background-color: #000000;
   height: 45px;
   display: flex;
+  align-items: center;
   justify-content: center;
   position: fixed;
-  
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 1468px;
   max-width: 100%;
   z-index: 1000;
-
 }
 
 .titleBarContent {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.documentTitle {
-  margin: 0;  
-  font-weight: 100;
-  color: #fff;
-  font-size : 20px;
-  height: auto;
-  display: flex;
-  align-items: center;
-
+  gap: 8px;
+  height: 100%;
 }
 
 .SimpleBar {
   margin: 0;
-  font-size: 1.2em;
+  font-size: 24px;
   font-weight: 900;
   color: #E30613;
-  display: flex;
-  align-items: center;
-  height: auto;
-
+  line-height: 1;
 }
 
+.documentTitle {
+  margin: 0;
+  font-weight: 300;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+}
 
 </style>

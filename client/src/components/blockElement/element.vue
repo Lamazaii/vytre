@@ -49,6 +49,7 @@ watch(nombreRepetitions, (v) => emit('update:modelValue', v))
 </script>
 
 <style scoped>
+/*
 .element-container {
   display: flex;
   gap: 50px;
@@ -65,4 +66,5 @@ watch(nombreRepetitions, (v) => emit('update:modelValue', v))
   align-items: center;
   flex: 1;
 }
+  */
 </style>

@@ -76,8 +76,8 @@ const popupStore = usePopupStore()
   top: 45px;
   left: 50%;
   transform: translateX(-50%);
-  width: 1468px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: 54px;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
@@ -222,8 +222,8 @@ const popupStore = usePopupStore()
   top: calc(45px + 54px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: auto;
   background: transparent;
   display: flex;
@@ -237,8 +237,8 @@ const popupStore = usePopupStore()
   top: calc(45px + 54px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: auto;
   background: transparent;
   display: flex;

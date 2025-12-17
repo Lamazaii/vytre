@@ -101,10 +101,11 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   gap: 10px;
   height: 40px;
   width: 100%;
+  max-width: 1468px;
   background-color: #F3F4F6;
   border-bottom: 0.5px solid #c2c2c2;
   box-sizing: border-box;
-  padding-left: 45px;
+  padding-left: auto;
 }
 
 .formatGroup {
