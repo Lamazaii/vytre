@@ -1,8 +1,7 @@
-import {Blocks} from './Blocks'
+import type {Block} from './Block'
 
 
-export function generateBlocksFromText(text: string, startIndex = 0): Blocks[] {
-
+export function generateBlocksFromText(text: string, startIndex = 0): Block[] {
 
   if (!text) return []
 

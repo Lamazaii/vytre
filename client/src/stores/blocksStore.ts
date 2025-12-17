@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Blocks } from '../types/Blocks'
+import type { Block } from '../types/Block'
 
 export const useBlocksStore = defineStore('blocks', () => {
-  const blocks = ref<Array<Blocks & { modified?: boolean }>>([
+  const blocks = ref<Array<Block & { modified?: boolean }>>([
     { numero: 1, titre: 'Titre du Bloc Éditable', description: '', modified: false }
   ])
   const selectedIndex = ref<number | null>(null)

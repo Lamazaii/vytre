@@ -2,7 +2,7 @@
   <div class="addBlockZone" :class="{ disabled }" @click="onClick">
     <div class="plusIcon">
       <img src="../../assets/blockImage/plusDisable.png" alt="Add" />
-    </div>
+    </div >
     <span class="text">Ajouter une nouvelle étape</span>
   </div>
 </template>
