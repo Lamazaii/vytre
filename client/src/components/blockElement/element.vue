@@ -1,9 +1,14 @@
 <template>
   <div class="element-container">
-    <StepNumber :numero="numero" />
+    <StepNumber :numero="numero" :active="props.active"/>
     
     <div class="element-content">
-      <Block />
+      <Block 
+        :titre="titre"
+        :description="description"
+        :active="props.active"
+      />
+
       
       <RepetitionCount v-model="nombreRepetitions" />
     </div>
@@ -18,16 +23,24 @@ import RepetitionCount from './repetitionCount.vue';
 
 interface Props {
   numero?: number;
+  titre?: string;
+  description?: string;
   modelValue?: number;
+  active? : boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   numero: 1,
+  titre: 'Titre du Bloc Éditable',
+  description: 'Sélectionnez ce bloc pour l\'éditer.',
   modelValue: 1
 });
 
 const emit = defineEmits<{
+  'action-clic': [];
   'update:modelValue': [value: number];
+  'select': [];
+  'modified': [value: boolean];
 }>();
 
 const nombreRepetitions = ref(props.modelValue);
