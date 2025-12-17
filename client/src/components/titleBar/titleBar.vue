@@ -1,7 +1,7 @@
 <template>
   <header class="header">
-    <div class="headerContent">
-      <h1 class="titleBar">|</h1>
+    <div class="titleBarContent">
+      <h1 class="SimpleBar">|</h1>
       <h1 class="documentTitle">Titre du document</h1>
     </div>
   </header>
@@ -12,14 +12,14 @@
 </script>
 
 <style scoped>
+
 .header {
   background-color: #000000;
-  color: rgb(255, 255, 255);
   height: 45px;
   display: flex;
   justify-content: center;
   position: fixed;
-  top: 0;
+  
   left: 50%;
   transform: translateX(-50%);
   width: 1468px;
@@ -28,12 +28,10 @@
 
 }
 
-.headerContent {
-  width: 100%;
+.titleBarContent {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  gap: 12px;
 }
 
 .documentTitle {
@@ -41,12 +39,22 @@
   font-weight: 100;
   color: #fff;
   font-size : 20px;
+  height: auto;
+  display: flex;
+  align-items: center;
+
 }
 
-.titleBar {
-  margin: 0 0 4px;
+.SimpleBar {
+  margin: 0;
   font-size: 1.2em;
   font-weight: 900;
   color: #E30613;
+  display: flex;
+  align-items: center;
+  height: auto;
+
 }
+
+
 </style>
