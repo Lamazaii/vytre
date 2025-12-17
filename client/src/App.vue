@@ -1,52 +1,31 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
-  import Element from './components/blockElement/element.vue';
-  import AddBlockZone from './components/addBlock/addBlockZone.vue';
-  import OptionBar from './components/optionBar/optionBar.vue';
-  import TitleBar from './components/titleBar/titleBar.vue';
-  import { ref, computed } from 'vue';
-  import type { Blocks } from './types/Blocks';
+import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
+import Element from './components/blockElement/element.vue';
+import AddBlockZone from './components/addBlock/addBlockZone.vue';
+import OptionBar from './components/optionBar/optionBar.vue';
+import TitleBar from './components/titleBar/titleBar.vue';
+import { storeToRefs } from 'pinia'
+import { useBlocksStore } from './stores/blocksStore'
 
-  const blocks = ref<Array<Blocks & { modified?: boolean }>>([
-    {
-      numero: 1,
-      titre: 'Titre du Bloc Éditable',
-      description: '',
-      modified: false
-    },
-  ]);
+const store = useBlocksStore()
+const { blocks, selectedIndex, canAdd } = storeToRefs(store)
 
-  const selectedIndex = ref<number | null>(null)
+function toggleSelect(i: number) {
+  store.toggleSelect(i)
+}
 
-  function toggleSelect(i: number) {
-    selectedIndex.value = selectedIndex.value === i ? null : i
-  }
+function setModified(i: number, value: boolean) {
+  store.setModified(i, value)
+}
 
-  function setModified(i: number, value: boolean) {
-    if (!blocks.value[i]) return
-    blocks.value[i] = { ...blocks.value[i], modified: value }
-    console.log(`setModified: index=${i} modified=${value}`)
-  }
+function addEmptyBlockIfAllowed() {
+  store.addEmptyBlockIfAllowed()
+}
 
-  const canAdd = computed(() => {
-    if (blocks.value.length === 0) return true
-    const last = blocks.value[blocks.value.length - 1]
-    const result = !!(last && last.modified)
-    return result
-  })
-
-  function addEmptyBlockIfAllowed() {
-    if (!canAdd.value) {
-      alert('Modifier un bloc avant d\'en ajouter un nouveau.')
-      return
-    }
-    blocks.value.push({ numero: blocks.value.length + 1, titre: 'Nouveau bloc', description: '', modified: false })
-  }
-
-  function renumberBlocks() {
-    blocks.value = blocks.value.map((block: Blocks & { modified?: boolean }, i: number) => ({ ...block, numero: i + 1 }))
-  
-  };
+function removeBlock(i: number) {
+  store.removeBlock(i)
+}
 </script>
 
 <template>
@@ -65,7 +44,9 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
       :description="block.description"
       :active="selectedIndex === i"
       :modified="block.modified"
+      :canDelete="i !== 0"
       @select="toggleSelect(i)"
+      @delete="removeBlock(i)"
       />
      </div>
 
@@ -74,6 +55,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
     </div>
 
     <CopyPastePopup class="popUp"/>
+    <DeleteBlockPopup />
   </div>
 
 </template>
