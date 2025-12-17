@@ -6,11 +6,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlserver"
+  url      = env("DATABASE_URL")
 }
 
 model Document {
