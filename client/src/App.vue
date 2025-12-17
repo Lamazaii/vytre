@@ -3,6 +3,7 @@ import TitleBar from './components/titleBar/titleBar.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
 import Element from './components/blockElement/element.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
+import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 </script>
 
 <template>
@@ -13,10 +14,9 @@ import AddBlockZone from './components/addBlock/addBlockZone.vue';
 
     <Element/>
 
-    <div class= "addBlock"> 
-        <AddBlockZone />
-    </div>
+    <AddBlockZone class="addBlock"/>
 
+    <CopyPastePopup class="popUp"/>
   </div>
 
 </template>
@@ -51,6 +51,11 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.popUp {
+  display: flex;
+  padding-top: 158px;
 }
 
 </style>
