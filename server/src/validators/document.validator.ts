@@ -1,3 +1,5 @@
+// Ce docuement définit la structure attendue pour la création d'un Document (valide la data reçu du frontend avant de l'envoyer à la BDD)
+
 import { z } from 'zod';
 
 // on définit à quoi ressemble un bloc valide
