@@ -1,5 +1,5 @@
 <template>
-  <div class="addBlockZone">
+  <div class="addBlockZone" :class="{ disabled }" @click="onClick">
     <div class="plusIcon">
       <img src="../../assets/blockImage/plusDisable.png" alt="Add" />
     </div>
@@ -9,13 +9,26 @@
 
 
 <script setup lang="ts">
+  import {computed } from 'vue'
+
+  const props = defineProps<{ disabled?: boolean }>()
+  const disabled = computed(() => props.disabled ?? false)
+
+  const emit = defineEmits<{
+    add: []
+  }>()
+
+  function onClick() {
+    if (disabled.value) return
+    emit('add')
+  }
 
 </script>
 
 
 <style scoped>
 .addBlockZone {
-  width: 1000px;
+  width: 1000px;  
   height: 100px;
   border: 2px dashed #cccccc;
   border-radius: 8px;
@@ -35,6 +48,14 @@
 .addBlockZone:hover {
   border-color: #DC2626;
   background-color: #FDE2E2; 
+}
+
+.addBlockZone.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.addBlockZone.disabled .text {
+  color: #9e9e9e;
 }
 
 .plusIcon img {

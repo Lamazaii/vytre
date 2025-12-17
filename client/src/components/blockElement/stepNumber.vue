@@ -7,9 +7,11 @@
 <script setup lang="ts">
 interface Props {
   numero: number;
+  ative?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+const active = props.ative ?? false; 
 </script>
 
 <style scoped>
