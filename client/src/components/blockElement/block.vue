@@ -12,7 +12,7 @@
       data-placeholder="Sélectionnez ce bloc pour l'éditer."
     ></p>
 
-    <div class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="isTrashActive = !isTrashActive">
+    <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="onDelete">
       <img :src="(isTrashHover || isTrashActive) ? trashRed : trash" alt="Supprimer" />
     </div>
 
@@ -20,7 +20,7 @@
 
     <div class="imagesContainer" v-if="images.length > 0">
       <div class="imageItem" v-for="(image, index) in images" :key="index">
-        <img :src="image" alt="Image ajoutée" class="blockImage" />
+        <img :src="image" alt="Illustration ajoutée" class="blockImage" />
         <div class="removeImageIcon" @click="removeImage(index)">
           <img :src="trashRed" alt="Supprimer" />
         </div>
@@ -44,11 +44,13 @@ interface Props {
   titre?: string;
   description?: string;
   active? : boolean;
+  canDelete?: boolean;
 }
 
 const emit = defineEmits<{
   (e: 'modified', value: boolean): void;
   (e: 'select'): void;
+  (e: 'delete'): void;
 }>();
 
 const props = defineProps<Props>();
@@ -74,10 +76,15 @@ onMounted(() => {
 
 const handleImageSelected = (imageData: string) => {
   images.value.push(imageData)
+  emit('modified', true)
 }
 
 const removeImage = (index: number) => {
   images.value.splice(index, 1)
+}
+
+function onDelete() {
+  emit('delete')
 }
 
 </script>
