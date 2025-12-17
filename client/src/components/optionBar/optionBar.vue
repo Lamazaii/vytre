@@ -2,7 +2,7 @@
   <header class="optionBar">
     <div class="optionBarStart">
 
-      <button class="clipboardButton" title="Presse-papiers" type="button">
+      <button class="clipboardButton" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
         <img class="optionBarIcon" :src="clipBoardIcon" alt="Aller au presse papier" />
       </button>
 
@@ -63,8 +63,10 @@ import IconToggleGroup from "./iconToggleGroup.vue";
 import TextOptionBar from "./textOptionBar.vue";
 import ImageOptionBar from "./imageOptionBar.vue";
 import { ref } from 'vue'
+import { usePopupStore } from '../../stores/popupStore'
 
 const activeTab = ref<'text' | 'image'>('text')
+const popupStore = usePopupStore()
 
 </script>
 

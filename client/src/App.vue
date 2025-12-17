@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import Element from './components/blockElement/element.vue';
   import AddBlockZone from './components/addBlock/addBlockZone.vue';
   import OptionBar from './components/optionBar/optionBar.vue';
@@ -72,6 +73,7 @@
          <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
+    <CopyPastePopup class="popUp"/>
   </div>
 
 </template>
@@ -106,6 +108,11 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.popUp {
+  display: flex;
+  padding-top: 158px;
 }
 
 </style>
