@@ -55,7 +55,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   background-color: #F3F4F6;
   border-bottom: 0.5px solid #c2c2c2;
   box-sizing: border-box;
-  padding-left: 45px;
+  padding: 0 16px;
 }
 
 .formatGroup {

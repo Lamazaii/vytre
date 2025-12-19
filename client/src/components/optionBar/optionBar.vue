@@ -41,15 +41,14 @@
       </button>
 
     </div>
-
+    
+    <div v-if="activeTab === 'text'" class="optionsWrapper">
+      <TextOptionBar />
+    </div>
+    <div v-if="activeTab === 'image'" class="optionsWrapper">
+      <ImageOptionBar />
+    </div>
   </header>
-
-  <div v-if="activeTab === 'text'" class="textOptionsWrapper">
-    <TextOptionBar />
-  </div>
-  <div v-if="activeTab === 'image'" class="imageOptionsWrapper">
-    <ImageOptionBar />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -217,9 +216,10 @@ const popupStore = usePopupStore()
   text-align: center;
 }
 
-.textOptionsWrapper {
+.optionsWrapper {
   position: fixed;
-  top: calc(45px + 54px);
+  top: 45px;
+  
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -232,20 +232,6 @@ const popupStore = usePopupStore()
   z-index: 998;
 }
 
-.imageOptionsWrapper {
-  position: fixed;
-  top: calc(45px + 54px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 1468px;
-  height: auto;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  z-index: 998;
-}
 
 .clipboardButton {
   width: 36px;

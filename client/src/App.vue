@@ -98,6 +98,11 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   justify-content: center;
   background-color: #777777;
 }
+.header {
+  width: 100%;
+  height: 45px;
+  width: 1468px;
+}
 
 .app {
   font-family: 'Segoe UI', sans-serif;
@@ -112,35 +117,26 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 50px;
   background-color: #F3F4F6;
   margin: 0;
   padding: 0;
-  border: 5px solid #000000;
 }
 
 .OptionBarSpacer {
-  width: auto;
-  height: 90px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
+  width: 100%;
+  height: 94px;
+  display: block;
+  margin-bottom: 12px;
 }
-/*
 
 .addBlock {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-*/
 
-/*
 .popUp {
   display: flex;
   padding-top: 158px;
 }
-*/
 </style>
