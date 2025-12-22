@@ -11,17 +11,23 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 
   const popupStore = usePopupStore()
 
-  const blocks = ref<Array<Blocks & { modified?: boolean }>>([
+  const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[] }>>([
     {
       numero: 1,
       description: '',
       repetitionCount: 1,
-      modified: false
+      modified: false,
+      imageStrings: []
     },
   ]);
 
   watch(blocks, (newBlocks) => {
-    const blocksToStore = newBlocks.map(({ modified, ...rest }) => rest)
+    const blocksToStore = newBlocks.map(({ modified, imageStrings, ...rest }) => {
+      const images = imageStrings && imageStrings.length > 0 
+        ? imageStrings.map((imagePath, index) => ({ id: String(index), imagePath, blockId: rest.numero, block: rest as any }))
+        : []
+      return { ...rest, images }
+    })
     popupStore.setBlocks(blocksToStore)
   }, { deep: true })
 
@@ -49,7 +55,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
       alert('Modifier un bloc avant d\'en ajouter un nouveau.')
       return
     }
-    blocks.value.push({ numero: blocks.value.length + 1, description: '', repetitionCount: 1, modified: false })
+    blocks.value.push({ numero: blocks.value.length + 1, description: '', repetitionCount: 1, modified: false, imageStrings: [] })
   }
 
   function renumberBlocks() {
@@ -76,8 +82,10 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
       :numero="block.numero"
       :description="block.description"
       :modelValue="block.repetitionCount"
+      :images="block.imageStrings"
       @update:modelValue="(v) => { if (blocks[i]) blocks[i].repetitionCount = v }"
       @update:description="(v) => { if (blocks[i]) blocks[i].description = v }"
+      @update:images="(v) => { if (blocks[i]) blocks[i].imageStrings = v }"
       :active="selectedIndex === i"
       :modified="block.modified"
       @select="toggleSelect(i)"

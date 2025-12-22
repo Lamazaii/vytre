@@ -18,6 +18,7 @@
                         :numero="block.numero"
                         :description="block.description"
                         :modelValue="block.repetitionCount"
+                        :images="block.images"
                     />
                 </div>
             </div>
