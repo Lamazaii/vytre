@@ -33,7 +33,13 @@
 
     <div class="optionBarActions">
 
-      <IconToggleGroup :personIcon="personEditIcon" :visibilityIcon="visibilityIcon" />
+      <IconToggleGroup
+        :personIcon="personEditIcon"
+        :visibilityIcon="visibilityIcon"
+        :leftActive="!popupStore.isReaderOpen"
+        :rightActive="popupStore.isReaderOpen"
+        @change="handleIconChange"
+      />
 
       <button class="saveButton" type="button">
         <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
@@ -67,6 +73,14 @@ import { usePopupStore } from '../../stores/popupStore'
 const activeTab = ref<'text' | 'image'>('text')
 const popupStore = usePopupStore()
 
+function handleIconChange(value: { left: boolean; right: boolean }) {
+  if (value.right) {
+    popupStore.openReader()
+  } else {
+    popupStore.closeReader()
+  }
+}
+
 </script>
 
 <style scoped>
@@ -84,7 +98,7 @@ const popupStore = usePopupStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px 0 25px;
+  padding: 0 10px 0 10px;
   box-sizing: border-box;
   z-index: 999;
 }

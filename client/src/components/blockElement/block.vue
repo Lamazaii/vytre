@@ -49,6 +49,7 @@ interface Props {
 const emit = defineEmits<{
   (e: 'modified', value: boolean): void;
   (e: 'select'): void;
+  (e: 'update:description', value: string): void;
 }>();
 
 const props = defineProps<Props>();
@@ -63,6 +64,7 @@ const onWelcomeInput = (e: Event) => {
 
   const isModified = welcomeText.value.length > 0
   emit('modified', isModified)
+  emit('update:description', welcomeText.value)
 }
 
 const welcomeEl = ref<HTMLElement | null>(null)

@@ -4,17 +4,26 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import AddBlockZone from './components/addBlock/addBlockZone.vue';
   import OptionBar from './components/optionBar/optionBar.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import type { Blocks } from './types/Blocks';
+  import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
+  import { usePopupStore } from './stores/popupStore';
+
+  const popupStore = usePopupStore()
 
   const blocks = ref<Array<Blocks & { modified?: boolean }>>([
     {
       numero: 1,
-      titre: 'Titre du Bloc Éditable',
       description: '',
+      repetitionCount: 1,
       modified: false
     },
   ]);
+
+  watch(blocks, (newBlocks) => {
+    const blocksToStore = newBlocks.map(({ modified, ...rest }) => rest)
+    popupStore.setBlocks(blocksToStore)
+  }, { deep: true })
 
   const selectedIndex = ref<number | null>(null)
 
@@ -40,7 +49,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
       alert('Modifier un bloc avant d\'en ajouter un nouveau.')
       return
     }
-    blocks.value.push({ numero: blocks.value.length + 1, titre: 'Nouveau bloc', description: '', modified: false })
+    blocks.value.push({ numero: blocks.value.length + 1, description: '', repetitionCount: 1, modified: false })
   }
 
   function renumberBlocks() {
@@ -65,8 +74,10 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
       :key="i"
       @modified="(v)=>setModified(i,v)"
       :numero="block.numero"
-      :titre="block.titre"
       :description="block.description"
+      :modelValue="block.repetitionCount"
+      @update:modelValue="(v) => { if (blocks[i]) blocks[i].repetitionCount = v }"
+      @update:description="(v) => { if (blocks[i]) blocks[i].description = v }"
       :active="selectedIndex === i"
       :modified="block.modified"
       @select="toggleSelect(i)"
@@ -78,6 +89,9 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
     </div>
 
        <CopyPastePopup class="popUp"/>
+
+    <ReaderViewWindow/>
+
   </div>
 
 </template>

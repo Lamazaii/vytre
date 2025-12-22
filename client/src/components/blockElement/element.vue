@@ -8,6 +8,7 @@
         :description="description"
         :active="props.active"
         @modified="(v) => emit('modified', v)"
+        @update:description="(v) => emit('update:description', v)"
       />
 
       
@@ -40,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'action-clic': [];
   'update:modelValue': [value: number];
+  'update:description': [value: string];
   'select': [];
   'modified': [value: boolean];
 }>();
