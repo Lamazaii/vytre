@@ -13,6 +13,7 @@
                   :src="image.imagePath" 
                   :alt="`Image ${index + 1}`"
                   class="blockImage"
+                  @click="openImageZoom(image.imagePath, `Image ${index + 1}`)"
                 />
               </div>
             </div>
@@ -21,11 +22,20 @@
             {{ modelValue }}
         </div>
   </div>
+  
+  <ImageZoom 
+    :isOpen="isModalOpen" 
+    :imageSrc="selectedImageSrc" 
+    :imageAlt="selectedImageAlt"
+    @close="closeImageModal" 
+  />
 </template>
 
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { Image } from '../../types/Image';
+import ImageZoom from '../popup/ImageZoomPopUp.vue';
 
 interface Props {
   numero: number;
@@ -35,6 +45,20 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const isModalOpen = ref(false);
+const selectedImageSrc = ref('');
+const selectedImageAlt = ref('');
+
+const openImageZoom = (src: string, alt: string) => {
+  selectedImageSrc.value = src;
+  selectedImageAlt.value = alt;
+  isModalOpen.value = true;
+};
+
+const closeImageModal = () => {
+  isModalOpen.value = false;
+};
 
 </script>
 
@@ -88,6 +112,12 @@ const props = defineProps<Props>();
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.blockImage:hover {
+  transform: scale(1.05);
   max-width: 100%;
 }
 
