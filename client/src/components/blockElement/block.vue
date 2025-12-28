@@ -1,16 +1,18 @@
 <template>
   <div class="editableBlock">
-
-    <p
-      class="welcomeText"
-      contenteditable="true"
-      aria-label="Texte de bienvenue"
-      dir="ltr"
-      ref="welcomeEl"
-      @input="onWelcomeInput"
-      @keydown.enter.prevent
-      data-placeholder="Sélectionnez ce bloc pour l'éditer."
-    ></p>
+    <div class="editableText">
+      <p
+        class="welcomeText"
+        :class="{ isEmpty: isWelcomeEmpty }"
+        contenteditable="true"
+        aria-label="Texte de bienvenue"
+        dir="ltr"
+        ref="welcomeEl"
+        @input="onWelcomeInput"
+        @keydown.enter.prevent
+        data-placeholder="Sélectionnez ce bloc pour l'éditer.">
+      </p>
+    </div>
 
     <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="onDelete">
       <img :src="(isTrashHover || isTrashActive) ? trashRed : trash" alt="Supprimer" />
@@ -18,16 +20,30 @@
 
     <div class="dottedSeparator"></div>
 
-    <div class="imagesContainer" v-if="images.length > 0">
-      <div class="imageItem" v-for="(image, index) in images" :key="index">
-        <img :src="image" alt="Illustration ajoutée" class="blockImage" />
-        <div class="removeImageIcon" @click="removeImage(index)">
-          <img :src="trashRed" alt="Supprimer" />
+    <div class="imageSection">
+      <div class="imagesContainer" v-if="images.length > 0">
+        <div class="imageItem" v-for="(image, index) in images" :key="index">
+          <img :src="image" alt="Illustration ajoutée" class="blockImage" />
+          <div class="removeImageIcon" @click="removeImage(index)">
+            <img :src="trashRed" alt="Supprimer" />
+          </div>
         </div>
       </div>
+  
+      <div class="addImage" @click="triggerFileInput">
+        <input 
+          ref="fileInput" 
+          type="file" 
+          accept="image/*" 
+          style="display: none"
+          @change="handleImageSelect"
+        />
+        <div class="addImageLogo">
+          <img src="../../assets/blockImage/imageIcon.svg" alt="Add" />
+        </div>
+        <p class="addImageText">Ajouter une image</p>
+      </div>
     </div>
- 
-    <AddImage class="addImage" @imageSelected="handleImageSelected"/>
 
   </div>
 </template>
@@ -35,8 +51,7 @@
 
 <script setup lang="ts">
 
-import AddImage from './addImage.vue';
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 
@@ -59,6 +74,8 @@ const props = defineProps<Props>();
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const images = ref<string[]>([])
+const isWelcomeEmpty = ref(true)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const welcomeText = ref(props.description || '')
 const onWelcomeInput = (e: Event) => {
@@ -66,6 +83,7 @@ const onWelcomeInput = (e: Event) => {
   welcomeText.value = (el.textContent || '').trim()
 
   const isModified = welcomeText.value.length > 0
+  isWelcomeEmpty.value = welcomeText.value.length === 0
   emit('modified', isModified)
   emit('update:description', welcomeText.value)
 }
@@ -74,6 +92,9 @@ const welcomeEl = ref<HTMLElement | null>(null)
 onMounted(() => {
   if (welcomeEl.value && props.description) {
     welcomeEl.value.textContent = props.description
+    isWelcomeEmpty.value = false
+  } else {
+    isWelcomeEmpty.value = true
   }
 })
 
@@ -92,6 +113,46 @@ function onDelete() {
   emit('delete')
 }
 
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleImageSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const files = input?.files
+  
+  if (!files || files.length === 0) {
+    console.warn('Aucun fichier sélectionné')
+    return
+  }
+
+  const file = files[0]
+  
+  if (!file) {
+    console.error('Erreur lors de la récupération du fichier')
+    return
+  }
+
+  if (!file.type.startsWith('image/')) {
+    console.error('Veuillez sélectionner une image')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const imageData = e.target?.result
+    if (!imageData || typeof imageData !== 'string') {
+      console.error('Erreur lors de la lecture du fichier')
+      return
+    }
+    emit('update:images', [...images.value, imageData])
+    images.value.push(imageData)
+    emit('modified', true)
+    input.value = ''
+  }
+  reader.readAsDataURL(file)
+}
+
 </script>
 
 
@@ -99,29 +160,37 @@ function onDelete() {
 .editableBlock {
   position: relative;
   width: 1000px;
-  min-height: 160px;
   border: 3px solid #DC2626;
   border-radius: 5px;
-  padding: 15px;
   background-color: #ffffff;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding-bottom: 90px;
+  align-items: center;
+  padding: 15px 0px 15px 0px;
+}
+
+.editableText {
+  display: flex;
+  align-items: center;
+  width: 900px;
+  min-height: 44px;
+  background-color: #ffffff;
+  padding: 0;
+  margin: 0;
 }
 
 .welcomeText {
-  position: absolute;
-  left: 50px;
-  bottom: calc(15px + 68px + 10px + 2px + 22px);
   font-size: 14px;
   color: #000000;
   margin: 0;
   outline: none;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 900px;
 }
 
-.welcomeText[contenteditable="true"]:empty::before {
+.welcomeText.isEmpty[contenteditable="true"]::before {
   content: attr(data-placeholder);
   color: #9e9e9e;
   opacity: 0.8;
@@ -163,31 +232,58 @@ function onDelete() {
   background: rgba(220, 38, 38, 0.15);
   border-radius: 4px;
 }
-
+ 
 .dottedSeparator {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(15px + 68px + 10px);
+  display :flex;
+  align-items: flex-start;
   width: 900px;
   height: 2px;
-  opacity: 0.3;
+  opacity: 0.4;
   z-index: 1;
-  border: none;
   background-image: radial-gradient(circle, #000000 3px, transparent 1px);
   background-size: 8px 8px;
   background-repeat: repeat-x;
-  background-position: 0 50%;
+  background-position: 0 40%;
+  margin : 13px 0px 13px 0px;
 }
 
 .addImage {
-  position: absolute;
-  left: 0px;
-  right: 0px;
-  bottom: 15px;
-  width: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 900px;
   height: 68px;
   z-index: 1;
+  flex-direction: column;
+  border: 2px dashed transparent;
+  background-color: transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.addImageText {
+  font-size: 16px;
+  color: #000000;
+  opacity: 0.5;
+  margin: 0; 
+  margin-top: 4px;
+  transition: all 0.3s ease;
+}
+
+.addImageLogo img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.imageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .addImage:hover {
@@ -211,12 +307,8 @@ function onDelete() {
   justify-content: center;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background-color: #fafafa;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  width: 100%;
-  box-sizing: border-box;
+  background-color: #ffffff;
+  width : 900px;
 }
 
 .imageItem {
