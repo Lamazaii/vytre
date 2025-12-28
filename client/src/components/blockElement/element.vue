@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
   titre: 'Titre du Bloc Éditable',
   description: 'Sélectionnez ce bloc pour l\'éditer.',
   modelValue: 1,
-  images: () => []
+  images: () => [],
   canDelete: true
 });
 

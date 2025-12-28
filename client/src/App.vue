@@ -6,35 +6,26 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
   import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
   import { useBlocksStore } from './stores/blockStores';
-import { storeToRefs } from 'pinia'
-  import { ref } from 'vue';
+  import { storeToRefs } from 'pinia'
 
   const blocksStore = useBlocksStore()
-const { blocks, selectedIndex, canAdd } = storeToRefs(store)
+  const { selectedIndex, canAdd } = storeToRefs(blocksStore)
 
 function toggleSelect(i: number) {
-  store.toggleSelect(i)
+  blocksStore.toggleSelect(i)
 }
 
 function setModified(i: number, value: boolean) {
-  store.setModified(i, value)
+  blocksStore.setModified(i, value)
 }
 
-  function setModified(i: number, value: boolean) {
-    blocksStore.setModified(i, value)
-  }
 function addEmptyBlockIfAllowed() {
-  store.addEmptyBlockIfAllowed()
+  blocksStore.addEmptyBlockIfAllowed()
 }
 
 function removeBlock(i: number) {
-  store.removeBlock(i)
+  blocksStore.removeBlock(i)
 }
-  const canAdd = blocksStore.canAdd
-
-  function addEmptyBlockIfAllowed() {
-    blocksStore.addEmptyBlockIfAllowed()
-  }
 
 </script>
 
