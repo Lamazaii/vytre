@@ -51,18 +51,17 @@ const close = () => {
 
 .close-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #FF0000;
-  border: 2px solid #FFFFFF;
+  top: 15px;
+  right: 15px;
+  border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
-  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  margin-right : 15px;
+  font-size: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
+  color: #333333;
 }
 </style>
