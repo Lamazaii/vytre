@@ -4,32 +4,11 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import AddBlockZone from './components/addBlock/addBlockZone.vue';
   import OptionBar from './components/optionBar/optionBar.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
-  import { ref, computed, watch } from 'vue';
-  import type { Blocks } from './types/Blocks';
+  import { ref } from 'vue';
   import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
-  import { usePopupStore } from './stores/popupStore';
+  import { useBlocksStore } from './stores/blockStores';
 
-  const popupStore = usePopupStore()
-
-  const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[] }>>([
-    {
-      numero: 1,
-      description: '',
-      repetitionCount: 1,
-      modified: false,
-      imageStrings: []
-    },
-  ]);
-
-  watch(blocks, (newBlocks) => {
-    const blocksToStore = newBlocks.map(({ modified, imageStrings, ...rest }) => {
-      const images = imageStrings && imageStrings.length > 0 
-        ? imageStrings.map((imagePath, index) => ({ id: String(index), imagePath, blockId: rest.numero, block: rest as any }))
-        : []
-      return { ...rest, images }
-    })
-    popupStore.setBlocks(blocksToStore)
-  }, { deep: true })
+  const blocksStore = useBlocksStore()
 
   const selectedIndex = ref<number | null>(null)
 
@@ -38,30 +17,15 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   }
 
   function setModified(i: number, value: boolean) {
-    if (!blocks.value[i]) return
-    blocks.value[i] = { ...blocks.value[i], modified: value }
-    console.log(`setModified: index=${i} modified=${value}`)
+    blocksStore.setModified(i, value)
   }
 
-  const canAdd = computed(() => {
-    if (blocks.value.length === 0) return true
-    const last = blocks.value[blocks.value.length - 1]
-    const result = !!(last && last.modified)
-    return result
-  })
+  const canAdd = blocksStore.canAdd
 
   function addEmptyBlockIfAllowed() {
-    if (!canAdd.value) {
-      alert('Modifier un bloc avant d\'en ajouter un nouveau.')
-      return
-    }
-    blocks.value.push({ numero: blocks.value.length + 1, description: '', repetitionCount: 1, modified: false, imageStrings: [] })
+    blocksStore.addEmptyBlockIfAllowed()
   }
 
-  function renumberBlocks() {
-    blocks.value = blocks.value.map((block: Blocks & { modified?: boolean }, i: number) => ({ ...block, numero: i + 1 }))
-  
-  };
 </script>
 
 <template>
@@ -76,16 +40,16 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 
     <div class = "block">
       <Element
-      v-for="(block,i) in blocks"
+      v-for="(block,i) in blocksStore.blocks"
       :key="i"
       @modified="(v)=>setModified(i,v)"
       :numero="block.numero"
       :description="block.description"
       :modelValue="block.repetitionCount"
       :images="block.imageStrings"
-      @update:modelValue="(v) => { if (blocks[i]) blocks[i].repetitionCount = v }"
-      @update:description="(v) => { if (blocks[i]) blocks[i].description = v }"
-      @update:images="(v) => { if (blocks[i]) blocks[i].imageStrings = v }"
+      @update:modelValue="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].repetitionCount = v }"
+      @update:description="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].description = v }"
+      @update:images="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].imageStrings = v }"
       :active="selectedIndex === i"
       :modified="block.modified"
       @select="toggleSelect(i)"
@@ -123,7 +87,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 .header {
   width: 100%;
   height: 45px;
-  width: 1468px;
+  max-width: 1468px;
 }
 
 .app {

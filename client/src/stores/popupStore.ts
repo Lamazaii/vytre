@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Blocks } from '../types/Blocks'
 
 export const usePopupStore = defineStore('popup', () => {
   const isOpen = ref(false)
   const isReaderOpen = ref(false)
-  const blocks = ref<Blocks[]>([])
 
   function openPopup() {
     isOpen.value = true
@@ -23,18 +21,6 @@ export const usePopupStore = defineStore('popup', () => {
     isReaderOpen.value = false
   }
 
-  function setBlocks(newBlocks: Blocks[]) {
-    blocks.value = newBlocks
-  }
-
-  function getBlocks() {
-    return blocks.value
-  }
-
-  function addBlock(block: Blocks) {
-    blocks.value.push(block)
-  }
-
   return {
     isOpen,
     openPopup,
@@ -42,9 +28,5 @@ export const usePopupStore = defineStore('popup', () => {
     isReaderOpen,
     openReader,
     closeReader,
-    blocks,
-    setBlocks,
-    getBlocks,
-    addBlock,
   }
 })

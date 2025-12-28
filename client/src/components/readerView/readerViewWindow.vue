@@ -13,12 +13,12 @@
                         <div class="headerRep">REP.</div>
                     </div>
                     <ReaderViewBlock
-                        v-for="block in popupStore.blocks"
+                        v-for="block in blocksStore.blocks"
                         :key="block.numero"
                         :numero="block.numero"
                         :description="block.description"
                         :modelValue="block.repetitionCount"
-                        :images="block.images"
+                        :images="convertToImages(block.imageStrings)"
                     />
                 </div>
             </div>
@@ -28,13 +28,22 @@
 
 <script setup lang="ts">
 import { usePopupStore } from '../../stores/popupStore'
+import { useBlocksStore } from '../../stores/blockStores'
 import ReaderViewBar from './readerViewBar.vue'
 import ReaderViewBlock from './readerViewBlock.vue'
+import type { Image } from '../../types/Image'
 
 const popupStore = usePopupStore()
+const blocksStore = useBlocksStore()
 
-function closeReader() {
-    popupStore.closeReader()
+function convertToImages(imageStrings?: string[]): Image[] {
+  if (!imageStrings || imageStrings.length === 0) return []
+  return imageStrings.map((imagePath, index) => ({
+    id: String(index),
+    imagePath,
+    blockId: 0,
+    block: null
+  }))
 }
 </script>
 
