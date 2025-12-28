@@ -7,7 +7,9 @@
         :titre="titre"
         :description="description"
         :active="props.active"
+        :canDelete="canDelete"
         @modified="(v) => emit('modified', v)"
+        @delete="emit('delete')"
       />
 
       
@@ -28,13 +30,15 @@ interface Props {
   description?: string;
   modelValue?: number;
   active? : boolean;
+  canDelete?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   numero: 1,
   titre: 'Titre du Bloc Éditable',
   description: 'Sélectionnez ce bloc pour l\'éditer.',
-  modelValue: 1
+  modelValue: 1,
+  canDelete: true
 });
 
 const emit = defineEmits<{
@@ -42,6 +46,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: number];
   'select': [];
   'modified': [value: boolean];
+  'delete': [];
 }>();
 
 const nombreRepetitions = ref(props.modelValue);
