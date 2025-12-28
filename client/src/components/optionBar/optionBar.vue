@@ -84,7 +84,7 @@ const popupStore = usePopupStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px 0 25px;
+  padding: 0 10px 0 10px;
   box-sizing: border-box;
   z-index: 999;
 }

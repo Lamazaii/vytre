@@ -15,32 +15,29 @@
 
 .header {
   background-color: #000000;
-  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1468px;
-  max-width: 100%;
-  z-index: 1000;
+  
+  width: auto;
+  max-width: 1468px;
 }
 
 .titleBarContent {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 100%;
+  max-height: 45px;
 }
 
 .SimpleBar {
   margin: 0;
+  padding: 0;
   font-size: 24px;
   font-weight: 900;
   color: #E30613;
-  line-height: 1;
+  display:block;
 }
 
 .documentTitle {
@@ -48,7 +45,6 @@
   font-weight: 300;
   color: #ffffff;
   font-size: 16px;
-  line-height: 1;
 }
 
 </style>

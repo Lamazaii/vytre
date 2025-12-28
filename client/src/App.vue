@@ -89,9 +89,10 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   padding: 0;
 }
 
+
 :global(#app) {
   width: 100%;
-  height: 100%;
+  height: auto;
   margin: 0;
   padding: 0;
   display: flex;
@@ -110,9 +111,10 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  width: 100%;
+  width: auto;
   max-width: 1468px;
-  height: 717px;
+  height: auto;
+  min-height: 717px;
   display: flex;
   flex-direction: column;
   align-items: center;
