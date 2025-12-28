@@ -51,6 +51,8 @@ const emit = defineEmits<{
   (e: 'modified', value: boolean): void;
   (e: 'select'): void;
   (e: 'delete'): void;
+  (e: 'update:description', value: string): void;
+  (e: 'update:images', value: string[]): void;
 }>();
 
 const props = defineProps<Props>();
@@ -65,6 +67,7 @@ const onWelcomeInput = (e: Event) => {
 
   const isModified = welcomeText.value.length > 0
   emit('modified', isModified)
+  emit('update:description', welcomeText.value)
 }
 
 const welcomeEl = ref<HTMLElement | null>(null)
@@ -77,10 +80,12 @@ onMounted(() => {
 const handleImageSelected = (imageData: string) => {
   images.value.push(imageData)
   emit('modified', true)
+  emit('update:images', images.value)
 }
 
 const removeImage = (index: number) => {
   images.value.splice(index, 1)
+  emit('update:images', images.value)
 }
 
 function onDelete() {

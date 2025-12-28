@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
-import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
-import Element from './components/blockElement/element.vue';
-import AddBlockZone from './components/addBlock/addBlockZone.vue';
-import OptionBar from './components/optionBar/optionBar.vue';
-import TitleBar from './components/titleBar/titleBar.vue';
+  import Element from './components/blockElement/element.vue';
+  import AddBlockZone from './components/addBlock/addBlockZone.vue';
+  import OptionBar from './components/optionBar/optionBar.vue';
+  import TitleBar from './components/titleBar/titleBar.vue';
+  import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
+  import { useBlocksStore } from './stores/blockStores';
 import { storeToRefs } from 'pinia'
-import { useBlocksStore } from './stores/blocksStore'
+  import { ref } from 'vue';
 
-const store = useBlocksStore()
+  const blocksStore = useBlocksStore()
 const { blocks, selectedIndex, canAdd } = storeToRefs(store)
 
 function toggleSelect(i: number) {
@@ -19,6 +20,9 @@ function setModified(i: number, value: boolean) {
   store.setModified(i, value)
 }
 
+  function setModified(i: number, value: boolean) {
+    blocksStore.setModified(i, value)
+  }
 function addEmptyBlockIfAllowed() {
   store.addEmptyBlockIfAllowed()
 }
@@ -26,6 +30,12 @@ function addEmptyBlockIfAllowed() {
 function removeBlock(i: number) {
   store.removeBlock(i)
 }
+  const canAdd = blocksStore.canAdd
+
+  function addEmptyBlockIfAllowed() {
+    blocksStore.addEmptyBlockIfAllowed()
+  }
+
 </script>
 
 <template>
@@ -40,12 +50,16 @@ function removeBlock(i: number) {
 
     <div class = "block">
       <Element
-      v-for="(block,i) in blocks"
+      v-for="(block,i) in blocksStore.blocks"
       :key="i"
       @modified="(v)=>setModified(i,v)"
       :numero="block.numero"
-      :titre="block.titre"
       :description="block.description"
+      :modelValue="block.repetitionCount"
+      :images="block.imageStrings"
+      @update:modelValue="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].repetitionCount = v }"
+      @update:description="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].description = v }"
+      @update:images="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].imageStrings = v }"
       :active="selectedIndex === i"
       :modified="block.modified"
       :canDelete="i !== 0"
@@ -58,8 +72,10 @@ function removeBlock(i: number) {
          <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
-    <CopyPastePopup class="popUp"/>
-    <DeleteBlockPopup />
+       <CopyPastePopup class="popUp"/>
+
+    <ReaderViewWindow/>
+
   </div>
 
 </template>
@@ -84,7 +100,7 @@ function removeBlock(i: number) {
 .header {
   width: 100%;
   height: 45px;
-  width: 1468px;
+  max-width: 1468px;
 }
 
 .app {

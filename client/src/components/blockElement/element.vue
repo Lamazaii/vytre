@@ -8,7 +8,10 @@
         :description="description"
         :active="props.active"
         :canDelete="canDelete"
+        :images="images"
         @modified="(v) => emit('modified', v)"
+        @update:description="(v) => emit('update:description', v)"
+        @update:images="(v) => emit('update:images', v)"
         @delete="emit('delete')"
       />
 
@@ -31,6 +34,7 @@ interface Props {
   modelValue?: number;
   active? : boolean;
   canDelete?: boolean;
+  images?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,19 +42,27 @@ const props = withDefaults(defineProps<Props>(), {
   titre: 'Titre du Bloc Éditable',
   description: 'Sélectionnez ce bloc pour l\'éditer.',
   modelValue: 1,
+  images: () => []
   canDelete: true
 });
 
 const emit = defineEmits<{
   'action-clic': [];
   'update:modelValue': [value: number];
+  'update:description': [value: string];
+  'update:images': [value: string[]];
   'select': [];
   'modified': [value: boolean];
   'delete': [];
 }>();
 
 const nombreRepetitions = ref(props.modelValue);
-watch(nombreRepetitions, (v) => emit('update:modelValue', v))
+const images = ref(props.images || []);
+
+watch(nombreRepetitions, (v) => emit('update:modelValue', v));
+watch(() => props.images, (newVal) => {
+  if (newVal) images.value = newVal;
+}, { deep: true });
 </script>
 
 <style scoped>
