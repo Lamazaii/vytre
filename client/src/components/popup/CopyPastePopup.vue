@@ -60,9 +60,7 @@ const placeholder = computed(
 	position: fixed;
 	inset: 0;
 	display: flex;
-	align-items: flex-start;
 	justify-content: center;
-	padding: 158px 24px 24px;
 	background: rgba(0, 0, 0, 0.55);
 	backdrop-filter: blur(2px);
 	z-index: 1200;

@@ -5,6 +5,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import OptionBar from './components/optionBar/optionBar.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
   import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
+  import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
   import { useBlocksStore } from './stores/blockStores';
   import { storeToRefs } from 'pinia'
 
@@ -67,6 +68,7 @@ function removeBlock(i: number) {
 
     <ReaderViewWindow/>
 
+    <DeleteBlockPopup/>
   </div>
 
 </template>
@@ -126,8 +128,9 @@ function removeBlock(i: number) {
   justify-content: center;
 }
 
-.popUp {
+.popUp{
   display: flex;
   padding-top: 158px;
 }
+
 </style>

@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { useBlocksStore } from '../../stores/blocksStore'
+import { useBlocksStore } from '../../stores/blockStores'
 import { computed } from 'vue'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 import trashWhite from '../../assets/popUpDeleteBlock/trashWhite.svg'
