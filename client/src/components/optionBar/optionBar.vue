@@ -41,15 +41,14 @@
       </button>
 
     </div>
-
+    
+    <div v-if="activeTab === 'text'" class="optionsWrapper">
+      <TextOptionBar />
+    </div>
+    <div v-if="activeTab === 'image'" class="optionsWrapper">
+      <ImageOptionBar />
+    </div>
   </header>
-
-  <div v-if="activeTab === 'text'" class="textOptionsWrapper">
-    <TextOptionBar />
-  </div>
-  <div v-if="activeTab === 'image'" class="imageOptionsWrapper">
-    <ImageOptionBar />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -76,8 +75,8 @@ const popupStore = usePopupStore()
   top: 45px;
   left: 50%;
   transform: translateX(-50%);
-  width: 1468px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: 54px;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
@@ -85,7 +84,7 @@ const popupStore = usePopupStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px 0 25px;
+  padding: 0 10px 0 10px;
   box-sizing: border-box;
   z-index: 999;
 }
@@ -217,13 +216,14 @@ const popupStore = usePopupStore()
   text-align: center;
 }
 
-.textOptionsWrapper {
+.optionsWrapper {
   position: fixed;
-  top: calc(45px + 54px);
+  top: 45px;
+  
   left: 50%;
   transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: auto;
   background: transparent;
   display: flex;
@@ -232,20 +232,6 @@ const popupStore = usePopupStore()
   z-index: 998;
 }
 
-.imageOptionsWrapper {
-  position: fixed;
-  top: calc(45px + 54px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
-  height: auto;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  z-index: 998;
-}
 
 .clipboardButton {
   width: 36px;

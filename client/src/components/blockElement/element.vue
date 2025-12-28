@@ -1,8 +1,8 @@
 <template>
   <div class="element-container">
-    <StepNumber :numero="numero" :active="props.active"/>
-    
     <div class="element-content">
+    
+      <StepNumber :numero="numero" :active="props.active"/>
       <Block 
         :titre="titre"
         :description="description"
@@ -49,20 +49,20 @@ watch(nombreRepetitions, (v) => emit('update:modelValue', v))
 </script>
 
 <style scoped>
+
 .element-container {
   display: flex;
-  gap: 50px;
   align-items: center;
-  width: 100%;
-  padding-top: 189px;
-  padding-left: 128px;
-  padding-right: 140px;
+  width: auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .element-content {
   display: flex;
-  gap: 50px;
+  gap : 50px;
   align-items: center;
-  flex: 1;
+  
 }
+  
 </style>
