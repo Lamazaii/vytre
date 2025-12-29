@@ -12,6 +12,7 @@
         @modified="(v) => emit('modified', v)"
         @update:description="(v) => emit('update:description', v)"
         @update:images="(v) => emit('update:images', v)"
+        @select="emit('select')"
         @delete="emit('delete')"
       />
 

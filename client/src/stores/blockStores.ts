@@ -17,7 +17,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   })
 
   function toggleSelect(i: number) {
-    selectedIndex.value = selectedIndex.value === i ? null : i
+    selectedIndex.value = i
   }
 
   function setModified(i: number, value: boolean) {

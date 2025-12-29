@@ -1,5 +1,5 @@
 <template>
-  <div class="editableBlock">
+  <div class="editableBlock" :class="{ active: props.active }" @click="emit('select')">
     <div class="editableText">
       <p
         class="welcomeText"
@@ -110,6 +110,7 @@ onMounted(() => {
 })
 
 function onFocusEditable() {
+  emit('select')
   if (welcomeEl.value) textFormatStore.setActiveEl(welcomeEl.value)
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
@@ -182,7 +183,7 @@ const handleImageSelect = (event: Event) => {
 .editableBlock {
   position: relative;
   width: 1000px;
-  border: 3px solid #DC2626;
+  border: 3px solid #C6C6C6;
   border-radius: 5px;
   background-color: #ffffff;
   box-sizing: border-box;
@@ -190,6 +191,10 @@ const handleImageSelect = (event: Event) => {
   flex-direction: column;
   align-items: center;
   padding: 15px 0px 15px 0px;
+}
+
+.editableBlock.active {
+  border-color: #DC2626;
 }
 
 .editableText {
