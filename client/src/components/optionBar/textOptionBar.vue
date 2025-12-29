@@ -1,15 +1,15 @@
 <template>
   <div class="textOptionBar">
     <div class="formatGroup">
-      <button class="formatButton" :class="{ active: bold }" @click="bold = !bold" title="Bold">
+      <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
       </button>
 
-      <button class="formatButton" :class="{ active: italic }" @click="italic = !italic" title="Italic">
+      <button class="formatButton" :class="{ active: italic }" @mousedown.prevent @click="applyItalic" title="Italic">
         <img :src="italic ? italicIconActive : italicIcon" alt="Italic" />
       </button>
 
-      <button class="formatButton" :class="{ active: underline }" @click="underline = !underline" title="Underline">
+      <button class="formatButton" :class="{ active: underline }" @mousedown.prevent @click="applyUnderline" title="Underline">
         <img :src="underline ? underlineIconActive : underlineIcon" alt="Underline" />
       </button>
 
@@ -58,9 +58,12 @@ import underlineIconActive from "../../assets/textOptionBar/underlineActive.svg"
 import addTextIcon from "../../assets/textOptionBar/addText.svg"
 import addTextIconActive from "../../assets/textOptionBar/addTextActive.svg"
 
-const bold = ref(false)
-const italic = ref(false)
-const underline = ref(false)
+import { storeToRefs } from 'pinia'
+import { useTextFormatStore } from '../../stores/textFormatStore'
+
+const textFormatStore = useTextFormatStore()
+const { bold, italic, underline } = storeToRefs(textFormatStore)
+const { applyBold, applyItalic, applyUnderline, updateStatesFromCommand } = textFormatStore
 const addText = ref(false)
 const fontSize = ref('Medium')
 const color = ref('#000000')
@@ -87,8 +90,14 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('selectionchange', updateStatesFromCommand)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('selectionchange', updateStatesFromCommand)
+})
 
 
 </script>

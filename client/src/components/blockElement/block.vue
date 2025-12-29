@@ -8,6 +8,10 @@
         aria-label="Texte de bienvenue"
         dir="ltr"
         ref="welcomeEl"
+        @focus="onFocusEditable"
+        @click="onSelectionActivity"
+        @keyup="onSelectionActivity"
+        @mouseup="onSelectionActivity"
         @input="onWelcomeInput"
         @keydown.enter.prevent
         data-placeholder="Sélectionnez ce bloc pour l'éditer.">
@@ -52,6 +56,7 @@
 <script setup lang="ts">
 
 import { ref, onMounted, watch } from 'vue'
+import { useTextFormatStore } from '../../stores/textFormatStore'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 
@@ -76,6 +81,7 @@ const isTrashActive = ref(false)
 const images = ref<string[]>([])
 const isWelcomeEmpty = ref(true)
 const fileInput = ref<HTMLInputElement | null>(null)
+const textFormatStore = useTextFormatStore()
 
 const welcomeText = ref(props.description || '')
 const onWelcomeInput = (e: Event) => {
@@ -86,6 +92,8 @@ const onWelcomeInput = (e: Event) => {
   isWelcomeEmpty.value = welcomeText.value.length === 0
   emit('modified', isModified)
   emit('update:description', welcomeText.value)
+  textFormatStore.saveSelection()
+  textFormatStore.updateStatesFromCommand()
 }
 
 const welcomeEl = ref<HTMLElement | null>(null)
@@ -96,7 +104,21 @@ onMounted(() => {
   } else {
     isWelcomeEmpty.value = true
   }
+  if (welcomeEl.value) {
+    textFormatStore.setActiveEl(welcomeEl.value)
+  }
 })
+
+function onFocusEditable() {
+  if (welcomeEl.value) textFormatStore.setActiveEl(welcomeEl.value)
+  textFormatStore.saveSelection()
+  textFormatStore.updateStatesFromCommand()
+}
+
+function onSelectionActivity() {
+  textFormatStore.saveSelection()
+  textFormatStore.updateStatesFromCommand()
+}
 
 const handleImageSelected = (imageData: string) => {
   images.value.push(imageData)
