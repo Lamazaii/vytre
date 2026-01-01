@@ -49,6 +49,7 @@ function removeBlock(i: number) {
       :description="block.description"
       :modelValue="block.repetitionCount"
       :images="block.imageStrings"
+      :blockIndex="i"
       @update:modelValue="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].repetitionCount = v }"
       @update:description="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].description = v }"
       @update:images="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].imageStrings = v }"

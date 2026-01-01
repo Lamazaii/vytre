@@ -3,8 +3,8 @@ import { ref, computed } from 'vue'
 import type { Blocks } from '../types/Blocks'
 
 export const useBlocksStore = defineStore('blocks', () => {
-  const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[] }>>([
-    { numero: 1, description: '', repetitionCount: 1, modified: false, imageStrings: [] }
+  const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[]; textZones?: string[] }>>([
+    { numero: 1, description: '', repetitionCount: 1, modified: false, imageStrings: [], textZones: [] }
   ])
   const selectedIndex = ref<number | null>(null)
   const deletePopupVisible = ref(false)
@@ -35,8 +35,17 @@ export const useBlocksStore = defineStore('blocks', () => {
       description: '',
       repetitionCount: 1,
       modified: false,
-      imageStrings: []
+      imageStrings: [],
+      textZones: []
     })
+  }
+
+  function addTextZone() {
+    if (selectedIndex.value === null) return
+    const block = blocks.value[selectedIndex.value]
+    if (!block) return
+    block.textZones ??= []
+    block.textZones.push('')
   }
 
   function renumberBlocks() {
@@ -84,6 +93,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     toggleSelect,
     setModified,
     addEmptyBlockIfAllowed,
+    addTextZone,
     removeBlock,
     renumberBlocks,
     confirmDelete,

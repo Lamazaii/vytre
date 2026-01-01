@@ -15,7 +15,7 @@
 
       <div class="divider"></div>
 
-      <button class="formatButton" :class="{ active: addText }" @click="addText = !addText" title="Add text">
+      <button class="formatButton" :class="{ active: addText }" @click="onAddText" title="Add text">
         <img :src="addText ? addTextIconActive : addTextIcon" alt="Add text" />
       </button>
     </div>
@@ -60,8 +60,10 @@ import addTextIconActive from "../../assets/textOptionBar/addTextActive.svg"
 
 import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../stores/textFormatStore'
+import { useBlocksStore } from '../../stores/blockStores'
 
 const textFormatStore = useTextFormatStore()
+const blocksStore = useBlocksStore()
 const { bold, italic, underline } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, updateStatesFromCommand } = textFormatStore
 const addText = ref(false)
@@ -79,6 +81,14 @@ function toggleColorPicker() {
 function selectColor(c: string) {
   color.value = c
   showColor.value = false
+}
+
+function onAddText() {
+  addText.value = !addText.value
+  if (addText.value) {
+    blocksStore.addTextZone()
+    addText.value = false
+  }
 }
 
 function onDocClick(e: MouseEvent) {

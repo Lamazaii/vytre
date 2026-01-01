@@ -18,6 +18,26 @@
       </p>
     </div>
 
+    <div class="textZonesSection" v-if="textZones.length > 0">
+      <div class="textZone" v-for="(zone, index) in textZones" :key="index">
+        <p 
+          class="textZoneContent"
+          :class="{ isEmpty: !zone || zone.trim() === '' }"
+          contenteditable="true"
+          dir="ltr"
+          @input="updateTextZone(index, $event)"
+          @click="onSelectionActivity"
+          @keyup="onSelectionActivity"
+          @mouseup="onSelectionActivity"
+          data-placeholder="Nouvelle zone de texte">
+          {{ zone }}
+        </p>
+        <button class="removeTextZoneButton" @click.stop="removeTextZone(index)" title="Remove text zone">
+          <img :src="trashRed" alt="Remove" />
+        </button>
+      </div>
+    </div>
+
     <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="onDelete">
       <img :src="(isTrashHover || isTrashActive) ? trashRed : trash" alt="Supprimer" />
     </div>
@@ -55,8 +75,9 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
+import { useBlocksStore } from '../../stores/blockStores'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 
@@ -65,6 +86,7 @@ interface Props {
   description?: string;
   active? : boolean;
   canDelete?: boolean;
+  blockIndex?: number;
 }
 
 const emit = defineEmits<{
@@ -82,8 +104,15 @@ const images = ref<string[]>([])
 const isWelcomeEmpty = ref(true)
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
+const blocksStore = useBlocksStore()
 
 const welcomeText = ref(props.description || '')
+const textZones = computed(() => {
+  if (props.blockIndex === undefined) return []
+  const block = blocksStore.blocks[props.blockIndex]
+  return block?.textZones || []
+})
+
 const onWelcomeInput = (e: Event) => {
   const el = e.target as HTMLElement
   welcomeText.value = (el.textContent || '').trim()
@@ -130,6 +159,26 @@ const handleImageSelected = (imageData: string) => {
 const removeImage = (index: number) => {
   images.value.splice(index, 1)
   emit('update:images', images.value)
+}
+
+function updateTextZone(index: number, event: Event) {
+  if (props.blockIndex === undefined) return
+  const block = blocksStore.blocks[props.blockIndex]
+  if (!block) return
+  const el = event.target as HTMLElement
+  const content = el.textContent || ''
+  if (block.textZones) {
+    block.textZones[index] = content
+  }
+}
+
+function removeTextZone(index: number) {
+  if (props.blockIndex === undefined) return
+  const block = blocksStore.blocks[props.blockIndex]
+  if (!block) return
+  if (block.textZones) {
+    block.textZones.splice(index, 1)
+  }
 }
 
 function onDelete() {
@@ -272,6 +321,71 @@ const handleImageSelect = (event: Event) => {
   background-repeat: repeat-x;
   background-position: 0 40%;
   margin : 13px 0px 13px 0px;
+}
+
+.textZonesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 900px;
+}
+
+.textZone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.textZoneContent {
+  flex: 1;
+  font-size: 14px;
+  color: #000000;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.textZoneContent.isEmpty[contenteditable="true"]::before {
+  content: attr(data-placeholder);
+  color: #9e9e9e;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.removeTextZoneButton {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, filter 0.2s ease, background-color 0.16s ease;
+  border: none;
+  background: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeTextZoneButton img {
+  width: 20px;
+  height: 20px;
+}
+
+.textZone:hover .removeTextZoneButton {
+  opacity: 0.5;
+}
+
+.removeTextZoneButton:hover {
+  opacity: 1 !important;
+  background: #E0E0E0;
+  border-radius: 4px;
 }
 
 .addImage {
