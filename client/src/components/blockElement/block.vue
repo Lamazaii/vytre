@@ -22,15 +22,15 @@
       <div class="textZone" v-for="(zone, index) in textZones" :key="index">
         <p 
           class="textZoneContent"
-          :class="{ isEmpty: !zone || zone.trim() === '' }"
+          :class="{ isEmpty: textZoneEmpty[index] ?? (!zone || zone.trim() === '') }"
           contenteditable="true"
           dir="ltr"
+          :ref="(el) => setTextZoneRef(el, index)"
           @input="updateTextZone(index, $event)"
           @click="onSelectionActivity"
           @keyup="onSelectionActivity"
           @mouseup="onSelectionActivity"
           data-placeholder="Nouvelle zone de texte">
-          {{ zone }}
         </p>
         <button class="removeTextZoneButton" @click.stop="removeTextZone(index)" title="Remove text zone">
           <img :src="trashRed" alt="Remove" />
@@ -112,6 +112,21 @@ const textZones = computed(() => {
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
+const textZoneRefs = ref<Array<HTMLElement | null>>([])
+const textZoneEmpty = ref<boolean[]>([])
+
+watch(textZones, (zones) => {
+  zones.forEach((zone, idx) => {
+    const el = textZoneRefs.value[idx]
+    if (!el) return
+    if (document.activeElement === el) return
+    const current = el.textContent ?? ''
+    const next = zone ?? ''
+    if (current !== next) el.textContent = next
+    textZoneEmpty.value[idx] = (next.trim?.() ?? '').length === 0
+  })
+  textZoneEmpty.value = zones.map((z) => (z?.trim?.() ?? '').length === 0)
+}, { deep: true })
 
 const onWelcomeInput = (e: Event) => {
   const el = e.target as HTMLElement
@@ -170,6 +185,17 @@ function updateTextZone(index: number, event: Event) {
   if (block.textZones) {
     block.textZones[index] = content
   }
+  textZoneEmpty.value[index] = content.trim().length === 0
+}
+
+const setTextZoneRef = (el: any, index: number) => {
+  const htmlEl = (el?.$el ?? el) as HTMLElement | null
+  textZoneRefs.value[index] = htmlEl
+  if (htmlEl && textZones.value[index] !== undefined) {
+    const next = textZones.value[index] ?? ''
+    if ((htmlEl.textContent ?? '') !== next) htmlEl.textContent = next
+    textZoneEmpty.value[index] = next.trim().length === 0
+  }
 }
 
 function removeTextZone(index: number) {
@@ -179,6 +205,8 @@ function removeTextZone(index: number) {
   if (block.textZones) {
     block.textZones.splice(index, 1)
   }
+  textZoneRefs.value.splice(index, 1)
+  textZoneEmpty.value.splice(index, 1)
 }
 
 function onDelete() {
@@ -326,7 +354,6 @@ const handleImageSelect = (event: Event) => {
 .textZonesSection {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   width: 900px;
 }
 
