@@ -36,9 +36,6 @@
           <div class="swatches">
             <button class="swatch" v-for="c in presetColors" :key="c" :style="{ background: c }" @click="selectColor(c)" :aria-label="c"></button>
           </div>
-          <div class="custom">
-            <input class="customColorInput" type="color" v-model="color" @input="selectColor(color)" aria-label="Custom color" />
-          </div>
         </div>
       </div>
     </div>
@@ -65,14 +62,14 @@ import { useBlocksStore } from '../../stores/blockStores'
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const { bold, italic, underline } = storeToRefs(textFormatStore)
-const { applyBold, applyItalic, applyUnderline, updateStatesFromCommand } = textFormatStore
+const { applyBold, applyItalic, applyUnderline, applyColor, updateStatesFromCommand } = textFormatStore
 const addText = ref(false)
 const fontSize = ref('Medium')
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
-const presetColors = ['#000000', '#dc2626', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6b21a8'] // A completer
+const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 
 function toggleColorPicker() {
   showColor.value = !showColor.value
@@ -80,6 +77,7 @@ function toggleColorPicker() {
 
 function selectColor(c: string) {
   color.value = c
+  applyColor(c)
   showColor.value = false
 }
 
@@ -208,23 +206,36 @@ onBeforeUnmount(() => {
   border: 1px solid #ddd;
 }
 
-.colorPicker { position: relative; display: inline-block; }
+.colorPicker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap : 10px;
+}
+
 .colorMenu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 160px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   border-radius: 6px;
-  padding: 8px;
-  z-index: 2000;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.swatches {
+  display: flex;
+  gap: 6px;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
 .swatch {
-  width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ddd; cursor: pointer; padding: 0;
+  width: 17px;
+  height: 17px; 
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  cursor: pointer;
 }
-.custom { margin-top: 8px; display:flex; justify-content: center; }
-.customColorInput { width: 100%; height: 32px; border: none; background: transparent; cursor: pointer; }
+
 </style>

@@ -42,9 +42,9 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     } catch {}
   }
 
-  function execCommand(cmd: string) {
+  function execCommand(cmd: string, value?: string) {
     restoreSelection()
-    try { document.execCommand(cmd) } catch {}
+    try { document.execCommand(cmd, false, value) } catch {}
     saveSelection()
     updateStatesFromCommand()
   }
@@ -52,6 +52,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const applyBold = () => execCommand('bold')
   const applyItalic = () => execCommand('italic')
   const applyUnderline = () => execCommand('underline')
+  const applyColor = (value: string) => execCommand('foreColor', value)
 
   function resetFormattingIndicators() {
     bold.value = false
@@ -74,6 +75,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     applyBold,
     applyItalic,
     applyUnderline,
+    applyColor,
     resetFormattingIndicators,
   }
 })
