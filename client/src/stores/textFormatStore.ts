@@ -5,6 +5,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const bold = ref(false)
   const italic = ref(false)
   const underline = ref(false)
+  const fontSize = ref('Medium')
 
   const activeEl = ref<HTMLElement | null>(null)
   const lastRange = ref<Range | null>(null)
@@ -39,6 +40,16 @@ export const useTextFormatStore = defineStore('textFormat', () => {
       bold.value = document.queryCommandState('bold')
       italic.value = document.queryCommandState('italic')
       underline.value = document.queryCommandState('underline')
+
+      const sizeValue = document.queryCommandValue('fontSize')
+      const reverseMap: Record<string, string> = {
+        '1': 'Small',
+        '2': 'Medium',
+        '4': 'Large'
+      }
+      if (sizeValue && reverseMap[sizeValue]) {
+        fontSize.value = reverseMap[sizeValue]
+      }
     } catch {}
   }
 
@@ -54,16 +65,28 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const applyUnderline = () => execCommand('underline')
   const applyColor = (value: string) => execCommand('foreColor', value)
 
+  const applyFontSize = (sizeLabel: string) => {
+    const sizeMap: Record<string, string> = {
+      'Small': '1',
+      'Medium': '2',
+      'Large': '4'
+    }
+    const value = sizeMap[sizeLabel] || '3'
+    execCommand('fontSize', value)
+  }
+
   function resetFormattingIndicators() {
     bold.value = false
     italic.value = false
     underline.value = false
+    fontSize.value = 'Medium'
   }
 
   return {
     bold,
     italic,
     underline,
+    fontSize,
 
     activeEl,
     lastRange,
@@ -76,6 +99,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     applyItalic,
     applyUnderline,
     applyColor,
+    applyFontSize,
     resetFormattingIndicators,
   }
 })

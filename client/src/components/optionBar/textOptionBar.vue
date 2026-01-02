@@ -21,7 +21,7 @@
     </div>
 
     <div class="textControls">
-      <select class="fontSize" v-model="fontSize" aria-label="Text size">
+      <select class="fontSize" v-model="fontSize" @change="handleSizeChange" aria-label="Text size">
         <option value="Small">Petit</option>
         <option value="Medium">Moyen</option>
         <option value="Large">Grand</option>
@@ -44,7 +44,6 @@
 
 
 <script setup lang="ts">
-
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import boldIcon from "../../assets/textOptionBar/bold.svg"
 import boldIconActive from "../../assets/textOptionBar/boldActive.svg"
@@ -61,15 +60,20 @@ import { useBlocksStore } from '../../stores/blockStores'
 
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
-const { bold, italic, underline } = storeToRefs(textFormatStore)
-const { applyBold, applyItalic, applyUnderline, applyColor, updateStatesFromCommand } = textFormatStore
+
+const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
+const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
+
 const addText = ref(false)
-const fontSize = ref('Medium')
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
+
+function handleSizeChange() {
+  applyFontSize(fontSize.value)
+}
 
 function toggleColorPicker() {
   showColor.value = !showColor.value
@@ -106,8 +110,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('selectionchange', updateStatesFromCommand)
 })
-
-
 </script>
 
 <style scoped>
@@ -162,8 +164,6 @@ onBeforeUnmount(() => {
   display: block;
   object-fit: contain;
 }
-
-.formatImg { display:block; width:16px; height:16px; object-fit:contain }
 
 .divider {
   width: 1px;
@@ -237,5 +237,4 @@ onBeforeUnmount(() => {
   border: 1px solid #ddd;
   cursor: pointer;
 }
-
 </style>
