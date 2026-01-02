@@ -6,6 +6,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
   import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
   import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
+  import ErrorPopup from './components/popup/ErrorPopup.vue';
   import { useBlocksStore } from './stores/blockStores';
   import { storeToRefs } from 'pinia'
 
@@ -70,6 +71,7 @@ function removeBlock(i: number) {
     <ReaderViewWindow/>
 
     <DeleteBlockPopup/>
+    <ErrorPopup/>
   </div>
 
 </template>

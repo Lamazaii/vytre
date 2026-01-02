@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Blocks } from '../types/Blocks'
+import { useErrorPopupStore } from './errorPopupStore'
 
 export const useBlocksStore = defineStore('blocks', () => {
+  const errorPopup = useErrorPopupStore()
   const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[]; textZones?: string[] }>>([
     { numero: 1, description: '', repetitionCount: 1, modified: false, imageStrings: [], textZones: [] }
   ])
@@ -27,7 +29,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   function addEmptyBlockIfAllowed() {
     if (!canAdd.value) {
-      alert("Modifier un bloc avant d'en ajouter un nouveau.")
+      errorPopup.show("Modifier un bloc avant d'en ajouter un nouveau.")
       return
     }
     blocks.value.push({
@@ -44,6 +46,17 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (selectedIndex.value === null) return
     const block = blocks.value[selectedIndex.value]
     if (!block) return
+    const baseEmpty = (block.description ?? '').trim().length === 0
+    if (baseEmpty) {
+      errorPopup.show('Remplir le texte de base avant d\'ajouter une zone.')
+      return
+    }
+    const zones = block.textZones ?? []
+    const lastZone = zones[zones.length - 1]
+    if (lastZone !== undefined && (lastZone ?? '').trim().length === 0) {
+      errorPopup.show('Remplir la zone de texte précédente avant d\'en ajouter une nouvelle.')
+      return
+    }
     block.textZones ??= []
     block.textZones.push('')
   }

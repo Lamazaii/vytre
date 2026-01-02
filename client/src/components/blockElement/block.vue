@@ -374,16 +374,14 @@ const handleImageSelect = (event: Event) => {
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
-  margin: 0;
-  padding: 0;
   text-align: left;
+  margin-right: 40px;;
 }
 
 .textZoneContent.isEmpty[contenteditable="true"]::before {
   content: attr(data-placeholder);
   color: #9e9e9e;
   opacity: 0.8;
-  pointer-events: none;
 }
 
 .removeTextZoneButton {
