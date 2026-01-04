@@ -6,6 +6,7 @@ import CopyPastePopup from './components/popup/CopyPastePopup.vue';
   import TitleBar from './components/titleBar/titleBar.vue';
   import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
   import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
+  import ErrorPopup from './components/popup/ErrorPopup.vue';
   import { useBlocksStore } from './stores/blockStores';
   import { storeToRefs } from 'pinia'
 
@@ -49,6 +50,7 @@ function removeBlock(i: number) {
       :description="block.description"
       :modelValue="block.repetitionCount"
       :images="block.imageStrings"
+      :blockIndex="i"
       @update:modelValue="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].repetitionCount = v }"
       @update:description="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].description = v }"
       @update:images="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].imageStrings = v }"
@@ -69,6 +71,7 @@ function removeBlock(i: number) {
     <ReaderViewWindow/>
 
     <DeleteBlockPopup/>
+    <ErrorPopup/>
   </div>
 
 </template>

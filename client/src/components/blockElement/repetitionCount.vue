@@ -5,10 +5,12 @@
       <div class="repetitionBox">
         <div class="repetitionInner">
           <input 
+            v-model.number="inputValue"
             type="number" 
-            v-model.number="nombreRepetitions" 
             min="1"
             class="repetitionInput"
+            @input="handleInput"
+            @blur="handleBlur"
           />
         </div>
       </div>
@@ -17,25 +19,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+  
+  import { ref, watch } from 'vue';
 
-interface Props {
-  modelValue?: number;
-}
+  interface Props {
+    modelValue?: number;
+  }
 
-const props = withDefaults(defineProps<Props>(), {
-  modelValue: 1
-});
+  const props = withDefaults(defineProps<Props>(), {
+    modelValue: 1
+  });
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number];
-}>();
+  const emit = defineEmits<{
+    'update:modelValue': [value: number];
+  }>();
 
-const nombreRepetitions = ref(props.modelValue);
+  const inputValue = ref<number | string>(props.modelValue);
 
-watch(nombreRepetitions, (newValue) => {
-  emit('update:modelValue', newValue);
-});
+  watch(() => props.modelValue, (newVal) => {
+    inputValue.value = newVal;
+  });
+
+  const handleInput = () => {
+    const val = Number(inputValue.value);
+    if (inputValue.value !== '' && !isNaN(val)) {
+      emit('update:modelValue', val);
+    }
+  };
+
+  const handleBlur = () => {
+    const numericValue = Number(inputValue.value);
+
+    if (inputValue.value === '' || numericValue < 1) {
+      inputValue.value = 1;
+      emit('update:modelValue', 1);
+    }
+  };
+
 </script>
 
 <style scoped>

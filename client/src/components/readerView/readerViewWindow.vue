@@ -19,6 +19,7 @@
                         :description="block.description"
                         :modelValue="block.repetitionCount"
                         :images="convertToImages(block.imageStrings)"
+                        :textZones="block.textZones"
                     />
                 </div>
             </div>

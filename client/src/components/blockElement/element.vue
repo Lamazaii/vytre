@@ -9,9 +9,11 @@
         :active="props.active"
         :canDelete="canDelete"
         :images="images"
+        :blockIndex="blockIndex"
         @modified="(v) => emit('modified', v)"
         @update:description="(v) => emit('update:description', v)"
         @update:images="(v) => emit('update:images', v)"
+        @select="emit('select')"
         @delete="emit('delete')"
       />
 
@@ -35,6 +37,7 @@ interface Props {
   active? : boolean;
   canDelete?: boolean;
   images?: string[];
+  blockIndex?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {

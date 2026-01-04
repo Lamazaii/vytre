@@ -5,7 +5,11 @@
         </div>
         <div class="blockContent">
             <div class="contentWrapper">
-              <div class="description">{{ description }}</div>
+              <div class="description" v-html="description"></div>
+              <div v-if="textZones && textZones.length > 0" class="textZonesContainer">
+                <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
+                </div>
+              </div>
               <div v-if="images && images.length > 0" class="imagesContainer">
                 <img 
                   v-for="(image, index) in images" 
@@ -42,6 +46,7 @@ interface Props {
   description: string;
   modelValue: number;
   images?: Image[];
+  textZones?: string[];
 }
 
 const props = defineProps<Props>();
@@ -116,6 +121,21 @@ const closeImageModal = () => {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.textZonesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.textZone {
+  font-size: 16px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
 .blockImage:hover {
   transform: scale(1.05);
   max-width: 100%;
@@ -125,7 +145,8 @@ const closeImageModal = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;;
+  justify-content: center;
+  align-items: center;;
 }
 
 .blockImage {
