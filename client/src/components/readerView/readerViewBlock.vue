@@ -5,10 +5,9 @@
         </div>
         <div class="blockContent">
             <div class="contentWrapper">
-              <div class="description">{{ description }}</div>
+              <div class="description" v-html="description"></div>
               <div v-if="textZones && textZones.length > 0" class="textZonesContainer">
-                <div v-for="(zone, index) in textZones" :key="index" class="textZone">
-                  {{ zone }}
+                <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
                 </div>
               </div>
               <div v-if="images && images.length > 0" class="imagesContainer">

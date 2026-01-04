@@ -1,38 +1,28 @@
 <template>
   <div class="editableBlock" :class="{ active: props.active }" @click="emit('select')">
     <div class="editableText">
-      <p
-        class="welcomeText"
-        :class="{ isEmpty: isWelcomeEmpty }"
-        contenteditable="true"
-        aria-label="Texte de bienvenue"
-        dir="ltr"
-        ref="welcomeEl"
+      <TiptapEditor
+        ref="welcomeEditorRef"
+        v-model="welcomeText"
+        :placeholder="'Sélectionnez ce bloc pour l\'éditer.'"
         @focus="onFocusEditable"
-        @click="onSelectionActivity"
-        @keyup="onSelectionActivity"
-        @mouseup="onSelectionActivity"
-        @input="onWelcomeInput"
-        @keydown.enter.prevent
-        data-placeholder="Sélectionnez ce bloc pour l'éditer.">
-      </p>
+        @selectionUpdate="onSelectionActivity"
+      />
     </div>
 
     <div class="textZonesSection" v-if="textZones.length > 0">
       <div class="textZone" v-for="(zone, index) in textZones" :key="index">
-        <p 
-          class="textZoneContent"
-          :class="{ isEmpty: textZoneEmpty[index] ?? (!zone || zone.trim() === '') }"
-          contenteditable="true"
-          dir="ltr"
-          :ref="(el) => setTextZoneRef(el, index)"
-          @input="updateTextZone(index, $event)"
-          @click="onSelectionActivity"
-          @keyup="onSelectionActivity"
-          @mouseup="onSelectionActivity"
-          data-placeholder="Nouvelle zone de texte">
-        </p>
-        <button class="removeTextZoneButton" @click.stop="removeTextZone(index)" title="Remove text zone">
+        <div class="textZoneEditorWrapper">
+          <TiptapEditor
+            :ref="(el) => setTextZoneEditorRef(el, index)"
+            :model-value="zone"
+            :placeholder="'Nouvelle zone de texte'"
+            @update:model-value="(html) => onTextZoneUpdate(index, html)"
+            @focus="() => onTextZoneFocus(index)"
+            @selectionUpdate="onSelectionActivity"
+          />
+        </div>
+        <button class="removeTextZoneButton" @click.stop="onRemoveTextZone(index)" title="Remove text zone">
           <img :src="trashRed" alt="Remove" />
         </button>
       </div>
@@ -78,6 +68,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
+import TiptapEditor from '../editor/TiptapEditor.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 
@@ -101,10 +92,11 @@ const props = defineProps<Props>();
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const images = ref<string[]>([])
-const isWelcomeEmpty = ref(true)
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
+const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
+const textZoneEditorRefs = ref<Array<InstanceType<typeof TiptapEditor> | null>>([])
 
 const welcomeText = ref(props.description || '')
 const textZones = computed(() => {
@@ -112,50 +104,61 @@ const textZones = computed(() => {
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
-const textZoneRefs = ref<Array<HTMLElement | null>>([])
-const textZoneEmpty = ref<boolean[]>([])
 
-watch(textZones, (zones) => {
-  zones.forEach((zone, idx) => {
-    const el = textZoneRefs.value[idx]
-    if (!el) return
-    if (document.activeElement === el) return
-    const current = el.textContent ?? ''
-    const next = zone ?? ''
-    if (current !== next) el.textContent = next
-    textZoneEmpty.value[idx] = (next.trim?.() ?? '').length === 0
-  })
-  textZoneEmpty.value = zones.map((z) => (z?.trim?.() ?? '').length === 0)
-}, { deep: true })
+watch(() => props.description, (newDesc) => {
+  if (newDesc !== welcomeText.value) {
+    welcomeText.value = newDesc || ''
+  }
+})
 
-const onWelcomeInput = (e: Event) => {
-  const el = e.target as HTMLElement
-  welcomeText.value = (el.textContent || '').trim()
+watch(welcomeText, (newValue) => {
+  if (props.blockIndex !== undefined) {
+    blocksStore.updateBlockDescription(props.blockIndex, newValue)
+  }
+  
+  const isEmpty = blocksStore.isContentEmpty(newValue)
+  emit('modified', !isEmpty)
+  emit('update:description', newValue)
+})
 
-  const isModified = welcomeText.value.length > 0
-  isWelcomeEmpty.value = welcomeText.value.length === 0
-  emit('modified', isModified)
-  emit('update:description', welcomeText.value)
-  textFormatStore.saveSelection()
-  textFormatStore.updateStatesFromCommand()
-}
-
-const welcomeEl = ref<HTMLElement | null>(null)
 onMounted(() => {
-  if (welcomeEl.value && props.description) {
-    welcomeEl.value.textContent = props.description
-    isWelcomeEmpty.value = false
-  } else {
-    isWelcomeEmpty.value = true
-  }
-  if (welcomeEl.value) {
-    textFormatStore.setActiveEl(welcomeEl.value)
-  }
+  setTimeout(() => {
+    if (welcomeEditorRef.value) {
+      const editor = welcomeEditorRef.value.getEditor()
+      if (editor) {
+        textFormatStore.setTiptapEditor(editor as any)
+      }
+    }
+  }, 100)
 })
 
 function onFocusEditable() {
   emit('select')
-  if (welcomeEl.value) textFormatStore.setActiveEl(welcomeEl.value)
+  if (welcomeEditorRef.value) {
+    const editor = welcomeEditorRef.value.getEditor()
+    if (editor) {
+      textFormatStore.setTiptapEditor(editor as any)
+    }
+  }
+  textFormatStore.saveSelection()
+  textFormatStore.updateStatesFromCommand()
+}
+
+function setTextZoneEditorRef(el: any, index: number) {
+  if (el) {
+    textZoneEditorRefs.value[index] = el
+  }
+}
+
+function onTextZoneFocus(index: number) {
+  emit('select')
+  const editorRef = textZoneEditorRefs.value[index]
+  if (editorRef) {
+    const editor = editorRef.getEditor()
+    if (editor) {
+      textFormatStore.setTiptapEditor(editor as any)
+    }
+  }
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
 }
@@ -165,48 +168,19 @@ function onSelectionActivity() {
   textFormatStore.updateStatesFromCommand()
 }
 
-const handleImageSelected = (imageData: string) => {
-  images.value.push(imageData)
-  emit('modified', true)
-  emit('update:images', images.value)
-}
-
 const removeImage = (index: number) => {
   images.value.splice(index, 1)
   emit('update:images', images.value)
 }
 
-function updateTextZone(index: number, event: Event) {
+function onTextZoneUpdate(index: number, html: string) {
   if (props.blockIndex === undefined) return
-  const block = blocksStore.blocks[props.blockIndex]
-  if (!block) return
-  const el = event.target as HTMLElement
-  const content = el.textContent || ''
-  if (block.textZones) {
-    block.textZones[index] = content
-  }
-  textZoneEmpty.value[index] = content.trim().length === 0
+  blocksStore.updateTextZone(props.blockIndex, index, html)
 }
 
-const setTextZoneRef = (el: any, index: number) => {
-  const htmlEl = (el?.$el ?? el) as HTMLElement | null
-  textZoneRefs.value[index] = htmlEl
-  if (htmlEl && textZones.value[index] !== undefined) {
-    const next = textZones.value[index] ?? ''
-    if ((htmlEl.textContent ?? '') !== next) htmlEl.textContent = next
-    textZoneEmpty.value[index] = next.trim().length === 0
-  }
-}
-
-function removeTextZone(index: number) {
+function onRemoveTextZone(index: number) {
   if (props.blockIndex === undefined) return
-  const block = blocksStore.blocks[props.blockIndex]
-  if (!block) return
-  if (block.textZones) {
-    block.textZones.splice(index, 1)
-  }
-  textZoneRefs.value.splice(index, 1)
-  textZoneEmpty.value.splice(index, 1)
+  blocksStore.removeTextZone(props.blockIndex, index)
 }
 
 function onDelete() {
@@ -284,23 +258,6 @@ const handleImageSelect = (event: Event) => {
   margin: 0;
 }
 
-.welcomeText {
-  font-size: 14px;
-  color: #000000;
-  margin: 0;
-  outline: none;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  max-width: 900px;
-}
-
-.welcomeText.isEmpty[contenteditable="true"]::before {
-  content: attr(data-placeholder);
-  color: #9e9e9e;
-  opacity: 0.8;
-  pointer-events: none;
-}
-
 .trashIcon {
   position: absolute;
   top: 10px;
@@ -366,22 +323,9 @@ const handleImageSelect = (event: Event) => {
   min-height: 44px;
 }
 
-.textZoneContent {
+.textZoneEditorWrapper {
   flex: 1;
-  font-size: 14px;
-  color: #000000;
-  outline: none;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  text-align: left;
-  margin-right: 40px;;
-}
-
-.textZoneContent.isEmpty[contenteditable="true"]::before {
-  content: attr(data-placeholder);
-  color: #9e9e9e;
-  opacity: 0.8;
+  margin-right: 40px;
 }
 
 .removeTextZoneButton {

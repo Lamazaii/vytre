@@ -3,6 +3,16 @@ import { ref, computed } from 'vue'
 import type { Blocks } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 
+/**
+ * Vérifie si un contenu HTML est vide (en ignorant les balises)
+ * @param html - Contenu HTML à vérifier
+ * @returns true si le contenu est vide, false sinon
+ */
+function isContentEmpty(html: string): boolean {
+  const textContent = html.replaceAll(/<[^>]*>/g, '').trim()
+  return textContent.length === 0
+}
+
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
   const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[]; textZones?: string[] }>>([
@@ -46,17 +56,23 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (selectedIndex.value === null) return
     const block = blocks.value[selectedIndex.value]
     if (!block) return
-    const baseEmpty = (block.description ?? '').trim().length === 0
+    
+    // Utiliser isContentEmpty pour vérifier si la description de base est vide
+    const baseEmpty = isContentEmpty(block.description ?? '')
     if (baseEmpty) {
       errorPopup.show('Remplir le texte de base avant d\'ajouter une zone.')
       return
     }
+    
     const zones = block.textZones ?? []
     const lastZone = zones[zones.length - 1]
-    if (lastZone !== undefined && (lastZone ?? '').trim().length === 0) {
+    
+    // Vérifier si la dernière zone est vide en utilisant isContentEmpty
+    if (lastZone !== undefined && isContentEmpty(lastZone ?? '')) {
       errorPopup.show('Remplir la zone de texte précédente avant d\'en ajouter une nouvelle.')
       return
     }
+    
     block.textZones ??= []
     block.textZones.push('')
   }
@@ -94,6 +110,54 @@ export const useBlocksStore = defineStore('blocks', () => {
     blockToDeleteIndex.value = null
   }
 
+  /**
+   * Met à jour la description principale d'un bloc
+   * @param index - Index du bloc à mettre à jour
+   * @param html - Nouveau contenu HTML
+   */
+  function updateBlockDescription(index: number, html: string) {
+    if (index < 0 || index >= blocks.value.length) return
+    const block = blocks.value[index]
+    if (!block) return
+    
+    block.description = html
+    
+    // Vérifier si le contenu est vide (après suppression des balises HTML)
+    const textContent = html.replaceAll(/<[^>]*>/g, '').trim()
+    const isModified = textContent.length > 0
+    
+    block.modified = isModified
+  }
+
+  /**
+   * Met à jour une zone de texte spécifique dans un bloc
+   * @param blockIndex - Index du bloc
+   * @param zoneIndex - Index de la zone de texte
+   * @param html - Nouveau contenu HTML
+   */
+  function updateTextZone(blockIndex: number, zoneIndex: number, html: string) {
+    if (blockIndex < 0 || blockIndex >= blocks.value.length) return
+    const block = blocks.value[blockIndex]
+    if (!block?.textZones) return
+    if (zoneIndex < 0 || zoneIndex >= block.textZones.length) return
+    
+    block.textZones[zoneIndex] = html
+  }
+
+  /**
+   * Supprime une zone de texte d'un bloc
+   * @param blockIndex - Index du bloc
+   * @param zoneIndex - Index de la zone de texte à supprimer
+   */
+  function removeTextZone(blockIndex: number, zoneIndex: number) {
+    if (blockIndex < 0 || blockIndex >= blocks.value.length) return
+    const block = blocks.value[blockIndex]
+    if (!block?.textZones) return
+    if (zoneIndex < 0 || zoneIndex >= block.textZones.length) return
+    
+    block.textZones.splice(zoneIndex, 1)
+  }
+
   return {
     // state
     blocks,
@@ -111,5 +175,9 @@ export const useBlocksStore = defineStore('blocks', () => {
     renumberBlocks,
     confirmDelete,
     cancelDelete,
+    updateBlockDescription,
+    updateTextZone,
+    removeTextZone,
+    isContentEmpty,
   }
 })
