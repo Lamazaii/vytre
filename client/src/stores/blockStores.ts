@@ -9,7 +9,7 @@ import { useErrorPopupStore } from './errorPopupStore'
  * @returns true si le contenu est vide, false sinon
  */
 function isContentEmpty(html: string): boolean {
-  const textContent = html.replaceAll(/<[^>]*>/g, '').trim()
+  const textContent = html.replace(/<[^>]*>/g, '').trim()
   return textContent.length === 0
 }
 
@@ -123,7 +123,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     block.description = html
     
     // Vérifier si le contenu est vide (après suppression des balises HTML)
-    const textContent = html.replaceAll(/<[^>]*>/g, '').trim()
+    const textContent = html.replace(/<[^>]*>/g, '').trim()
     const isModified = textContent.length > 0
     
     block.modified = isModified
