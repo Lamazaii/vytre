@@ -41,7 +41,7 @@
         @change="handleIconChange"
       />
 
-      <button class="saveButton" type="button">
+      <button class="saveButton" type="button" @click="emit('save')">
         <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
         <span class="saveButtonLabel" >ENREGISTRER</span>
       </button>
@@ -72,6 +72,9 @@ import { usePopupStore } from '../../stores/popupStore'
 
 const activeTab = ref<'text' | 'image'>('text')
 const popupStore = usePopupStore()
+const emit = defineEmits<{
+  save: []
+}>()
 
 function handleIconChange(value: { left: boolean; right: boolean }) {
   if (value.right) {

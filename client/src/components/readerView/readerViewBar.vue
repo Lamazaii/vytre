@@ -11,7 +11,7 @@
       </div>
 
         <div class="SaveButtonSpacer">
-            <button class="saveButton" type="button">
+          <button class="saveButton" type="button" @click="emit('save')">
                 <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
                 <span class="saveButtonLabel" >ENREGISTRER</span>
             </button>
@@ -28,6 +28,9 @@ import IconToggleGroup from "../optionBar/iconToggleGroup.vue";
 import { usePopupStore } from '../../stores/popupStore'
 
 const popupStore = usePopupStore()
+const emit = defineEmits<{
+  save: []
+}>()
 
 function handleToggleChange(value: { left: boolean; right: boolean }) {
   if (value.left) {

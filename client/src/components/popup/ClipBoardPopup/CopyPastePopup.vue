@@ -19,7 +19,7 @@
 import { computed } from "vue";
 import BarPopUp from "./BarPopUp.vue";
 
-import { usePopupStore } from '../../stores/popupStore'
+import { usePopupStore } from '../../../stores/popupStore'
 
 const popupStore = usePopupStore()
 

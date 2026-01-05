@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import clipboardIcon from "../../assets/optionBarImage/contentPasteRed.svg";
+import clipboardIcon from "../../../assets/optionBarImage/contentPasteRed.svg";
 
 defineEmits<{
   close: []
