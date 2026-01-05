@@ -7,17 +7,31 @@
         class="documentTitle" 
         type="text" 
         placeholder="Titre du document"
-        @keydown.enter="$event.target.blur()"
-        @focus="$event.target.select()"
+      @keydown.enter="handleEnter" 
+      @focus="handleFocus"
       />
     </div>
-  </header>
+  </header> 
 </template>
 
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
 
 const blocksStore = useBlocksStore()
+
+function handleEnter(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target) {
+    target.blur();
+  }
+}
+
+function handleFocus(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target) {
+    target.select();
+  }
+}
 </script>
 
 <style scoped>
@@ -28,9 +42,10 @@ const blocksStore = useBlocksStore()
   align-items: center;
   justify-content: center;
   position: fixed;
+  top: 0;
   height: 45px;
-  width: auto;
-  max-width: 1468px;
+  width: 100%;
+  z-index: 1000;
 }
 
 .titleBarContent {
