@@ -1,24 +1,21 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
-  import Element from './components/blockElement/element.vue';
-  import AddBlockZone from './components/addBlock/addBlockZone.vue';
-  import OptionBar from './components/optionBar/optionBar.vue';
-  import TitleBar from './components/titleBar/titleBar.vue';
-  import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
-  import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
-  import ErrorPopup from './components/popup/ErrorPopup.vue';
-  import { useBlocksStore } from './stores/blockStores';
-  import { storeToRefs } from 'pinia'
+import Element from './components/blockElement/element.vue';
+import AddBlockZone from './components/addBlock/addBlockZone.vue';
+import OptionBar from './components/optionBar/optionBar.vue';
+import TitleBar from './components/titleBar/titleBar.vue';
+import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
+import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
+import ErrorPopup from './components/popup/ErrorPopup.vue';
+import { useBlocksStore } from './stores/blockStores';
+import { storeToRefs } from 'pinia'
 
-  const blocksStore = useBlocksStore()
-  const { selectedIndex, canAdd } = storeToRefs(blocksStore)
+const blocksStore = useBlocksStore()
+
+const { blocks, selectedIndex, canAdd } = storeToRefs(blocksStore)
 
 function toggleSelect(i: number) {
   blocksStore.toggleSelect(i)
-}
-
-function setModified(i: number, value: boolean) {
-  blocksStore.setModified(i, value)
 }
 
 function addEmptyBlockIfAllowed() {
@@ -28,7 +25,6 @@ function addEmptyBlockIfAllowed() {
 function removeBlock(i: number) {
   blocksStore.removeBlock(i)
 }
-
 </script>
 
 <template>
@@ -39,41 +35,35 @@ function removeBlock(i: number) {
     <div class="OptionBarSpacer">
       <OptionBar />
     </div>
-    
 
-    <div class = "block">
+    <div class="block">
       <Element
-      v-for="(block,i) in blocksStore.blocks"
-      :key="i"
-      @modified="(v)=>setModified(i,v)"
-      :numero="block.numero"
-      :description="block.description"
-      :modelValue="block.repetitionCount"
-      :images="block.imageStrings"
-      :blockIndex="i"
-      @update:modelValue="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].repetitionCount = v }"
-      @update:description="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].description = v }"
-      @update:images="(v) => { if (blocksStore.blocks[i]) blocksStore.blocks[i].imageStrings = v }"
-      :active="selectedIndex === i"
-      :modified="block.modified"
-      :canDelete="i !== 0"
-      @select="toggleSelect(i)"
-      @delete="removeBlock(i)"
+        v-for="(block, i) in blocks"
+        :key="block.id"
+        :numero="block.step" 
+        :description="block.text"
+        :modelValue="block.nbOfRepeats"
+        :images="block.images"
+        :active="selectedIndex === i"
+        :modified="block.modified"
+        :canDelete="blocks.length > 1"
+        @select="toggleSelect(i)"
+        @delete="removeBlock(i)"
+        @update:description="(v: string) => blocksStore.updateBlockDescription(i, v)"
+        @update:modelValue="(v: number) => block.nbOfRepeats = v"
+        @update:images="(v: any) => block.images = v"
       />
-     </div>
-
-    <div class= "addBlock"> 
-         <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
-       <CopyPastePopup class="popUp"/>
+    <div class="addBlock"> 
+      <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
+    </div>
 
+    <CopyPastePopup class="popUp"/>
     <ReaderViewWindow/>
-
     <DeleteBlockPopup/>
     <ErrorPopup/>
   </div>
-
 </template>
 
 <style scoped>

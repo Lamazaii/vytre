@@ -28,6 +28,7 @@ import { ref, watch } from 'vue';
 import StepNumber from './stepNumber.vue';
 import Block from './block.vue';
 import RepetitionCount from './repetitionCount.vue';
+import type { Image } from '../../types/Image';
 
 interface Props {
   numero?: number;
@@ -36,7 +37,7 @@ interface Props {
   modelValue?: number;
   active? : boolean;
   canDelete?: boolean;
-  images?: string[];
+  images?: Image[];
   blockIndex?: number;
 }
 
@@ -53,7 +54,7 @@ const emit = defineEmits<{
   'action-clic': [];
   'update:modelValue': [value: number];
   'update:description': [value: string];
-  'update:images': [value: string[]];
+  'update:images': [value: Image[]];
   'select': [];
   'modified': [value: boolean];
   'delete': [];
