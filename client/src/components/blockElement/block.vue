@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <Teleport to="body">
+  <Teleport to=".app">
     <div v-if="showCropper && imageToCrop" class="cropper-modal-overlay">
       <div class="cropper-card" @click.stop>
         <header class="cropper-header">
@@ -529,11 +529,8 @@ onMounted(() => {
 
 /* Style de la modale */
 .cropper-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: absolute;
+  inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(2px);
   display: flex;
