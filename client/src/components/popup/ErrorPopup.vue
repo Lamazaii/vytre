@@ -31,7 +31,7 @@ const close = () => store.close()
 
 <style scoped>
 .popup-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;

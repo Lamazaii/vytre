@@ -3,7 +3,7 @@
         <div class="popup">
                 <div class="readerApp">
                 <div class="readerViewWindow">
-                    <ReaderViewBar />
+                    <ReaderViewBar @save="emit('save')" />
                 </div>
 
                 <div class="readerWindowContent">
@@ -36,6 +36,9 @@ import ReaderViewBlock from './readerViewBlock.vue'
 
 const popupStore = usePopupStore()
 const blocksStore = useBlocksStore()
+const emit = defineEmits<{
+    save: []
+}>()
 
 </script>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import CopyPastePopup from './components/popup/CopyPastePopup.vue';
+import CopyPastePopup from './components/popup/ClipBoardPopup/CopyPastePopup.vue';
+import SavePopUp from './components/popup/SavePopUp.vue';
 import Element from './components/blockElement/element.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
@@ -7,12 +8,28 @@ import TitleBar from './components/titleBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
+import { ref } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
 import { storeToRefs } from 'pinia'
 
 const blocksStore = useBlocksStore()
 
 const { blocks, selectedIndex, canAdd } = storeToRefs(blocksStore)
+const saveDialogOpen = ref(false)
+const documentTitle = ref('Titre du document actuel')
+
+function openSaveDialog() {
+  saveDialogOpen.value = true
+}
+
+function handleSaveCancel() {
+  saveDialogOpen.value = false
+}
+
+function handleSaveConfirm(value: string) {
+  documentTitle.value = value || documentTitle.value
+  saveDialogOpen.value = false
+}
 
 function toggleSelect(i: number) {
   blocksStore.toggleSelect(i)
@@ -33,7 +50,7 @@ function removeBlock(i: number) {
       <TitleBar/>
     </div>
     <div class="OptionBarSpacer">
-      <OptionBar />
+      <OptionBar @save="openSaveDialog" />
     </div>
 
     <div class="block">
@@ -59,8 +76,17 @@ function removeBlock(i: number) {
       <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
-    <CopyPastePopup class="popUp"/>
-    <ReaderViewWindow/>
+       <CopyPastePopup class="popUp"/>
+
+    <ReaderViewWindow @save="openSaveDialog"/>
+
+    <SavePopUp
+      :isOpen="saveDialogOpen"
+      v-model="documentTitle"
+      @confirm="handleSaveConfirm"
+      @cancel="handleSaveCancel"
+    />
+
     <DeleteBlockPopup/>
     <ErrorPopup/>
   </div>
@@ -95,7 +121,8 @@ function removeBlock(i: number) {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  width: auto;
+  position: relative;
+  width: 100%;
   max-width: 1468px;
   height: auto;
   min-height: 717px;
