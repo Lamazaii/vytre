@@ -1,8 +1,12 @@
 import type { Image } from "./Image";
 
-export interface Blocks {
-  numero: number;
-  titre: string;
-  description: string;
-  images?: Image[];
+export interface Block {
+  id: number;
+  text: string;
+  step: number;
+  nbOfRepeats: number;
+  images: Image[];
+
+
+  modified: boolean;
 }

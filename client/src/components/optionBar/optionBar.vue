@@ -33,23 +33,28 @@
 
     <div class="optionBarActions">
 
-      <IconToggleGroup :personIcon="personEditIcon" :visibilityIcon="visibilityIcon" />
+      <IconToggleGroup
+        :personIcon="personEditIcon"
+        :visibilityIcon="visibilityIcon"
+        :leftActive="!popupStore.isReaderOpen"
+        :rightActive="popupStore.isReaderOpen"
+        @change="handleIconChange"
+      />
 
-      <button class="saveButton" type="button">
+      <button class="saveButton" type="button" @click="emit('save')">
         <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
         <span class="saveButtonLabel" >ENREGISTRER</span>
       </button>
 
     </div>
-
+    
+    <div v-if="activeTab === 'text'" class="optionsWrapper">
+      <TextOptionBar />
+    </div>
+    <div v-if="activeTab === 'image'" class="optionsWrapper">
+      <ImageOptionBar />
+    </div>
   </header>
-
-  <div v-if="activeTab === 'text'" class="textOptionsWrapper">
-    <TextOptionBar />
-  </div>
-  <div v-if="activeTab === 'image'" class="imageOptionsWrapper">
-    <ImageOptionBar />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -67,6 +72,17 @@ import { usePopupStore } from '../../stores/popupStore'
 
 const activeTab = ref<'text' | 'image'>('text')
 const popupStore = usePopupStore()
+const emit = defineEmits<{
+  save: []
+}>()
+
+function handleIconChange(value: { left: boolean; right: boolean }) {
+  if (value.right) {
+    popupStore.openReader()
+  } else {
+    popupStore.closeReader()
+  }
+}
 
 </script>
 
@@ -76,8 +92,8 @@ const popupStore = usePopupStore()
   top: 45px;
   left: 50%;
   transform: translateX(-50%);
-  width: 1468px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: 54px;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
@@ -85,7 +101,7 @@ const popupStore = usePopupStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px 0 25px;
+  padding: 0 10px 0 10px;
   box-sizing: border-box;
   z-index: 999;
 }
@@ -128,14 +144,23 @@ const popupStore = usePopupStore()
   font-weight: 600;
   letter-spacing: 0.3px;
   padding: 0;
-  border-bottom: 3px solid transparent;
+  position: relative;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .tabButtonActive {
   color: #dc2626;
-  border-bottom-color: #dc2626;
+}
+
+.tabButtonActive::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #dc2626;
 }
 
 .tabButtonActive .tabButtonIcon {
@@ -155,7 +180,7 @@ const popupStore = usePopupStore()
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
-  line-height: 32px;
+  line-height: 1;
   text-align: center;
 }
 
@@ -211,41 +236,26 @@ const popupStore = usePopupStore()
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 1;
   display: flex;
   align-items: center;
   text-align: center;
 }
 
-.textOptionsWrapper {
+.optionsWrapper {
   position: fixed;
-  top: calc(45px + 54px);
+  top: 54px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
+  width: 100%;
+  max-width: 1468px;
   height: auto;
   background: transparent;
-  display: flex;
   align-items: center;
   box-sizing: border-box;
   z-index: 998;
 }
 
-.imageOptionsWrapper {
-  position: fixed;
-  top: calc(45px + 54px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1468px, calc(100vw - 32px));
-  max-width: 100%;
-  height: auto;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  z-index: 998;
-}
 
 .clipboardButton {
   width: 36px;

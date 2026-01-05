@@ -1,27 +1,27 @@
 <template>
   <div class="textOptionBar">
     <div class="formatGroup">
-      <button class="formatButton" :class="{ active: bold }" @click="bold = !bold" title="Bold">
+      <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
       </button>
 
-      <button class="formatButton" :class="{ active: italic }" @click="italic = !italic" title="Italic">
+      <button class="formatButton" :class="{ active: italic }" @mousedown.prevent @click="applyItalic" title="Italic">
         <img :src="italic ? italicIconActive : italicIcon" alt="Italic" />
       </button>
 
-      <button class="formatButton" :class="{ active: underline }" @click="underline = !underline" title="Underline">
+      <button class="formatButton" :class="{ active: underline }" @mousedown.prevent @click="applyUnderline" title="Underline">
         <img :src="underline ? underlineIconActive : underlineIcon" alt="Underline" />
       </button>
 
       <div class="divider"></div>
 
-      <button class="formatButton" :class="{ active: addText }" @click="addText = !addText" title="Add text">
+      <button class="formatButton" :class="{ active: addText }" @click="onAddText" title="Add text">
         <img :src="addText ? addTextIconActive : addTextIcon" alt="Add text" />
       </button>
     </div>
 
     <div class="textControls">
-      <select class="fontSize" v-model="fontSize" aria-label="Text size">
+      <select class="fontSize" v-model="fontSize" @change="handleSizeChange" aria-label="Text size">
         <option value="Small">Petit</option>
         <option value="Medium">Moyen</option>
         <option value="Large">Grand</option>
@@ -36,9 +36,6 @@
           <div class="swatches">
             <button class="swatch" v-for="c in presetColors" :key="c" :style="{ background: c }" @click="selectColor(c)" :aria-label="c"></button>
           </div>
-          <div class="custom">
-            <input class="customColorInput" type="color" v-model="color" @input="selectColor(color)" aria-label="Custom color" />
-          </div>
         </div>
       </div>
     </div>
@@ -47,7 +44,6 @@
 
 
 <script setup lang="ts">
-
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import boldIcon from "../../assets/textOptionBar/bold.svg"
 import boldIconActive from "../../assets/textOptionBar/boldActive.svg"
@@ -58,16 +54,26 @@ import underlineIconActive from "../../assets/textOptionBar/underlineActive.svg"
 import addTextIcon from "../../assets/textOptionBar/addText.svg"
 import addTextIconActive from "../../assets/textOptionBar/addTextActive.svg"
 
-const bold = ref(false)
-const italic = ref(false)
-const underline = ref(false)
+import { storeToRefs } from 'pinia'
+import { useTextFormatStore } from '../../stores/textFormatStore'
+import { useBlocksStore } from '../../stores/blockStores'
+
+const textFormatStore = useTextFormatStore()
+const blocksStore = useBlocksStore()
+
+const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
+const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
+
 const addText = ref(false)
-const fontSize = ref('Medium')
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
-const presetColors = ['#000000', '#dc2626', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#6b21a8'] // A completer
+const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
+
+function handleSizeChange() {
+  applyFontSize(fontSize.value)
+}
 
 function toggleColorPicker() {
   showColor.value = !showColor.value
@@ -75,7 +81,16 @@ function toggleColorPicker() {
 
 function selectColor(c: string) {
   color.value = c
+  applyColor(c)
   showColor.value = false
+}
+
+function onAddText() {
+  addText.value = !addText.value
+  if (addText.value) {
+    blocksStore.addTextZone()
+    addText.value = false
+  }
 }
 
 function onDocClick(e: MouseEvent) {
@@ -87,10 +102,14 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
-
-
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('selectionchange', updateStatesFromCommand)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('selectionchange', updateStatesFromCommand)
+})
 </script>
 
 <style scoped>
@@ -104,7 +123,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   background-color: #F3F4F6;
   border-bottom: 0.5px solid #c2c2c2;
   box-sizing: border-box;
-  padding-left: 45px;
+  padding: 0 16px;
+  margin: 0;
 }
 
 .formatGroup {
@@ -144,8 +164,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   display: block;
   object-fit: contain;
 }
-
-.formatImg { display:block; width:16px; height:16px; object-fit:contain }
 
 .divider {
   width: 1px;
@@ -188,23 +206,35 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   border: 1px solid #ddd;
 }
 
-.colorPicker { position: relative; display: inline-block; }
+.colorPicker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap : 10px;
+}
+
 .colorMenu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 160px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   border-radius: 6px;
-  padding: 8px;
-  z-index: 2000;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.swatches {
+  display: flex;
+  gap: 6px;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
 .swatch {
-  width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ddd; cursor: pointer; padding: 0;
+  width: 17px;
+  height: 17px; 
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  cursor: pointer;
 }
-.custom { margin-top: 8px; display:flex; justify-content: center; }
-.customColorInput { width: 100%; height: 32px; border: none; background: transparent; cursor: pointer; }
 </style>

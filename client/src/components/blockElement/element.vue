@@ -1,13 +1,20 @@
 <template>
   <div class="element-container">
-    <StepNumber :numero="numero" :active="props.active"/>
-    
     <div class="element-content">
+    
+      <StepNumber :numero="numero" :active="props.active"/>
       <Block 
         :titre="titre"
         :description="description"
         :active="props.active"
+        :canDelete="canDelete"
+        :images="images"
+        :blockIndex="blockIndex"
         @modified="(v) => emit('modified', v)"
+        @update:description="(v) => emit('update:description', v)"
+        @update:images="(v) => emit('update:images', v)"
+        @select="emit('select')"
+        @delete="emit('delete')"
       />
 
       
@@ -21,6 +28,7 @@ import { ref, watch } from 'vue';
 import StepNumber from './stepNumber.vue';
 import Block from './block.vue';
 import RepetitionCount from './repetitionCount.vue';
+import type { Image } from '../../types/Image';
 
 interface Props {
   numero?: number;
@@ -28,41 +36,54 @@ interface Props {
   description?: string;
   modelValue?: number;
   active? : boolean;
+  canDelete?: boolean;
+  images?: Image[];
+  blockIndex?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   numero: 1,
   titre: 'Titre du Bloc Éditable',
   description: 'Sélectionnez ce bloc pour l\'éditer.',
-  modelValue: 1
+  modelValue: 1,
+  images: () => [],
+  canDelete: true
 });
 
 const emit = defineEmits<{
   'action-clic': [];
   'update:modelValue': [value: number];
+  'update:description': [value: string];
+  'update:images': [value: Image[]];
   'select': [];
   'modified': [value: boolean];
+  'delete': [];
 }>();
 
 const nombreRepetitions = ref(props.modelValue);
-watch(nombreRepetitions, (v) => emit('update:modelValue', v))
+const images = ref(props.images || []);
+
+watch(nombreRepetitions, (v) => emit('update:modelValue', v));
+watch(() => props.images, (newVal) => {
+  if (newVal) images.value = newVal;
+}, { deep: true });
 </script>
 
 <style scoped>
+
 .element-container {
   display: flex;
-  gap: 50px;
   align-items: center;
-  width: 100%;
-  padding-top: 189px;
-  padding-left: 128px;
-  padding-right: 140px;
+  width: auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .element-content {
   display: flex;
-  gap: 50px;
+  gap : 50px;
   align-items: center;
-  flex: 1;
+  
 }
+  
 </style>
