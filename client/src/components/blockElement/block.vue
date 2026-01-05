@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="onDelete">
+    <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click.stop="onDelete">
       <img :src="(isTrashHover || isTrashActive) ? trashRed : trash" alt="Supprimer" />
     </div>
 
@@ -36,9 +36,16 @@
 
     <div class="imageSection">
       <div class="imagesContainer" v-if="images.length > 0">
-        <div class="imageItem" v-for="(image, index) in images" :key="image.id || index">
-          <img :src="image.imagePath" alt="Illustration ajoutée" class="blockImage" />
-          <div class="removeImageIcon" @click="removeImage(index)">
+        <div 
+          class="imageItem" 
+          v-for="(image, index) in images" 
+          :key="image.id || index"
+          :class="{ 'selected-image': imageCropStore.selectedImageId === image.id }"
+          @click.stop="toggleSelectImage(image.id)"
+        >
+          <img :src="image.imagePath" alt="Illustration" class="blockImage" />
+
+          <div class="removeImageIcon" @click.stop="removeImage(index)">
             <img :src="trashRed" alt="Supprimer" />
           </div>
         </div>
@@ -58,8 +65,36 @@
         <p class="addImageText">Ajouter une image</p>
       </div>
     </div>
-
   </div>
+
+  <Teleport to="body">
+    <div v-if="showCropper && imageToCrop" class="cropper-modal-overlay">
+      <div class="cropper-card" @click.stop>
+        <header class="cropper-header">
+          <div class="cropper-title-group">
+            <img :src="cropIconActive" alt="Rogner" class="cropper-title-icon" />
+            <h3 class="cropper-title">Rogner l'image</h3>
+          </div>
+          <button class="cropper-close-button" @click="showCropper = false" aria-label="Fermer">✕</button>
+        </header>
+        <div class="cropper-body">
+          <div class="cropper-engine-wrapper">
+            <cropper
+              ref="cropperRef"
+              class="cropper-engine"
+              :src="imageToCrop.imagePath"
+              :stencil-props="{ aspectRatio: 1 }"
+            />
+          </div>
+        </div>
+        <div class="cropper-separator"></div>
+        <footer class="cropper-footer">
+          <button class="cropper-ghost-button" @click="showCropper = false">Annuler</button>
+          <button class="cropper-primary-button" @click="saveCrop">CONFIRMER</button>
+        </footer>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 
@@ -67,11 +102,14 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
+import { useImageCropStore } from '../../stores/imageCropStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
-// Importation du type Image pour la cohérence
+import cropIconActive from '../../assets/imageOptionBar/cropActive.svg'
 import type { Image } from '../../types/Image'
+import { Cropper } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
 
 interface Props {
   titre?: string;
@@ -79,88 +117,103 @@ interface Props {
   active? : boolean;
   canDelete?: boolean;
   blockIndex?: number;
-  // Correction : Changement du type string[] en Image[]
   images?: Image[];
 }
 
-const emit = defineEmits<{
-  (e: 'modified', value: boolean): void;
-  (e: 'select'): void;
-  (e: 'delete'): void;
-  (e: 'update:description', value: string): void;
-  // Correction : Émet un tableau d'objets Image
-  (e: 'update:images', value: Image[]): void;
-}>();
-
 const props = defineProps<Props>();
+const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 'update:images']);
+
+// États
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
-
-// Initialisation avec les props.images (qui sont désormais des objets)
 const images = ref<Image[]>(props.images || [])
+const welcomeText = ref(props.description || '')
+const showCropper = ref(false)
+const cropperRef = ref<any>(null)
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
+const imageCropStore = useImageCropStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<InstanceType<typeof TiptapEditor> | null>>([])
 
-const welcomeText = ref(props.description || '')
-
+// Computed
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
 
-watch(() => props.description, (newDesc) => {
-  if (newDesc !== welcomeText.value) {
-    welcomeText.value = newDesc || ''
+const imageToCrop = computed(() => 
+  images.value.find(img => img.id === imageCropStore.selectedImageId)
+)
+
+// Méthodes Image
+const toggleSelectImage = (id: string) => {
+  if (imageCropStore.selectedImageId === id) {
+    imageCropStore.clearSelection()
+  } else {
+    imageCropStore.selectImage(id, props.blockIndex ?? 0)
   }
-})
+}
 
-// Surveillance des images venant des props pour la réactivité
-watch(() => props.images, (newVal) => {
-  if (newVal) images.value = newVal
-}, { deep: true })
-
-watch(welcomeText, (newValue) => {
-  if (props.blockIndex !== undefined) {
-    blocksStore.updateBlockDescription(props.blockIndex, newValue)
-  }
-  
-  const isEmpty = blocksStore.isContentEmpty(newValue)
-  emit('modified', !isEmpty)
-  emit('update:description', newValue)
-})
-
-onMounted(() => {
-  setTimeout(() => {
-    if (welcomeEditorRef.value) {
-      const editor = welcomeEditorRef.value.getEditor()
-      if (editor) {
-        textFormatStore.setTiptapEditor(editor as any)
+const saveCrop = () => {
+  if (cropperRef.value && imageCropStore.selectedImageId) {
+    const { canvas } = cropperRef.value.getResult()
+    if (canvas) {
+      const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
+      if (index !== -1 && images.value[index]) {
+        images.value[index].imagePath = canvas.toDataURL()
+        emit('update:images', [...images.value])
+        emit('modified', true)
       }
+      showCropper.value = false
     }
-  }, 100)
-})
+  }
+}
 
+const removeImage = (index: number) => {
+  images.value.splice(index, 1)
+  emit('update:images', [...images.value])
+}
+
+const handleImageSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input?.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const imageData = e.target?.result
+    if (typeof imageData !== 'string') return
+    const newImage: Image = {
+      id: Date.now().toString(),
+      imagePath: imageData,
+      blockId: props.blockIndex ?? 0,
+    }
+    images.value = [...images.value, newImage]
+    emit('update:images', images.value)
+    emit('modified', true)
+    input.value = ''
+  }
+  reader.readAsDataURL(file)
+}
+
+const triggerFileInput = () => fileInput.value?.click()
+
+// Méthodes Texte & Bloc
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {
     const editor = welcomeEditorRef.value.getEditor()
-    if (editor) {
-      textFormatStore.setTiptapEditor(editor as any)
-    }
+    if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
-  textFormatStore.updateStatesFromCommand()
 }
 
 function setTextZoneEditorRef(el: any, index: number) {
-  if (el) {
-    textZoneEditorRefs.value[index] = el
-  }
+  if (el) textZoneEditorRefs.value[index] = el
 }
 
 function onTextZoneFocus(index: number) {
@@ -168,22 +221,14 @@ function onTextZoneFocus(index: number) {
   const editorRef = textZoneEditorRefs.value[index]
   if (editorRef) {
     const editor = editorRef.getEditor()
-    if (editor) {
-      textFormatStore.setTiptapEditor(editor as any)
-    }
+    if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
-  textFormatStore.updateStatesFromCommand()
 }
 
 function onSelectionActivity() {
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
-}
-
-const removeImage = (index: number) => {
-  images.value.splice(index, 1)
-  emit('update:images', [...images.value])
 }
 
 function onTextZoneUpdate(index: number, html: string) {
@@ -196,42 +241,48 @@ function onRemoveTextZone(index: number) {
   blocksStore.removeTextZone(props.blockIndex, index)
 }
 
-function onDelete() {
-  emit('delete')
-}
+function onDelete() { emit('delete') }
 
-const triggerFileInput = () => {
-  fileInput.value?.click()
-}
+// Watchers
+watch(() => props.description, (newDesc) => {
+  if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
+})
 
-const handleImageSelect = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input?.files?.[0]
-  
-  if (!file || !file.type.startsWith('image/')) return
+watch(() => props.images, (newVal) => {
+  if (newVal) images.value = newVal
+}, { deep: true })
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const imageData = e.target?.result
-    if (typeof imageData !== 'string') return
-
-    // Correction : Création d'un objet Image structuré
-    const newImage: Image = {
-      id: Date.now().toString(),
-      imagePath: imageData, // Contient le base64
-      blockId: props.blockIndex ?? 0,
-    }
-
-    const updatedImages = [...images.value, newImage]
-    images.value = updatedImages
-    emit('update:images', updatedImages)
-    emit('modified', true)
-    input.value = ''
+watch(welcomeText, (newValue) => {
+  if (props.blockIndex !== undefined) {
+    blocksStore.updateBlockDescription(props.blockIndex, newValue)
   }
-  reader.readAsDataURL(file)
-}
-</script>
+  emit('update:description', newValue)
+})
 
+// Watcher pour la demande de rognage depuis la barre d'outils
+watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  if (timestamp > 0) {
+    const imageExists = images.value.some(img => img.id === imageCropStore.selectedImageId)
+    if (imageExists) {
+      showCropper.value = true
+    }
+  }
+})
+
+// Synchroniser l'état du cropper avec le store
+watch(showCropper, (isOpen) => {
+  imageCropStore.isCropperOpen = isOpen
+})
+
+onMounted(() => {
+  setTimeout(() => {
+    if (welcomeEditorRef.value) {
+      const editor = welcomeEditorRef.value.getEditor()
+      if (editor) textFormatStore.setTiptapEditor(editor as any)
+    }
+  }, 100)
+})
+</script>
 
 <style scoped>
 .editableBlock {
@@ -469,5 +520,146 @@ const handleImageSelect = (event: Event) => {
 .removeImageIcon:hover {
   opacity: 1 !important;
   background: #E0E0E0;
+}
+
+.imageItem.selected-image {
+  border: 2px solid #DC2626;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
+}
+
+/* Style de la modale */
+.cropper-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.cropper-card {
+  width: 600px;
+  background: #f2f3f6;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cropper-header {
+  height: 45px;
+  background: #0b0b0b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.cropper-title-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cropper-title-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.cropper-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 300;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.cropper-close-button {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.cropper-close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.cropper-body {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cropper-engine-wrapper {
+  width: 100%;
+  max-width: 560px;
+}
+
+.cropper-engine {
+  height: 400px;
+  width: 100%;
+  background: #eee;
+}
+
+.cropper-separator {
+  height: 2px;
+  background: #d1d5db;
+  width: 560px;
+  margin: 0 auto;
+}
+
+.cropper-footer {
+  width: 560px;
+  display: flex;
+  margin: 0 auto;
+  padding: 16px 0;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cropper-ghost-button {
+  border: none;
+  background: transparent;
+  color: #6b6b6b;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 10px;
+}
+
+.cropper-ghost-button:hover {
+  text-decoration: underline;
+}
+
+.cropper-primary-button {
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.cropper-primary-button:hover {
+  filter: brightness(0.95);
+}
+
+.cropper-primary-button:active {
+  filter: brightness(0.9);
 }
 </style>
