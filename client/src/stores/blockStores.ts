@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Blocks } from '../types/Blocks'
+import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 
 /**
@@ -15,8 +15,8 @@ function isContentEmpty(html: string): boolean {
 
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
-  const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[]; textZones?: string[] }>>([
-    { numero: 1, description: '', repetitionCount: 1, modified: false, imageStrings: [], textZones: [] }
+  const blocks = ref<Array<Block & { textZones?: string[] }>>([
+    { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [], textZones: [] }
   ])
   const selectedIndex = ref<number | null>(null)
   const deletePopupVisible = ref(false)
@@ -43,11 +43,12 @@ export const useBlocksStore = defineStore('blocks', () => {
       return
     }
     blocks.value.push({
-      numero: blocks.value.length + 1,
-      description: '',
-      repetitionCount: 1,
+      id: Date.now(),
+      text: '',
+      step: blocks.value.length + 1,
+      nbOfRepeats: 1,
       modified: false,
-      imageStrings: [],
+      images: [],
       textZones: []
     })
   }
@@ -58,7 +59,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (!block) return
     
     // Utiliser isContentEmpty pour vérifier si la description de base est vide
-    const baseEmpty = isContentEmpty(block.description ?? '')
+    const baseEmpty = isContentEmpty(block.text ?? '')
     if (baseEmpty) {
       errorPopup.show('Remplir le texte de base avant d\'ajouter une zone.')
       return
@@ -120,7 +121,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     const block = blocks.value[index]
     if (!block) return
     
-    block.description = html
+    block.text = html
     
     // Vérifier si le contenu est vide (après suppression des balises HTML)
     const textContent = html.replace(/<[^>]*>/g, '').trim()

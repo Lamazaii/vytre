@@ -1,4 +1,4 @@
-import type { Block } from "./Block";
+import type { Block } from "./Blocks";
 
 export interface Image {
     id: string;
