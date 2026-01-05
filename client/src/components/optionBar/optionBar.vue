@@ -141,14 +141,23 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   font-weight: 600;
   letter-spacing: 0.3px;
   padding: 0;
-  border-bottom: 3px solid transparent;
+  position: relative;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .tabButtonActive {
   color: #dc2626;
-  border-bottom-color: #dc2626;
+}
+
+.tabButtonActive::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #dc2626;
 }
 
 .tabButtonActive .tabButtonIcon {
@@ -168,7 +177,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
-  line-height: 32px;
+  line-height: 1;
   text-align: center;
 }
 
@@ -224,7 +233,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 1;
   display: flex;
   align-items: center;
   text-align: center;
@@ -232,15 +241,13 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
 
 .optionsWrapper {
   position: fixed;
-  top: 45px;
-  
+  top: 54px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 1468px;
   height: auto;
   background: transparent;
-  display: flex;
   align-items: center;
   box-sizing: border-box;
   z-index: 998;

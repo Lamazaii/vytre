@@ -59,7 +59,7 @@ function toggleLeft() {
   if (!leftActiveLocal.value && !rightActiveLocal.value) {
     setStates(true, false)
   } else if (leftActiveLocal.value && !rightActiveLocal.value) {
-    setStates(false, false)
+    return
   } else if (!leftActiveLocal.value && rightActiveLocal.value) {
     setStates(true, false)
   } else {
@@ -73,7 +73,7 @@ function toggleRight() {
   } else if (!rightActiveLocal.value && leftActiveLocal.value) {
     setStates(false, true)
   } else if (rightActiveLocal.value && !leftActiveLocal.value) {
-    setStates(false, false)
+    return
   } else {
     setStates(false, true)
   }
