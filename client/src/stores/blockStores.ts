@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
+import type { Image } from '../types/Image'
 
 /**
  * Vérifie si un contenu HTML est vide (en ignorant les balises)
@@ -16,7 +17,7 @@ function isContentEmpty(html: string): boolean {
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
   const blocks = ref<Array<Block & { textZones?: string[] }>>([
-    { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [], textZones: [] }
+    { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [] as Image[], textZones: [] }
   ])
   const selectedIndex = ref<number | null>(null)
   const deletePopupVisible = ref(false)
@@ -48,7 +49,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       step: blocks.value.length + 1,
       nbOfRepeats: 1,
       modified: false,
-      images: [],
+      images: [] as Image[],
       textZones: []
     })
   }

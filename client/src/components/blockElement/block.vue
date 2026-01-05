@@ -36,8 +36,8 @@
 
     <div class="imageSection">
       <div class="imagesContainer" v-if="images.length > 0">
-        <div class="imageItem" v-for="(image, index) in images" :key="index">
-          <img :src="image" alt="Illustration ajoutée" class="blockImage" />
+        <div class="imageItem" v-for="(image, index) in images" :key="image.id || index">
+          <img :src="image.imagePath" alt="Illustration ajoutée" class="blockImage" />
           <div class="removeImageIcon" @click="removeImage(index)">
             <img :src="trashRed" alt="Supprimer" />
           </div>
@@ -64,13 +64,14 @@
 
 
 <script setup lang="ts">
-
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
 import TiptapEditor from '../editor/TiptapEditor.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
+// Importation du type Image pour la cohérence
+import type { Image } from '../../types/Image'
 
 interface Props {
   titre?: string;
@@ -78,6 +79,8 @@ interface Props {
   active? : boolean;
   canDelete?: boolean;
   blockIndex?: number;
+  // Correction : Changement du type string[] en Image[]
+  images?: Image[];
 }
 
 const emit = defineEmits<{
@@ -85,13 +88,17 @@ const emit = defineEmits<{
   (e: 'select'): void;
   (e: 'delete'): void;
   (e: 'update:description', value: string): void;
-  (e: 'update:images', value: string[]): void;
+  // Correction : Émet un tableau d'objets Image
+  (e: 'update:images', value: Image[]): void;
 }>();
 
 const props = defineProps<Props>();
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
-const images = ref<string[]>([])
+
+// Initialisation avec les props.images (qui sont désormais des objets)
+const images = ref<Image[]>(props.images || [])
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
@@ -99,6 +106,7 @@ const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<InstanceType<typeof TiptapEditor> | null>>([])
 
 const welcomeText = ref(props.description || '')
+
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
@@ -110,6 +118,11 @@ watch(() => props.description, (newDesc) => {
     welcomeText.value = newDesc || ''
   }
 })
+
+// Surveillance des images venant des props pour la réactivité
+watch(() => props.images, (newVal) => {
+  if (newVal) images.value = newVal
+}, { deep: true })
 
 watch(welcomeText, (newValue) => {
   if (props.blockIndex !== undefined) {
@@ -170,7 +183,7 @@ function onSelectionActivity() {
 
 const removeImage = (index: number) => {
   images.value.splice(index, 1)
-  emit('update:images', images.value)
+  emit('update:images', [...images.value])
 }
 
 function onTextZoneUpdate(index: number, html: string) {
@@ -193,40 +206,30 @@ const triggerFileInput = () => {
 
 const handleImageSelect = (event: Event) => {
   const input = event.target as HTMLInputElement
-  const files = input?.files
+  const file = input?.files?.[0]
   
-  if (!files || files.length === 0) {
-    console.warn('Aucun fichier sélectionné')
-    return
-  }
-
-  const file = files[0]
-  
-  if (!file) {
-    console.error('Erreur lors de la récupération du fichier')
-    return
-  }
-
-  if (!file.type.startsWith('image/')) {
-    console.error('Veuillez sélectionner une image')
-    return
-  }
+  if (!file || !file.type.startsWith('image/')) return
 
   const reader = new FileReader()
   reader.onload = (e) => {
     const imageData = e.target?.result
-    if (!imageData || typeof imageData !== 'string') {
-      console.error('Erreur lors de la lecture du fichier')
-      return
+    if (typeof imageData !== 'string') return
+
+    // Correction : Création d'un objet Image structuré
+    const newImage: Image = {
+      id: Date.now().toString(),
+      imagePath: imageData, // Contient le base64
+      blockId: props.blockIndex ?? 0,
     }
-    emit('update:images', [...images.value, imageData])
-    images.value.push(imageData)
+
+    const updatedImages = [...images.value, newImage]
+    images.value = updatedImages
+    emit('update:images', updatedImages)
     emit('modified', true)
     input.value = ''
   }
   reader.readAsDataURL(file)
 }
-
 </script>
 
 
