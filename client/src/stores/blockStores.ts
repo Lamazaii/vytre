@@ -15,6 +15,7 @@ function isContentEmpty(html: string): boolean {
 
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
+  const documentTitle = ref('Titre du document')
   const blocks = ref<Array<Blocks & { modified?: boolean; imageStrings?: string[]; textZones?: string[] }>>([
     { numero: 1, description: '', repetitionCount: 1, modified: false, imageStrings: [], textZones: [] }
   ])
@@ -160,6 +161,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   return {
     // state
+    documentTitle,
     blocks,
     selectedIndex,
     deletePopupVisible,
