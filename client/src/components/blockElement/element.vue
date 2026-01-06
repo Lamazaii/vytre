@@ -1,8 +1,9 @@
 <template>
   <div class="element-container">
     <div class="element-content">
-    
-      <StepNumber :numero="numero" :active="props.active"/>
+      <div class="drag-handle" title="Déplacer le bloc">
+        <StepNumber :numero="numero" :active="props.active"/>
+      </div>
       <Block 
         :titre="titre"
         :description="description"
@@ -84,6 +85,18 @@ watch(() => props.images, (newVal) => {
   gap : 50px;
   align-items: center;
   
+}
+ 
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
   
 </style>

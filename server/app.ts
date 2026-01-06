@@ -2,17 +2,45 @@ import createError from 'http-errors';
 import express, { NextFunction, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
+// eslint-disable-next-line n/no-extraneous-import
+import swaggerUi from 'swagger-ui-express';
+// eslint-disable-next-line n/no-extraneous-import
+import swaggerJsdoc from 'swagger-jsdoc';
 
 import indexRouter from './src/routes/index.router';
 import usersRouter from './src/routes/users.router';
 
 const app = express();
 
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Vytre API',
+      version: '1.0.0',
+      description: 'API documentation for Vytre project',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+        description: 'Development server',
+      },
+    ],
+  },
+  apis: ['./src/routes/*.ts'],
+};
+
+const specs = swaggerJsdoc(swaggerOptions);
+
 // view engine setup
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Swagger documentation route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

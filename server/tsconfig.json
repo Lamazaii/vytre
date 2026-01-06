@@ -2,8 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",//Version Javascript
     "module": "CommonJS",//Type de module pour node.js
-    "rootDir": "src",//Dossier source, contient le code métier
-    "outDir": "dist",//ou le JS est compilé
+    "outDir": "./dist",//ou le JS est compilé
 
     "strict": true,//Active toutes les vérifications strictes de TS
     "noImplicitAny": true,// interndit type implicite any
@@ -11,8 +10,9 @@
 
     "esModuleInterop": true,//Permet d'importer des modules CommonJS avec la syntaxe ES6
     "forceConsistentCasingInFileNames": true,//évite les erreurs de casse dans les imports
-    "skipLibCheck": true//Ignore les erreurs internes des librairies
+    "skipLibCheck": true, //Ignore les erreurs internes des librairies
+    "skipDefaultLibCheck": true,
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["app.ts", "src/**/*", "./eslint.config.ts"],
+  "exclude": ["node_modules"]
 }
