@@ -8,5 +8,5 @@ export interface Block {
   images: Image[];
 
 
-  modified: boolean;
+  modified?: boolean;
 }
