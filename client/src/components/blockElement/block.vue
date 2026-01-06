@@ -67,34 +67,7 @@
     </div>
   </div>
 
-  <Teleport to=".app">
-    <div v-if="showCropper && imageToCrop" class="cropper-modal-overlay">
-      <div class="cropper-card" @click.stop>
-        <header class="cropper-header">
-          <div class="cropper-title-group">
-            <img :src="cropIconActive" alt="Rogner" class="cropper-title-icon" />
-            <h3 class="cropper-title">Rogner l'image</h3>
-          </div>
-          <button class="cropper-close-button" @click="showCropper = false" aria-label="Fermer">✕</button>
-        </header>
-        <div class="cropper-body">
-          <div class="cropper-engine-wrapper">
-            <cropper
-              ref="cropperRef"
-              class="cropper-engine"
-              :src="imageToCrop.imagePath"
-              :stencil-props="{ aspectRatio: 1 }"
-            />
-          </div>
-        </div>
-        <div class="cropper-separator"></div>
-        <footer class="cropper-footer">
-          <button class="cropper-ghost-button" @click="showCropper = false">Annuler</button>
-          <button class="cropper-primary-button" @click="saveCrop">CONFIRMER</button>
-        </footer>
-      </div>
-    </div>
-  </Teleport>
+  <CropPopup @crop="handleCropComplete" />
 </template>
 
 
@@ -104,11 +77,10 @@ import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
 import { useImageCropStore } from '../../stores/imageCropStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
+import CropPopup from '../popup/CropPopup.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
-import cropIconActive from '../../assets/imageOptionBar/cropActive.svg'
 import type { Image } from '../../types/Image'
-import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 
 interface Props {
@@ -128,8 +100,6 @@ const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const images = ref<Image[]>(props.images || [])
 const welcomeText = ref(props.description || '')
-const showCropper = ref(false)
-const cropperRef = ref<any>(null)
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
@@ -145,10 +115,6 @@ const textZones = computed(() => {
   return block?.textZones || []
 })
 
-const imageToCrop = computed(() => 
-  images.value.find(img => img.id === imageCropStore.selectedImageId)
-)
-
 // Méthodes Image
 const toggleSelectImage = (id: string) => {
   if (imageCropStore.selectedImageId === id) {
@@ -158,17 +124,13 @@ const toggleSelectImage = (id: string) => {
   }
 }
 
-const saveCrop = () => {
-  if (cropperRef.value && imageCropStore.selectedImageId) {
-    const { canvas } = cropperRef.value.getResult()
-    if (canvas) {
-      const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
-      if (index !== -1 && images.value[index]) {
-        images.value[index].imagePath = canvas.toDataURL()
-        emit('update:images', [...images.value])
-        emit('modified', true)
-      }
-      showCropper.value = false
+const handleCropComplete = (croppedImageData: string) => {
+  if (imageCropStore.selectedImageId) {
+    const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
+    if (index !== -1 && images.value[index]) {
+      images.value[index].imagePath = croppedImageData
+      emit('update:images', [...images.value])
+      emit('modified', true)
     }
   }
 }
@@ -262,16 +224,18 @@ watch(welcomeText, (newValue) => {
 // Watcher pour la demande de rognage depuis la barre d'outils
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   if (timestamp > 0) {
-    const imageExists = images.value.some(img => img.id === imageCropStore.selectedImageId)
-    if (imageExists) {
-      showCropper.value = true
+    const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
+    if (imageToEdit) {
+      imageCropStore.openCropper(imageToEdit.imagePath)
     }
   }
 })
 
 // Synchroniser l'état du cropper avec le store
-watch(showCropper, (isOpen) => {
-  imageCropStore.isCropperOpen = isOpen
+watch(() => imageCropStore.isCropperOpen, (isOpen) => {
+  if (!isOpen) {
+    // Le cropper a été fermé
+  }
 })
 
 onMounted(() => {
@@ -525,138 +489,5 @@ onMounted(() => {
 .imageItem.selected-image {
   border: 2px solid #DC2626;
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
-}
-
-/* Style de la modale */
-.cropper-modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1200;
-}
-
-.cropper-card {
-  width: 600px;
-  background: #f2f3f6;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.cropper-header {
-  height: 45px;
-  background: #0b0b0b;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-}
-
-.cropper-title-group {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.cropper-title-icon {
-  width: 22px;
-  height: 22px;
-}
-
-.cropper-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 300;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-.cropper-close-button {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.cropper-close-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.cropper-body {
-  padding: 20px;
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.cropper-engine-wrapper {
-  width: 100%;
-  max-width: 560px;
-}
-
-.cropper-engine {
-  height: 400px;
-  width: 100%;
-  background: #eee;
-}
-
-.cropper-separator {
-  height: 2px;
-  background: #d1d5db;
-  width: 560px;
-  margin: 0 auto;
-}
-
-.cropper-footer {
-  width: 560px;
-  display: flex;
-  margin: 0 auto;
-  padding: 16px 0;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.cropper-ghost-button {
-  border: none;
-  background: transparent;
-  color: #6b6b6b;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 8px 10px;
-}
-
-.cropper-ghost-button:hover {
-  text-decoration: underline;
-}
-
-.cropper-primary-button {
-  border: none;
-  background: #dc2626;
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 10px 18px;
-  border-radius: 4px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-.cropper-primary-button:hover {
-  filter: brightness(0.95);
-}
-
-.cropper-primary-button:active {
-  filter: brightness(0.9);
 }
 </style>
