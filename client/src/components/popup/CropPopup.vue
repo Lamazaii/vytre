@@ -14,7 +14,7 @@
             ref="cropperRef"
             class="cropper-engine"
             :src="imageSrc"
-            :stencil-props="{ aspectRatio: 1 }"
+            :stencil-props="{ aspectRatio: null }"
           />
         </div>
       </div>
