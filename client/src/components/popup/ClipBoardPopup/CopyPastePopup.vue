@@ -72,8 +72,6 @@ const placeholder = computed(
 	display: flex;
 	flex-direction: column;
 	background: #f2f3f6;
-	border-radius: 8px;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 	overflow: hidden;
 	border: 1px solid #d6d6d6;
 }

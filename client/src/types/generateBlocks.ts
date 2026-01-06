@@ -43,10 +43,6 @@ export function generateBlocksFromText(text: string, startIndex = 0): Block[] {
 }
 
 function parseRepeats(value?: string): number {
-  // Parse la colonne "Nombre" pour obtenir un nombre de répétitions:
-  // - accepte les décimaux (1.5 ou 1,5)
-  // - accepte les fractions du type "1/3" et retourne le quotient
-  // - retourne 1 si la valeur est vide ou invalide
   const raw = (value ?? '').replace(',', '.').trim();
   if (!raw) return 1;
 
@@ -64,24 +60,10 @@ function parseRepeats(value?: string): number {
 }
 
 function splitRow(line: string): string[] {
-  // Coupe une ligne en cellules par tabulation (collage Excel/Sheets).
-  // On NE filtre pas les cellules vides pour conserver l'alignement des colonnes.
-  // Format attendu: Numéro \t Libellé \t Nombre \t ... (autres colonnes ignorées)
-  // IMPORTANT: Ne pas utiliser de fallback sur espaces, sinon les espaces du Libellé décalent les colonnes.
   return line.split('\t').map(cell => cell.trim());
 }
 
 export function generateBlocksFromClipboardTable(text: string): Block[] {
-  // Génère une liste de blocs à partir de données collées (format simple).
-  // Format attendu (3 colonnes séparées par tabulation):
-  //   Numéro \t Libellé \t Répétitions
-  // Exemple multiligne:
-  //   1	Etape 1	1
-  //   2	Etape 2	5
-  //   3	Etape 3	4
-  // Ou sur une seule ligne (détecté automatiquement):
-  //   1	Etape 1	1	2	Etape 2	5	3	Etape 3	4
-  // Colonnes supplémentaires (Périodicité, Fréquence, etc.) sont ignorées.
   const normalized = text.replace(/\r\n/g, '\n').trim();
   if (!normalized) return [];
 
@@ -93,8 +75,6 @@ export function generateBlocksFromClipboardTable(text: string): Block[] {
   const dataLines = hasHeader ? lines.slice(1) : lines;
 
   const blocks: Block[] = [];
-
-  // Si une seule ligne avec beaucoup de cellules, on regroupe par 3 (num, label, reps)
   if (dataLines.length === 1) {
     const cells = splitRow(dataLines[0] ?? '');
     for (let i = 0; i < cells.length; i += 3) {
