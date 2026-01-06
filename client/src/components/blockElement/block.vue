@@ -76,6 +76,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
 import { useImageCropStore } from '../../stores/imageCropStore'
+import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
 import CropPopup from '../popup/CropPopup.vue'
 import trash from '../../assets/blockImage/trash.svg'
@@ -105,6 +106,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const imageCropStore = useImageCropStore()
+const deletePopupStore = useDeletePopupStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<InstanceType<typeof TiptapEditor> | null>>([])
 
@@ -136,8 +138,10 @@ const handleCropComplete = (croppedImageData: string) => {
 }
 
 const removeImage = (index: number) => {
-  images.value.splice(index, 1)
-  emit('update:images', [...images.value])
+  deletePopupStore.show('image', () => {
+    images.value.splice(index, 1)
+    emit('update:images', [...images.value])
+  })
 }
 
 const handleImageSelect = (event: Event) => {

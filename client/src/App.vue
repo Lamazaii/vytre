@@ -6,7 +6,7 @@ import AddBlockZone from './components/addBlock/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
 import TitleBar from './components/titleBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
-import DeleteBlockPopup from './components/popup/DeleteBlockPopup.vue';
+import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
 import { ref } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
@@ -87,7 +87,7 @@ function removeBlock(i: number) {
       @cancel="handleSaveCancel"
     />
 
-    <DeleteBlockPopup/>
+    <DeletePopup/>
     <ErrorPopup/>
   </div>
 </template>
