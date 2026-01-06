@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click="onDelete">
+    <div v-if="props.canDelete !== false" class="trashIcon" :class="{ hovering: isTrashHover, active: isTrashActive }" @mouseenter="isTrashHover = true" @mouseleave="isTrashHover = false" @click.stop="onDelete">
       <img :src="(isTrashHover || isTrashActive) ? trashRed : trash" alt="Supprimer" />
     </div>
 
@@ -36,9 +36,16 @@
 
     <div class="imageSection">
       <div class="imagesContainer" v-if="images.length > 0">
-        <div class="imageItem" v-for="(image, index) in images" :key="image.id || index">
-          <img :src="image.imagePath" alt="Illustration ajoutée" class="blockImage" />
-          <div class="removeImageIcon" @click="removeImage(index)">
+        <div 
+          class="imageItem" 
+          v-for="(image, index) in images" 
+          :key="image.id || index"
+          :class="{ 'selected-image': imageCropStore.selectedImageId === image.id }"
+          @click.stop="toggleSelectImage(image.id)"
+        >
+          <img :src="image.imagePath" alt="Illustration" class="blockImage" />
+
+          <div class="removeImageIcon" @click.stop="removeImage(index)">
             <img :src="trashRed" alt="Supprimer" />
           </div>
         </div>
@@ -58,8 +65,9 @@
         <p class="addImageText">Ajouter une image</p>
       </div>
     </div>
-
   </div>
+
+  <CropPopup @crop="handleCropComplete" />
 </template>
 
 
@@ -67,11 +75,14 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 import { useBlocksStore } from '../../stores/blockStores'
+import { useImageCropStore } from '../../stores/imageCropStore'
+import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
+import CropPopup from '../popup/CropPopup.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
-// Importation du type Image pour la cohérence
 import type { Image } from '../../types/Image'
+import 'vue-advanced-cropper/dist/style.css'
 
 interface Props {
   titre?: string;
@@ -79,88 +90,96 @@ interface Props {
   active? : boolean;
   canDelete?: boolean;
   blockIndex?: number;
-  // Correction : Changement du type string[] en Image[]
   images?: Image[];
 }
 
-const emit = defineEmits<{
-  (e: 'modified', value: boolean): void;
-  (e: 'select'): void;
-  (e: 'delete'): void;
-  (e: 'update:description', value: string): void;
-  // Correction : Émet un tableau d'objets Image
-  (e: 'update:images', value: Image[]): void;
-}>();
-
 const props = defineProps<Props>();
+const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 'update:images']);
+
+// États
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
-
-// Initialisation avec les props.images (qui sont désormais des objets)
 const images = ref<Image[]>(props.images || [])
+const welcomeText = ref(props.description || '')
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
+const imageCropStore = useImageCropStore()
+const deletePopupStore = useDeletePopupStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<InstanceType<typeof TiptapEditor> | null>>([])
 
-const welcomeText = ref(props.description || '')
-
+// Computed
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
 
-watch(() => props.description, (newDesc) => {
-  if (newDesc !== welcomeText.value) {
-    welcomeText.value = newDesc || ''
+// Méthodes Image
+const toggleSelectImage = (id: string) => {
+  if (imageCropStore.selectedImageId === id) {
+    imageCropStore.clearSelection()
+  } else {
+    imageCropStore.selectImage(id, props.blockIndex ?? 0)
   }
-})
+}
 
-// Surveillance des images venant des props pour la réactivité
-watch(() => props.images, (newVal) => {
-  if (newVal) images.value = newVal
-}, { deep: true })
-
-watch(welcomeText, (newValue) => {
-  if (props.blockIndex !== undefined) {
-    blocksStore.updateBlockDescription(props.blockIndex, newValue)
-  }
-  
-  const isEmpty = blocksStore.isContentEmpty(newValue)
-  emit('modified', !isEmpty)
-  emit('update:description', newValue)
-})
-
-onMounted(() => {
-  setTimeout(() => {
-    if (welcomeEditorRef.value) {
-      const editor = welcomeEditorRef.value.getEditor()
-      if (editor) {
-        textFormatStore.setTiptapEditor(editor as any)
-      }
+const handleCropComplete = (croppedImageData: string) => {
+  if (imageCropStore.selectedImageId) {
+    const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
+    if (index !== -1 && images.value[index]) {
+      images.value[index].imagePath = croppedImageData
+      emit('update:images', [...images.value])
+      emit('modified', true)
     }
-  }, 100)
-})
+  }
+}
 
+const removeImage = (index: number) => {
+  deletePopupStore.show('image', () => {
+    images.value.splice(index, 1)
+    emit('update:images', [...images.value])
+  })
+}
+
+const handleImageSelect = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input?.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const imageData = e.target?.result
+    if (typeof imageData !== 'string') return
+    const newImage: Image = {
+      id: Date.now().toString(),
+      imagePath: imageData,
+      blockId: props.blockIndex ?? 0,
+    }
+    images.value = [...images.value, newImage]
+    emit('update:images', images.value)
+    emit('modified', true)
+    input.value = ''
+  }
+  reader.readAsDataURL(file)
+}
+
+const triggerFileInput = () => fileInput.value?.click()
+
+// Méthodes Texte & Bloc
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {
     const editor = welcomeEditorRef.value.getEditor()
-    if (editor) {
-      textFormatStore.setTiptapEditor(editor as any)
-    }
+    if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
-  textFormatStore.updateStatesFromCommand()
 }
 
 function setTextZoneEditorRef(el: any, index: number) {
-  if (el) {
-    textZoneEditorRefs.value[index] = el
-  }
+  if (el) textZoneEditorRefs.value[index] = el
 }
 
 function onTextZoneFocus(index: number) {
@@ -168,22 +187,14 @@ function onTextZoneFocus(index: number) {
   const editorRef = textZoneEditorRefs.value[index]
   if (editorRef) {
     const editor = editorRef.getEditor()
-    if (editor) {
-      textFormatStore.setTiptapEditor(editor as any)
-    }
+    if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
-  textFormatStore.updateStatesFromCommand()
 }
 
 function onSelectionActivity() {
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
-}
-
-const removeImage = (index: number) => {
-  images.value.splice(index, 1)
-  emit('update:images', [...images.value])
 }
 
 function onTextZoneUpdate(index: number, html: string) {
@@ -196,42 +207,50 @@ function onRemoveTextZone(index: number) {
   blocksStore.removeTextZone(props.blockIndex, index)
 }
 
-function onDelete() {
-  emit('delete')
-}
+function onDelete() { emit('delete') }
 
-const triggerFileInput = () => {
-  fileInput.value?.click()
-}
+// Watchers
+watch(() => props.description, (newDesc) => {
+  if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
+})
 
-const handleImageSelect = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input?.files?.[0]
-  
-  if (!file || !file.type.startsWith('image/')) return
+watch(() => props.images, (newVal) => {
+  if (newVal) images.value = newVal
+}, { deep: true })
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const imageData = e.target?.result
-    if (typeof imageData !== 'string') return
-
-    // Correction : Création d'un objet Image structuré
-    const newImage: Image = {
-      id: Date.now().toString(),
-      imagePath: imageData, // Contient le base64
-      blockId: props.blockIndex ?? 0,
-    }
-
-    const updatedImages = [...images.value, newImage]
-    images.value = updatedImages
-    emit('update:images', updatedImages)
-    emit('modified', true)
-    input.value = ''
+watch(welcomeText, (newValue) => {
+  if (props.blockIndex !== undefined) {
+    blocksStore.updateBlockDescription(props.blockIndex, newValue)
   }
-  reader.readAsDataURL(file)
-}
-</script>
+  emit('update:description', newValue)
+})
 
+// Watcher pour la demande de rognage depuis la barre d'outils
+watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  if (timestamp > 0) {
+    const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
+    if (imageToEdit) {
+      imageCropStore.openCropper(imageToEdit.imagePath)
+    }
+  }
+})
+
+// Synchroniser l'état du cropper avec le store
+watch(() => imageCropStore.isCropperOpen, (isOpen) => {
+  if (!isOpen) {
+    // Le cropper a été fermé
+  }
+})
+
+onMounted(() => {
+  setTimeout(() => {
+    if (welcomeEditorRef.value) {
+      const editor = welcomeEditorRef.value.getEditor()
+      if (editor) textFormatStore.setTiptapEditor(editor as any)
+    }
+  }, 100)
+})
+</script>
 
 <style scoped>
 .editableBlock {
@@ -469,5 +488,10 @@ const handleImageSelect = (event: Event) => {
 .removeImageIcon:hover {
   opacity: 1 !important;
   background: #E0E0E0;
+}
+
+.imageItem.selected-image {
+  border: 2px solid #DC2626;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
 }
 </style>

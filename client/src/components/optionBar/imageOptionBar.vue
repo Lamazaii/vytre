@@ -1,8 +1,8 @@
 <template>
   <div class="imageOptionBar">
     <div class="formatGroup">
-      <button class="formatButton" :class="{ active: crop }" @click="crop = !crop" title="Crop an image">
-        <img :src="crop ? cropIconActive : cropIcon" alt="Crop" />
+      <button class="formatButton" :class="{ active: imageCropStore.isCropperOpen }" @click="onCropClick" title="Crop an image">
+        <img :src="imageCropStore.isCropperOpen ? cropIconActive : cropIcon" alt="Crop" />
         <span class="labelButton">Rogner</span>
       </button>
 
@@ -18,29 +18,26 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
+import { useImageCropStore } from '../../stores/imageCropStore'
+import { useErrorPopupStore } from '../../stores/errorPopupStore'
 import cropIcon from "../../assets/imageOptionBar/crop.svg"
 import cropIconActive from "../../assets/imageOptionBar/cropActive.svg"
 import arrowIcon from "../../assets/imageOptionBar/arrow.svg"
 import arrowIconActive from "../../assets/imageOptionBar/arrowActive.svg"
 
-const crop = ref(false)
+const imageCropStore = useImageCropStore()
+const errorPopupStore = useErrorPopupStore()
+
 const addArrow = ref(false)
-const showColor = ref(false)
-const colorRoot = ref<HTMLElement | null>(null)
 
-function onDocClick(e: MouseEvent) {
-  const root = colorRoot.value
-  if (!root) return
-  const target = e.target as Node
-  if (!root.contains(target)) {
-    showColor.value = false
+function onCropClick() {
+  if (!imageCropStore.selectedImageId) {
+    errorPopupStore.show('Veuillez sélectionner une image à rogner.')
+    return
   }
+  imageCropStore.requestCrop()
 }
-
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
-
 
 </script>
 
@@ -95,7 +92,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 }
 
-
 .labelButton {
   white-space: nowrap;
   font-family: 'Segoe UI';
@@ -110,6 +106,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 .formatButton.active .labelButton {
   color: #dc2626;
 }
+
 
 .formatImg { display:block; width:16px; height:16px; object-fit:contain }
 
