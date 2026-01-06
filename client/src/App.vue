@@ -30,11 +30,14 @@ function handleSaveCancel() {
   saveDialogOpen.value = false
 }
 
-function handleSaveConfirm(value: string) {
-  if (value.trim()) {
-    blocksStore.documentTitle = value.trim()
-  }
+async function handleSaveConfirm(value: string) {
+  blocksStore.currentDocument.title = value || documentTitle.value
+  
+
   saveDialogOpen.value = false
+  
+
+  await blocksStore.saveDocument()
 }
 
 function toggleSelect(i: number) {

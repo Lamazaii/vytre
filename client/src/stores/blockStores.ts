@@ -4,6 +4,8 @@ import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 import { useDeletePopupStore } from './deletePopupStore'
 import type { Image } from '../types/Image'
+import type { Document } from '../types/Document'
+
 
 /**
  * Vérifie si un contenu HTML est vide (en ignorant les balises)
@@ -32,6 +34,54 @@ export const useBlocksStore = defineStore('blocks', () => {
     const hasImages = (last?.images?.length ?? 0) > 0
     return hasText || hasImages
   })
+
+  const currentDocument = ref<{
+    id: string;
+    title: string;
+    version: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>({
+    id: crypto.randomUUID(), // Génère un ID unique proprement
+    title: 'Titre du document',
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  })
+
+  async function saveDocument() {
+    try {
+      // Préparation de l'objet Document final
+      const documentToPost: Document = {
+        id: currentDocument.value.id,
+        title: currentDocument.value.title,
+        version: currentDocument.value.version,
+        createdAt: currentDocument.value.createdAt,
+        updatedAt: new Date(), // On met à jour la date de modification
+        // On nettoie les blocs pour qu'ils correspondent au type Block[] (sans 'modified')
+        blocks: blocks.value.map((b, index) => {
+          const { modified, ...blockData } = b;
+          return {
+            ...blockData,
+            step: index + 1 // On s'assure que le step suit l'ordre du tableau
+          };
+        })
+      };
+
+      const response = await fetch('http://localhost:3000/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(documentToPost)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors du POST');
+
+      errorPopup.show("Document sauvegardé avec succès !");
+    } catch (error) {
+      console.error(error);
+      errorPopup.show("Erreur lors de la sauvegarde du document.");
+    }
+  }
 
   function toggleSelect(i: number) {
     selectedIndex.value = i
@@ -164,6 +214,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   return {
     // state
     documentTitle,
+    currentDocument,
     blocks,
     selectedIndex,
     blockToDeleteIndex,
@@ -171,6 +222,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     canAdd,
     // actions
     toggleSelect,
+    saveDocument,
     setModified,
     addEmptyBlockIfAllowed,
     addTextZone,
