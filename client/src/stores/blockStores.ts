@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
+import { useDeletePopupStore } from './deletePopupStore'
 import type { Image } from '../types/Image'
 
 /**
@@ -16,18 +17,20 @@ function isContentEmpty(html: string): boolean {
 
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
+  const deletePopup = useDeletePopupStore()
   const documentTitle = ref('Titre du document')
   const blocks = ref<Array<Block & { textZones?: string[] }>>([
     { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [] as Image[], textZones: [] }
   ])
   const selectedIndex = ref<number | null>(null)
-  const deletePopupVisible = ref(false)
   const blockToDeleteIndex = ref<number | null>(null)
 
   const canAdd = computed(() => {
     if (blocks.value.length === 0) return true
     const last = blocks.value[blocks.value.length - 1]
-    return !!last?.modified
+    const hasText = !!last?.modified
+    const hasImages = (last?.images?.length ?? 0) > 0
+    return hasText || hasImages
   })
 
   function toggleSelect(i: number) {
@@ -81,7 +84,9 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   function renumberBlocks() {
-    blocks.value = blocks.value.map((block, i) => ({ ...block, numero: i + 1 }))
+    blocks.value.forEach((block, i) => {
+      block.step = i + 1
+    })
   }
 
   function removeBlock(i: number) {
@@ -92,7 +97,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (i < 0 || i >= blocks.value.length) return
     // Ouvrir la popup de confirmation
     blockToDeleteIndex.value = i
-    deletePopupVisible.value = true
+    deletePopup.show('block', confirmDelete)
   }
 
   function confirmDelete() {
@@ -105,11 +110,6 @@ export const useBlocksStore = defineStore('blocks', () => {
       else if (selectedIndex.value > i) selectedIndex.value = (selectedIndex.value - 1)
       else if (selectedIndex.value >= blocks.value.length) selectedIndex.value = blocks.value.length - 1
     }
-    cancelDelete()
-  }
-
-  function cancelDelete() {
-    deletePopupVisible.value = false
     blockToDeleteIndex.value = null
   }
 
@@ -166,7 +166,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     documentTitle,
     blocks,
     selectedIndex,
-    deletePopupVisible,
     blockToDeleteIndex,
     // getters
     canAdd,
@@ -178,7 +177,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     removeBlock,
     renumberBlocks,
     confirmDelete,
-    cancelDelete,
     updateBlockDescription,
     updateTextZone,
     removeTextZone,

@@ -5,11 +5,11 @@
         <button class="close-btn" @click="onCancel">✕</button>
         <div class="header-content">
           <img :src="warningIcon" alt="Warning" class="warning-icon" />
-          <h2>SUPPRIMER LE BLOC ?</h2>
+          <h2>{{ title }}</h2>
         </div>
       </div>
       <div class="popup-body">
-        <p>Êtes-vous sûr de vouloir supprimer ce bloc ?</p>
+        <p>{{ message }}</p>
         <p class="warning">Cette action est irréversible</p>
       </div>
       <div class="popup-footer">
@@ -23,21 +23,31 @@
 </template>
 
 <script setup lang="ts">
-import { useBlocksStore } from '../../stores/blockStores'
+import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import { computed } from 'vue'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 import trashWhite from '../../assets/popUpDeleteBlock/trashWhite.svg'
 
-const store = useBlocksStore()
+const store = useDeletePopupStore()
 
-const isVisible = computed(() => store.deletePopupVisible)
+const isVisible = computed(() => store.isVisible)
+
+const title = computed(() => {
+  return store.deleteType === 'block' ? 'SUPPRIMER LE BLOC ?' : "SUPPRIMER L'IMAGE ?"
+})
+
+const message = computed(() => {
+  return store.deleteType === 'block' 
+    ? 'Êtes-vous sûr de vouloir supprimer ce bloc ?'
+    : 'Êtes-vous sûr de vouloir supprimer cette image ?'
+})
 
 function onCancel() {
-  store.cancelDelete()
+  store.cancel()
 }
 
 function onConfirm() {
-  store.confirmDelete()
+  store.confirm()
 }
 </script>
 
