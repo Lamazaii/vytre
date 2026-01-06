@@ -18,6 +18,7 @@ const blocksStore = useBlocksStore()
 const { blocks, selectedIndex, canAdd } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const documentTitle = ref('Titre du document actuel')
+const clipboardText = ref('')
 
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)
@@ -52,6 +53,15 @@ function onDragEnd() {
   blocks.value.forEach((block, index) => {
     block.step = index + 1
   })
+}
+
+function handleClipboardSubmit(value: string) {
+  blocksStore.loadFromClipboard(value)
+  clipboardText.value = value
+}
+
+function handleClipboardCancel() {
+  clipboardText.value = ''
 }
 </script>
 
@@ -98,7 +108,12 @@ function onDragEnd() {
       <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
     </div>
 
-       <CopyPastePopup class="popUp"/>
+       <CopyPastePopup
+        class="popUp"
+        v-model="clipboardText"
+        @submit="handleClipboardSubmit"
+        @cancel="handleClipboardCancel"
+      />
 
     <ReaderViewWindow @save="openSaveDialog"/>
 
