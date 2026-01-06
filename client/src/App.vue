@@ -15,9 +15,8 @@ import draggable from 'vuedraggable'
 
 const blocksStore = useBlocksStore()
 
-const { blocks, selectedIndex, canAdd } = storeToRefs(blocksStore)
+const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
-const documentTitle = ref('Titre du document actuel')
 
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)
@@ -32,7 +31,9 @@ function handleSaveCancel() {
 }
 
 function handleSaveConfirm(value: string) {
-  documentTitle.value = value || documentTitle.value
+  if (value.trim()) {
+    blocksStore.documentTitle = value.trim()
+  }
   saveDialogOpen.value = false
 }
 
