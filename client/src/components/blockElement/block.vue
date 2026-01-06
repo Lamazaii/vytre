@@ -227,7 +227,8 @@ watch(welcomeText, (newValue) => {
 
 // Watcher pour la demande de rognage depuis la barre d'outils
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  if (timestamp > 0) {
+  // Ne traiter que si le crop a été demandé pour ce bloc
+  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex) {
     const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
     if (imageToEdit) {
       imageCropStore.openCropper(imageToEdit.imagePath)
