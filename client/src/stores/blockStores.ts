@@ -81,7 +81,9 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   function renumberBlocks() {
-    blocks.value = blocks.value.map((block, i) => ({ ...block, numero: i + 1 }))
+    blocks.value.forEach((block, i) => {
+      block.step = i + 1
+    })
   }
 
   function removeBlock(i: number) {
