@@ -69,6 +69,7 @@ function onDragEnd() {
         v-model="blocks" 
         item-key="id"
         ghost-class="ghost"
+        handle=".drag-handle"
         @end="onDragEnd"
       >
         <template #item="{element: block, index: i}">
