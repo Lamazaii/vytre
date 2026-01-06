@@ -11,12 +11,17 @@ import ErrorPopup from './components/popup/ErrorPopup.vue';
 import { ref } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
 import { storeToRefs } from 'pinia'
+import draggable from 'vuedraggable'
 
 const blocksStore = useBlocksStore()
 
 const { blocks, selectedIndex, canAdd } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const documentTitle = ref('Titre du document actuel')
+
+function setModified(i: number, value: boolean) {
+  blocksStore.setModified(i, value)
+}
 
 function openSaveDialog() {
   saveDialogOpen.value = true
@@ -42,6 +47,12 @@ function addEmptyBlockIfAllowed() {
 function removeBlock(i: number) {
   blocksStore.removeBlock(i)
 }
+
+function onDragEnd() {
+  blocks.value.forEach((block, index) => {
+    block.step = index + 1
+  })
+}
 </script>
 
 <template>
@@ -54,22 +65,32 @@ function removeBlock(i: number) {
     </div>
 
     <div class="block">
-      <Element
-        v-for="(block, i) in blocks"
-        :key="block.id"
-        :numero="block.step" 
-        :description="block.text"
-        :modelValue="block.nbOfRepeats"
-        :images="block.images"
-        :active="selectedIndex === i"
-        :modified="block.modified"
-        :canDelete="blocks.length > 1"
-        @select="toggleSelect(i)"
-        @delete="removeBlock(i)"
-        @update:description="(v: string) => blocksStore.updateBlockDescription(i, v)"
-        @update:modelValue="(v: number) => block.nbOfRepeats = v"
-        @update:images="(v: any) => block.images = v"
-      />
+      <draggable 
+        v-model="blocks" 
+        item-key="id"
+        ghost-class="ghost"
+        @end="onDragEnd"
+      >
+        <template #item="{element: block, index: i}">
+          <Element
+            :key="block.id"
+            :numero="block.step" 
+            :description="block.text"
+            :modelValue="block.nbOfRepeats"
+            :images="block.images"
+            :blockIndex="i"
+            :active="selectedIndex === i"
+            :modified="block.modified"
+            :canDelete="blocks.length > 1"
+            @select="toggleSelect(i)"
+            @delete="removeBlock(i)"
+            @modified="(v) => setModified(i, v)"
+            @update:description="(v: string) => blocksStore.updateBlockDescription(i, v)"
+            @update:modelValue="(v: number) => block.nbOfRepeats = v"
+            @update:images="(v: any) => block.images = v"
+          />
+        </template>
+      </draggable>
     </div>
 
     <div class="addBlock"> 
@@ -151,6 +172,11 @@ function removeBlock(i: number) {
 .popUp{
   display: flex;
   padding-top: 158px;
+}
+
+.ghost {
+  opacity: 0.5;
+  background: #c8ebfb;
 }
 
 </style>
