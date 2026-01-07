@@ -136,10 +136,7 @@ const closeImageModal = () => {
   white-space: pre-wrap;
 }
 
-.blockImage:hover {
-  transform: scale(1.05);
-  max-width: 100%;
-}
+
 
 .imagesContainer {
   display: flex;

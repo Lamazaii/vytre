@@ -117,7 +117,6 @@ const textZones = computed(() => {
   return block?.textZones || []
 })
 
-// Méthodes Image
 const toggleSelectImage = (id: string) => {
   if (imageCropStore.selectedImageId === id) {
     imageCropStore.clearSelection()
@@ -168,7 +167,6 @@ const handleImageSelect = (event: Event) => {
 
 const triggerFileInput = () => fileInput.value?.click()
 
-// Méthodes Texte & Bloc
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {
@@ -225,9 +223,7 @@ watch(welcomeText, (newValue) => {
   emit('update:description', newValue)
 })
 
-// Watcher pour la demande de rognage depuis la barre d'outils
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  // Ne traiter que si le crop a été demandé pour ce bloc
   if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex) {
     const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
     if (imageToEdit) {
@@ -236,10 +232,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   }
 })
 
-// Synchroniser l'état du cropper avec le store
 watch(() => imageCropStore.isCropperOpen, (isOpen) => {
   if (!isOpen) {
-    // Le cropper a été fermé
   }
 })
 
