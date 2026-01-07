@@ -44,7 +44,11 @@ function handleFocus(event: Event) {
   top: 0;
   height: 45px;
   width: 100%;
+  max-width: 1468px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
+  position: fixed;
 }
 
 .titleBarContent {
