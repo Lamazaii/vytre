@@ -100,7 +100,6 @@ function handleConfirm() {
     justify-content: center;
     align-items: center;
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(2px);
     z-index: 1200;
 }
 
@@ -153,16 +152,6 @@ function handleConfirm() {
 
 .closeButton:hover {
     background: rgba(255, 255, 255, 0.1);
-}
-
-.body {
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-    box-sizing: border-box;
-    align-items: center;
 }
 
 .message {

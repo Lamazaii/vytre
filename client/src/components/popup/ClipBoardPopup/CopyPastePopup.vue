@@ -57,7 +57,7 @@ const placeholder = computed(
 
 <style scoped>
 .overlay {
-	position: fixed;
+	position: absolute;
 	inset: 0;
 	display: flex;
 	justify-content: center;

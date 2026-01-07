@@ -1,5 +1,5 @@
 <template>
-  <header class="header">
+  <div class="titleBar">
     <div class="titleBarContent">
       <h1 class="SimpleBar">|</h1>
       <input 
@@ -11,7 +11,7 @@
       @focus="handleFocus"
       />
     </div>
-  </header> 
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -36,19 +36,15 @@ function handleFocus(event: Event) {
 
 <style scoped>
 
-.header {
+.titleBar {
   background-color: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
-  top: 0;
   height: 45px;
   width: 100%;
   max-width: 1468px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1000;
-  position: fixed;
 }
 
 .titleBarContent {

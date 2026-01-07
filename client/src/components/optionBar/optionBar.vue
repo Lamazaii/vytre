@@ -1,52 +1,54 @@
 <template>
-  <header class="optionBar">
-    <div class="optionBarStart">
+  <div class="optionBar">
+    <div class="topBar">
+      <div class="optionBarStart">
 
-      <button class="clipboardButton" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
-        <img class="optionBarIcon" :src="clipBoardIcon" alt="Aller au presse papier" />
-      </button>
-
-      <div class="optionBarSeparator"></div>
-
-      <nav class="optionBarTabs" aria-label="Type de contenu">
-        <button
-          :class="['tabButton', { tabButtonActive: activeTab === 'text' }]"
-          type="button"
-          @click="activeTab = 'text'"
-        >
-          <img class="tabButtonIcon" :src="textIcon" alt="Texte" />
-          <span class="tabButtonLabel">TEXTE</span>
+        <button class="clipboardButton" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
+          <img class="optionBarIcon" :src="clipBoardIcon" alt="Aller au presse papier" />
         </button>
 
-        <button
-          :class="['tabButton', { tabButtonActive: activeTab === 'image' }]"
-          type="button"
-          @click="activeTab = 'image'"
-        >
-          <img class="tabButtonIcon" :src="imageIcon" alt="Illustration" />
-          <span class="tabButtonLabel">IMAGE</span>
+        <div class="optionBarSeparator"></div>
+
+        <nav class="optionBarTabs" aria-label="Type de contenu">
+          <button
+            :class="['tabButton', { tabButtonActive: activeTab === 'text' }]"
+            type="button"
+            @click="activeTab = 'text'"
+          >
+            <img class="tabButtonIcon" :src="textIcon" alt="Texte" />
+            <span class="tabButtonLabel">TEXTE</span>
+          </button>
+
+          <button
+            :class="['tabButton', { tabButtonActive: activeTab === 'image' }]"
+            type="button"
+            @click="activeTab = 'image'"
+          >
+            <img class="tabButtonIcon" :src="imageIcon" alt="Illustration" />
+            <span class="tabButtonLabel">IMAGE</span>
+          </button>
+        </nav>
+
+        </div>
+      <div class="optionBarActions">
+
+        <IconToggleGroup
+          :personIcon="personEditIcon"
+          :visibilityIcon="visibilityIcon"
+          :leftActive="!popupStore.isReaderOpen"
+          :rightActive="popupStore.isReaderOpen"
+          @change="handleIconChange"
+        />
+
+        <button class="saveButton" type="button" @click="emit('save')">
+          <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
+          <span class="saveButtonLabel" >ENREGISTRER</span>
         </button>
-      </nav>
+
+      </div>
 
     </div>
 
-
-    <div class="optionBarActions">
-
-      <IconToggleGroup
-        :personIcon="personEditIcon"
-        :visibilityIcon="visibilityIcon"
-        :leftActive="!popupStore.isReaderOpen"
-        :rightActive="popupStore.isReaderOpen"
-        @change="handleIconChange"
-      />
-
-      <button class="saveButton" type="button" @click="emit('save')">
-        <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
-        <span class="saveButtonLabel" >ENREGISTRER</span>
-      </button>
-
-    </div>
     
     <div v-if="activeTab === 'text'" class="optionsWrapper">
       <TextOptionBar />
@@ -54,7 +56,7 @@
     <div v-if="activeTab === 'image'" class="optionsWrapper">
       <ImageOptionBar />
     </div>
-  </header>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -88,22 +90,24 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
 
 <style scoped>
 .optionBar {
-  position: fixed;
-  top: 45px;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100%;
   max-width: 1468px;
-  height: 54px;
+  height: auto;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 10px 0 10px;
+  justify-content: center;
+  flex-direction: column;
   box-sizing: border-box;
   z-index: 999;
+}
+
+.topBar{
+  display: flex;
+  justify-content: space-between;
+  width: 99%;
+  padding: 9px 0;
 }
 
 .optionBarStart {
@@ -243,10 +247,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
 }
 
 .optionsWrapper {
-  position: fixed;
-  top: 54px;
-  left: 50%;
-  transform: translateX(-50%);
+
   width: 100%;
   max-width: 1468px;
   height: auto;

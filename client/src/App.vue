@@ -67,13 +67,10 @@ function handleClipboardCancel() {
 </script>
 
 <template>
-  <div class="app">
-    <div class="header">
+    <header>
       <TitleBar/>
-    </div>
-    <div class="OptionBarSpacer">
       <OptionBar @save="openSaveDialog" />
-    </div>
+    </header>
 
     <div class="block">
       <draggable 
@@ -127,50 +124,16 @@ function handleClipboardCancel() {
 
     <DeletePopup/>
     <ErrorPopup/>
-  </div>
 </template>
 
 <style scoped>
 
-:global(body) {
-  margin: 0;
-  padding: 0;
-}
-
-
-:global(#app) {
+header {
   width: 100%;
-  height: auto;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  background-color: #777777;
-}
-.header {
-  width: 100%;
-  height: 45px;
   max-width: 1468px;
-}
-
-.app {
-  font-family: 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  position: relative;
-  width: auto;
-  max-width: 1468px;
-  height: auto;
-  min-height: 717px;
+  height : auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: #F3F4F6;
-  margin: 0;
-  padding: 0;
 }
 
 .OptionBarSpacer {
