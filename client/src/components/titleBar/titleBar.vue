@@ -41,7 +41,6 @@ function handleFocus(event: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: fixed;
   top: 0;
   height: 45px;
   width: 100%;

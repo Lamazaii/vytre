@@ -159,7 +159,7 @@ function handleClipboardCancel() {
   text-align: center;
   color: #2c3e50;
   position: relative;
-  width: 100%;
+  width: auto;
   max-width: 1468px;
   height: auto;
   min-height: 717px;
