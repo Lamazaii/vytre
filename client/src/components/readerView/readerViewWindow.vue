@@ -1,6 +1,6 @@
 <template>
-    <div v-if="popupStore.isReaderOpen" class="overlay" role="dialog" aria-modal="true">
-        <div class="popup">
+    <div v-if="popupStore.isReaderOpen" class="overlay" role="dialog" aria-modal="true" @click="closeReaderView">
+        <div class="popup" @click.stop>
                 <div class="readerApp">
                 <div class="readerViewWindow">
                     <ReaderViewBar @save="emit('save')" />
@@ -39,6 +39,10 @@ const blocksStore = useBlocksStore()
 const emit = defineEmits<{
     save: []
 }>()
+
+const closeReaderView = () => {
+    popupStore.closeReader()
+}
 
 </script>
 
