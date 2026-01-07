@@ -2,8 +2,10 @@
   <Transition name="modal">
     <div v-if="isOpen" class="modal-overlay" @click="close">
       <div class="modal-content" @click.stop>
-        <button class="close-button" @click="close">×</button>
-        <img :src="imageSrc" :alt="imageAlt" class="modal-image" />
+        <div class="image-wrapper">
+          <img :src="imageSrc" :alt="imageAlt" class="modal-image" />
+          <button class="close-button" @click="close">×</button>
+        </div>
       </div>
     </div>
   </Transition>
@@ -40,19 +42,24 @@ const close = () => {
 }
 
 .modal-content {
-  position: relative;
   cursor: default;
 }
 
+.image-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .modal-image {
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: block;
 }
 
 .close-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 5px;
+  right: 5px;
   border: none;
   border-radius: 50%;
   width: 36px;
