@@ -2,10 +2,11 @@
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
 import ConfirmSavePopUp from './components/popup/ConfirmSavePopUp.vue';
-import Element from './components/blockElement/element.vue';
-import AddBlockZone from './components/addBlock/addBlockZone.vue';
+
+import BlockWrapper from './components/blocks/BlockWrapper.vue';
+import AddBlockZone from './components/blocks/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
-import TitleBar from './components/titleBar/titleBar.vue';
+import TitleBar from './components/optionBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
@@ -142,29 +143,22 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         @end="onDragEnd"
       >
         <template #item="{element: block, index: i}">
-          <Element
+          <BlockWrapper
             :key="block.id"
-            :numero="block.step" 
-            :description="block.text"
-            :modelValue="block.nbOfRepeats"
-            :images="block.images"
+            :block="block"
             :blockIndex="i"
             :active="selectedIndex === i"
-            :modified="block.modified"
             :canDelete="blocks.length > 1"
             @select="toggleSelect(i)"
             @delete="removeBlock(i)"
             @modified="(v) => setModified(i, v)"
-            @update:description="(v: string) => blocksStore.updateBlockDescription(i, v)"
-            @update:modelValue="(v: number) => block.nbOfRepeats = v"
-            @update:images="(v: any) => block.images = v"
           />
         </template>
       </draggable>
-    </div>
 
-    <div class="addBlock"> 
-      <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
+      <div class="addBlock"> 
+        <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
+      </div>
     </div>
 
        <CopyPastePopup
@@ -215,8 +209,8 @@ header {
 
 .addBlock {
   display: flex;
-  align-items: center;
   justify-content: center;
+  width: 98%;
 }
 
 .popUp{

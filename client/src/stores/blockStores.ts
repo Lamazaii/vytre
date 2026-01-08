@@ -7,6 +7,8 @@ import { useConfirmSavePopupStore } from './confirmSavePopupStore'
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
+import { documentService } from '../services/documentService'
+import { documentSchema } from '../validators/documentValidator'
 
 
 /**
@@ -39,50 +41,50 @@ export const useBlocksStore = defineStore('blocks', () => {
   })
 
   const currentDocument = ref<{
-    id: string;
+    id?: number;
     title: string;
     version: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
   }>({
-    id: crypto.randomUUID(), // Génère un ID unique proprement
     title: 'Titre du document',
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    version: '1.0.0'
   })
 
   async function saveDocument() {
     try {
-      // Préparation de l'objet Document final
       const documentToPost: Document = {
-        id: currentDocument.value.id,
         title: currentDocument.value.title,
         version: currentDocument.value.version,
-        createdAt: currentDocument.value.createdAt,
-        updatedAt: new Date(), // On met à jour la date de modification
-        // On nettoie les blocs pour qu'ils correspondent au type Block[] (sans 'modified')
-        blocks: blocks.value.map((b, index) => {
-          const { modified, ...blockData } = b;
-          return {
-            ...blockData,
-            step: index + 1 // On s'assure que le step suit l'ordre du tableau
-          };
+        blocks: blocks.value.map((b) => {
+          const { modified, textZones, ...blockData } = b;
+          return blockData;
         })
       };
 
-      const response = await fetch('http://localhost:3000/documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(documentToPost)
-      });
+      const validation = documentSchema.safeParse(documentToPost);
 
-      if (!response.ok) throw new Error('Erreur lors du POST');
+      if (!validation.success) {
+        const firstError = validation.error.issues[0];
+        errorPopup.show(firstError?.message || "Données invalides");
+        return;
+      }
+
+      const savedDocument = await documentService.create(documentToPost);
+
+      currentDocument.value = {
+        id: savedDocument.id,
+        title: savedDocument.title,
+        version: savedDocument.version,
+        createdAt: savedDocument.createdAt,
+        updatedAt: savedDocument.updatedAt
+      };
 
       confirmSavePopup.show("Document sauvegardé avec succès !");
     } catch (error) {
       console.error(error);
-      errorPopup.show("Erreur lors de la sauvegarde du document.");
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
+      errorPopup.show(errorMessage);
     }
   }
 
@@ -116,7 +118,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     const block = blocks.value[selectedIndex.value]
     if (!block) return
     
-    // Utiliser isContentEmpty pour vérifier si la description de base est vide
     const baseEmpty = isContentEmpty(block.text ?? '')
     if (baseEmpty) {
       errorPopup.show('Remplir le texte de base avant d\'ajouter une zone.')
@@ -126,7 +127,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     const zones = block.textZones ?? []
     const lastZone = zones[zones.length - 1]
     
-    // Vérifier si la dernière zone est vide en utilisant isContentEmpty
     if (lastZone !== undefined && isContentEmpty(lastZone ?? '')) {
       errorPopup.show('Remplir la zone de texte précédente avant d\'en ajouter une nouvelle.')
       return

@@ -29,26 +29,22 @@
 <style scoped>
 
 .addBlockZone {
-  width: 1000px;  
-  height: 100px;
+  width: 996px;  
+  height: 96px;
   border: 2px dashed #cccccc;
   border-radius: 8px;
   background-color: #f5f5f5;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, filter 0.2s ease;
-  margin-top: 0px;
-  margin-left: 218px;
-  margin-right: 250px;
 }
 
 .addBlockZone:hover {
   border-color: #DC2626;
   background-color: #FDE2E2; 
+  cursor: pointer;
 }
 
 .addBlockZone.disabled {
