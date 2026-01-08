@@ -1,7 +1,17 @@
 <template>
 	<div v-if="popupStore.isOpen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="clipboard-title">
 		<div class="popup">
-			<BarPopUp @close="handleCancel" />
+			<div class="header-bar">
+				<div class="headerContent">
+				<div class="titleGroup">
+					<img class="clipboardIcon" :src="clipboardIcon" alt="Presse-papier" />
+					<h1 class="documentTitle">Presse-papier</h1>
+				</div>
+				<button class="closeButton" @click="handleCancel" aria-label="Fermer">
+					<span class="closeX">✕</span>
+				</button>
+				</div>
+			</div>
 
 			<div class="content">
 				<textarea id="clipboard-textarea" v-model="localValue" class="textarea" rows="9" :placeholder="placeholder"></textarea>
@@ -17,9 +27,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import BarPopUp from "./BarPopUp.vue";
+import clipboardIcon from "../../assets/optionBarImage/contentPasteRed.svg";
 
-import { usePopupStore } from '../../../stores/popupStore'
+import { usePopupStore } from '../../stores/popupStore'
 
 const popupStore = usePopupStore()
 
@@ -57,13 +67,13 @@ const placeholder = computed(
 
 <style scoped>
 .overlay {
-	position: fixed;
+	position: absolute;
 	inset: 0;
 	display: flex;
 	justify-content: center;
 	background: rgba(0, 0, 0, 0.55);
 	backdrop-filter: blur(2px);
-	z-index: 1200;
+	z-index: 4000;
 }
 
 .popup {
@@ -78,10 +88,6 @@ const placeholder = computed(
 
 .content {
 	padding: 18px 20px 10px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	flex: 1;
 }
 
 .label {
@@ -145,4 +151,66 @@ const placeholder = computed(
 .primaryButton:active {
 	filter: brightness(0.9);
 }
+
+.header-bar {
+  background-color: #000000;
+  color: rgb(255, 255, 255);
+  height: 45px;
+  display: flex;
+  justify-content: center;
+}
+
+.headerContent {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  border: none;
+  color: #ffffff;
+  background: transparent;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+  transition: filter 0.15s ease;
+}
+
+.closeButton:hover {
+  background: rgba(217, 217, 217, 0.30);
+  color: #dc2626;
+}
+
+.closeButton:active {
+  background: rgba(217, 217, 217, 0.20);
+  color: #dc2626;
+}
+
+.documentTitle {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 20px;
+}
+
+.titleBar {
+  margin: 0 0 4px;
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #E30613;
+}
+
 </style>

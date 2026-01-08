@@ -54,7 +54,7 @@ const closeReaderView = () => {
     justify-content: center;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(2px);
-    z-index: 1200;
+    z-index: 3200;
 }
 
 .popup {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CopyPastePopup from './components/popup/ClipBoardPopup/CopyPastePopup.vue';
+import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
 import Element from './components/blockElement/element.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
@@ -8,16 +8,42 @@ import TitleBar from './components/titleBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
-import { ref } from 'vue'
+import CropPopup from './components/popup/CropPopup.vue';
+import { ref, computed, watch } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
+import { useImageCropStore } from './stores/imageCropStore';
 import { storeToRefs } from 'pinia'
 import draggable from 'vuedraggable'
+import { usePopupStore } from './stores/popupStore'
+import { useDeletePopupStore } from './stores/deletePopupStore'
+import { useErrorPopupStore } from './stores/errorPopupStore'
 
 const blocksStore = useBlocksStore()
+const popupStore = usePopupStore()
+const deletePopupStore = useDeletePopupStore()
+const errorPopupStore = useErrorPopupStore()
+const imageCropStore = useImageCropStore()
 
 const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const clipboardText = ref('')
+
+const anyPopupOpen = computed(() => {
+  return (
+    saveDialogOpen.value === true ||
+    popupStore.isOpen === true ||
+    deletePopupStore.isVisible === true ||
+    errorPopupStore.isOpen === true ||
+    imageCropStore.isCropperOpen === true
+  )
+})
+
+watch(anyPopupOpen, (open) => {
+  const appEl = document.getElementById('app')
+  if (appEl) {
+    appEl.classList.toggle('no-scroll', open)
+  }
+}, { immediate: true })
 
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)
@@ -67,16 +93,41 @@ function handleClipboardSubmit(value: string) {
 function handleClipboardCancel() {
   clipboardText.value = ''
 }
+
+function handleCropComplete(croppedImageData: string) {
+  if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
+    const blockIndex = imageCropStore.blockIndex
+    const block = blocks.value[blockIndex]
+    if (block && block.images) {
+      const imageIndex = block.images.findIndex(img => img.id === imageCropStore.selectedImageId)
+      if (imageIndex !== -1 && block.images[imageIndex]) {
+        block.images[imageIndex].imagePath = croppedImageData
+        blocksStore.setModified(blockIndex, true)
+      }
+    }
+  }
+}
+
+watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  if (timestamp > 0 && imageCropStore.blockIndex !== null) {
+    const block = blocks.value[imageCropStore.blockIndex]
+    if (block && block.images) {
+      const imageToEdit = block.images.find(img => img.id === imageCropStore.selectedImageId)
+      if (imageToEdit) {
+        imageCropStore.openCropper(imageToEdit.imagePath)
+      }
+    }
+  }
+})
 </script>
 
 <template>
-  <div class="app">
-    <div class="header">
-      <TitleBar/>
-    </div>
-    <div class="OptionBarSpacer">
-      <OptionBar @save="openSaveDialog" />
-    </div>
+    <header>
+      <div class="OptionBarFixed">
+        <TitleBar/>
+        <OptionBar @save="openSaveDialog" />
+      </div>
+    </header>
 
     <div class="block">
       <draggable 
@@ -130,50 +181,23 @@ function handleClipboardCancel() {
 
     <DeletePopup/>
     <ErrorPopup/>
-  </div>
+    <CropPopup @crop="handleCropComplete" />
 </template>
 
 <style scoped>
 
-:global(body) {
-  margin: 0;
-  padding: 0;
-}
-
-
-:global(#app) {
+header {
   width: 100%;
-  height: auto;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  background-color: #777777;
-}
-.header {
-  width: 100%;
-  height: 45px;
   max-width: 1468px;
-}
-
-.app {
-  font-family: 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  position: relative;
-  width: auto;
-  max-width: 1468px;
-  height: auto;
-  min-height: 717px;
+  height : auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: #F3F4F6;
-  margin: 0;
-  padding: 0;
+}
+
+.OptionBarFixed {
+  position: fixed;
+  width: 100%;
+  z-index: 3000;
 }
 
 .OptionBarSpacer {
@@ -197,6 +221,11 @@ function handleClipboardCancel() {
 .ghost {
   opacity: 0.5;
   background: #c8ebfb;
+}
+
+.block {
+  margin-top: 140px;
+  z-index: 0;
 }
 
 </style>

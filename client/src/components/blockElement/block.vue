@@ -66,8 +66,6 @@
       </div>
     </div>
   </div>
-
-  <CropPopup @crop="handleCropComplete" />
 </template>
 
 
@@ -78,7 +76,6 @@ import { useBlocksStore } from '../../stores/blockStores'
 import { useImageCropStore } from '../../stores/imageCropStore'
 import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
-import CropPopup from '../popup/CropPopup.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 import type { Image } from '../../types/Image'
@@ -122,17 +119,6 @@ const toggleSelectImage = (id: string) => {
     imageCropStore.clearSelection()
   } else {
     imageCropStore.selectImage(id, props.blockIndex ?? 0)
-  }
-}
-
-const handleCropComplete = (croppedImageData: string) => {
-  if (imageCropStore.selectedImageId) {
-    const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
-    if (index !== -1 && images.value[index]) {
-      images.value[index].imagePath = croppedImageData
-      emit('update:images', [...images.value])
-      emit('modified', true)
-    }
   }
 }
 
