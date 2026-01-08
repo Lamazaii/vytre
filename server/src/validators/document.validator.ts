@@ -6,6 +6,7 @@ const imageSchema = z.object({
 
 const blockSchema = z.object({
   text: z.string().optional().default(''),
+  step: z.number().int().min(1, "Le numéro d'étape doit être au moins 1"),
   nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1").optional().default(1),
   images: z.array(imageSchema).optional().default([]),
 });
