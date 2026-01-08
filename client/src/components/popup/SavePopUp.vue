@@ -6,8 +6,8 @@
         aria-modal="true"
         aria-labelledby="save-popup-title"
     >
-        <div class="popup">
-            <header class="header">
+        <div class="popUp">
+            <header class="popUp-header">
                 <div class="titleGroup">
                     <img :src="saveIcon" alt="Sauvegarder" class="titleIcon" />
                     <h1 id="save-popup-title" class="title">{{ resolvedTitle }}</h1>
@@ -15,7 +15,7 @@
                 <button class="closeButton" type="button" @click="handleCancel" aria-label="Fermer">✕</button>
             </header>
 
-            <div class="body">
+            <div class="popUp-body">
                 <p class="message">{{ resolvedMessage }}</p>
 
                 <div class="inputGroup">
@@ -31,14 +31,14 @@
                         <img :src="editIcon" alt="Modifier" class="inputIcon" />
                     </div>
                 </div>
-            </div>
                 
-            <div class="separator" aria-hidden="true"></div>
+                <div class="separator" aria-hidden="true"></div>
 
-            <footer class="footer">
-                <button class="ghostButton" type="button" @click="handleCancel">{{ resolvedCancel }}</button>
-                <button class="primaryButton" type="button" @click="handleConfirm">{{ resolvedConfirm }}</button>
-            </footer>
+                <footer class="footer">
+                    <button class="ghostButton" type="button" @click="handleCancel">{{ resolvedCancel }}</button>
+                    <button class="primaryButton" type="button" @click="handleConfirm">{{ resolvedConfirm }}</button>
+                </footer>
+            </div>
         </div>
     </div>
 </template>
@@ -100,10 +100,10 @@ function handleConfirm() {
     justify-content: center;
     align-items: center;
     background: rgba(0, 0, 0, 0.55);
-    z-index: 1200;
+    z-index: 4000;
 }
 
-.popup {
+.popUp {
     width: 500px;
     min-height: 320px;
     background: #f2f3f6;
@@ -113,7 +113,7 @@ function handleConfirm() {
     overflow: hidden;
 }
 
-.header {
+.popUp-header {
     height: 45px;
     background: #0b0b0b;
     color: #ffffff;
@@ -121,6 +121,14 @@ function handleConfirm() {
     align-items: center;
     justify-content: space-between;
     padding: 0 12px;
+}
+
+.popUp-body{
+    flex : 1;    
+    display : flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
 .titleGroup {
@@ -214,20 +222,20 @@ function handleConfirm() {
     background: #d1d5db;
     width: 430px;
     margin: 0 auto;
+    margin-top : 20px;
 }
 
 .footer {
     width: 430px;
     display: flex;
     margin : 0 auto;
-    padding : 16px 0;
+    padding : 30px 0;
     justify-content: flex-end;
     gap: 12px;
 }
 
 .ghostButton {
     border: none;
-    background: transparent;
     color: #6b6b6b;
     font-weight: 700;
     font-size: 14px;

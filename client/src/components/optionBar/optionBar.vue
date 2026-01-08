@@ -1,71 +1,69 @@
 <template>
-  <div class="optionBar">
-    <div class="topBar">
-      <div class="optionBarStart">
-
-        <button class="clipboardButton" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
-          <img class="optionBarIcon" :src="clipBoardIcon" alt="Aller au presse papier" />
+  <div class="editor-toolbar">
+    <div class="toolbar-main-container">
+      
+      <div class="toolbar-left-group">
+        <button class="action-button-minimal" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
+          <img class="icon-standard" :src="iconClipboard" alt="Aller au presse papier" />
         </button>
 
-        <div class="optionBarSeparator"></div>
+        <div class="toolbar-vertical-divider"></div>
 
-        <nav class="optionBarTabs" aria-label="Type de contenu">
+        <nav class="content-type-nav" aria-label="Type de contenu">
           <button
-            :class="['tabButton', { tabButtonActive: activeTab === 'text' }]"
+            :class="['tab-item', { 'tab-item--active': activeTab === 'text' }]"
             type="button"
             @click="activeTab = 'text'"
           >
-            <img class="tabButtonIcon" :src="textIcon" alt="Texte" />
-            <span class="tabButtonLabel">TEXTE</span>
+            <img class="tab-item-icon" :src="iconText" alt="Texte" />
+            <span class="tab-item-label">TEXTE</span>
           </button>
 
           <button
-            :class="['tabButton', { tabButtonActive: activeTab === 'image' }]"
+            :class="['tab-item', { 'tab-item--active': activeTab === 'image' }]"
             type="button"
             @click="activeTab = 'image'"
           >
-            <img class="tabButtonIcon" :src="imageIcon" alt="Illustration" />
-            <span class="tabButtonLabel">IMAGE</span>
+            <img class="tab-item-icon" :src="iconImage" alt="Illustration" />
+            <span class="tab-item-label">IMAGE</span>
           </button>
         </nav>
+      </div>
 
-        </div>
-      <div class="optionBarActions">
-
+      <div class="toolbar-right-group">
         <IconToggleGroup
-          :personIcon="personEditIcon"
-          :visibilityIcon="visibilityIcon"
+          :personIcon="iconEditMode"
+          :visibilityIcon="iconViewMode"
           :leftActive="!popupStore.isReaderOpen"
           :rightActive="popupStore.isReaderOpen"
           @change="handleIconChange"
         />
 
-        <button class="saveButton" type="button" @click="emit('save')">
-          <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
-          <span class="saveButtonLabel" >ENREGISTRER</span>
+        <button class="save-action-button" type="button" @click="emit('save')">
+          <img class="save-action-icon" :src="iconSave" alt="Enregistrer" />
+          <span class="save-action-label">ENREGISTRER</span>
         </button>
-
       </div>
 
     </div>
 
-    
-    <div v-if="activeTab === 'text'" class="optionsWrapper">
+    <div v-if="activeTab === 'text'" class="contextual-toolbar-wrapper">
       <TextOptionBar />
     </div>
-    <div v-if="activeTab === 'image'" class="optionsWrapper">
+    <div v-if="activeTab === 'image'" class="contextual-toolbar-wrapper">
       <ImageOptionBar />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import clipBoardIcon from "../../assets/optionBarImage/contentPaste.svg";
-import floppyDiskIcon from "../../assets/optionBarImage/floppyDisk.svg";
-import imageIcon from "../../assets/optionBarImage/imageIcon.svg";
-import personEditIcon from "../../assets/optionBarImage/personEdit.svg";
-import textIcon from "../../assets/optionBarImage/textField.svg";
-import visibilityIcon from "../../assets/optionBarImage/visibility.svg";
+import iconClipboard from "../../assets/optionBarImage/contentPaste.svg";
+import iconSave from "../../assets/optionBarImage/floppyDisk.svg";
+import iconImage from "../../assets/optionBarImage/imageIcon.svg";
+import iconEditMode from "../../assets/optionBarImage/personEdit.svg";
+import iconText from "../../assets/optionBarImage/textField.svg";
+import iconViewMode from "../../assets/optionBarImage/visibility.svg";
+
 import IconToggleGroup from "./iconToggleGroup.vue";
 import TextOptionBar from "./textOptionBar.vue";
 import ImageOptionBar from "./imageOptionBar.vue";
@@ -85,11 +83,10 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
     popupStore.closeReader()
   }
 }
-
 </script>
 
 <style scoped>
-.optionBar {
+.editor-toolbar {
   width: 100%;
   max-width: 1468px;
   height: auto;
@@ -103,20 +100,20 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   z-index: 999;
 }
 
-.topBar{
+.toolbar-main-container {
   display: flex;
   justify-content: space-between;
   width: 99%;
   padding: 9px 0;
 }
 
-.optionBarStart {
+.toolbar-left-group {
   display: flex;
   align-items: center;
   gap: 24.5px;
 }
 
-.optionBarIcon {
+.icon-standard {
   width: 24px;
   height: 24px;
   font-weight: lighter;
@@ -124,19 +121,19 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   filter: brightness(0);
 }
 
-.optionBarSeparator {
+.toolbar-vertical-divider {
   width: 1px;
   height: 24px;
   background-color: #d0d0d0;
 }
 
-.optionBarTabs {
+.content-type-nav {
   display: flex;
   align-items: center;
   gap: 25px;
 }
 
-.tabButton {
+.tab-item {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -153,11 +150,11 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   transition: color 0.2s ease;
 }
 
-.tabButtonActive {
+.tab-item--active {
   color: #dc2626;
 }
 
-.tabButtonActive::after {
+.tab-item--active::after {
   content: '';
   position: absolute;
   bottom: -8px;
@@ -167,18 +164,18 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   background-color: #dc2626;
 }
 
-.tabButtonActive .tabButtonIcon {
+.tab-item--active .tab-item-icon {
   filter: brightness(0) saturate(100%) invert(14%) sepia(88%) saturate(6329%)
     hue-rotate(357deg) brightness(92%) contrast(102%);
 }
 
-.tabButtonIcon {
+.tab-item-icon {
   width: 20px;
   height: 20px;
   display: block;
 }
 
-.tabButtonLabel {
+.tab-item-label {
   text-transform: uppercase;
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
@@ -188,32 +185,13 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   text-align: center;
 }
 
-.optionBarActions {
+.toolbar-right-group {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.iconButton {
-  width: 36px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e0e0e0;
-  background: #f5f5f5;
-  border-radius: 4px;
-  cursor: not-allowed;
-  padding: 0;
-}
-
-.iconButtonIcon {
-  width: 18px;
-  height: 18px;
-  opacity: 0.5;
-}
-
-.saveButton {
+.save-action-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -230,24 +208,22 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   transition: filter 0.15s ease;
 }
 
-.saveButtonIcon {
+.save-action-icon {
   width: 18px;
   height: 18px;
   filter: brightness(0) invert(1);
 }
 
-.saveButtonLabel {
+.save-action-label {
   font-family: 'Segoe UI', sans-serif;
   font-style: normal;
   font-weight: 700;
-  font-size: 1;
   display: flex;
   align-items: center;
   text-align: center;
 }
 
-.optionsWrapper {
-
+.contextual-toolbar-wrapper {
   width: 100%;
   max-width: 1468px;
   height: auto;
@@ -257,8 +233,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   z-index: 998;
 }
 
-
-.clipboardButton {
+.action-button-minimal {
   width: 36px;
   height: 36px;
   display: inline-flex;
@@ -272,9 +247,9 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   transition: background-color 160ms ease;
 }
 
-.clipboardButton:hover { background: #E0E0E0; }
-.clipboardButton.active { background: rgba(220, 38, 38, 0.15); }
-.clipboardButton.active .optionBarIcon {
+.action-button-minimal:hover { background: #E0E0E0; }
+.action-button-minimal.active { background: rgba(220, 38, 38, 0.15); }
+.action-button-minimal.active .icon-standard {
   filter: brightness(0) saturate(100%) invert(14%) sepia(88%) saturate(6329%) hue-rotate(357deg) brightness(92%) contrast(102%);
 }
 </style>

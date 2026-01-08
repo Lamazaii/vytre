@@ -37,7 +37,7 @@ const close = () => store.close()
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1200;
+  z-index: 4000;
 }
 
 .popup-container {

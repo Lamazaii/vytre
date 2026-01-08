@@ -68,8 +68,10 @@ function handleClipboardCancel() {
 
 <template>
     <header>
-      <TitleBar/>
-      <OptionBar @save="openSaveDialog" />
+      <div class="OptionBarFixed">
+        <TitleBar/>
+        <OptionBar @save="openSaveDialog" />
+      </div>
     </header>
 
     <div class="block">
@@ -136,6 +138,12 @@ header {
   flex-direction: column;
 }
 
+.OptionBarFixed {
+  position: fixed;
+  width: 100%;
+  z-index: 3000;
+}
+
 .OptionBarSpacer {
   width: 100%;
   height: 94px;
@@ -157,6 +165,11 @@ header {
 .ghost {
   opacity: 0.5;
   background: #c8ebfb;
+}
+
+.block {
+  margin-top: 140px;
+  z-index: 0;
 }
 
 </style>

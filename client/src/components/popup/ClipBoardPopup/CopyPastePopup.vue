@@ -63,7 +63,7 @@ const placeholder = computed(
 	justify-content: center;
 	background: rgba(0, 0, 0, 0.55);
 	backdrop-filter: blur(2px);
-	z-index: 1200;
+	z-index: 4000;
 }
 
 .popup {
