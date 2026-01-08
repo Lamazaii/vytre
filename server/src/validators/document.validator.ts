@@ -18,8 +18,8 @@ const blockSchema = z.object({
 // on définit le Document entier
 export const createDocumentSchema = z.object({
   title: z.string().min(1, "Le titre ne peut pas être vide"),
-  version: z.string().min(1, "La version est requise"), 
-  
+  version: z.string().min(1, "La version est requise"),
+
   // On dit que blocks est un tableau (array) contenant des objets qui respectent le blockSchema
   // .optional() signifie qu'on a le droit de créer un document vide sans blocs pour commencer
   blocks: z.array(blockSchema).optional(),
