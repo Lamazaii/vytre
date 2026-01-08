@@ -5,6 +5,7 @@ import { useErrorPopupStore } from './errorPopupStore'
 import { useDeletePopupStore } from './deletePopupStore'
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
+import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
 
 
 /**
@@ -211,6 +212,29 @@ export const useBlocksStore = defineStore('blocks', () => {
     block.textZones.splice(zoneIndex, 1)
   }
 
+  function loadFromClipboard(rawText: string) {
+    const trimmed = rawText.trim()
+    if (!trimmed) {
+      errorPopup.show('Aucun contenu détecté dans le presse-papiers.')
+      return
+    }
+
+    const parsed = generateBlocksFromClipboardTable(trimmed).map((block, idx) => ({
+      ...block,
+      step: idx + 1,
+      textZones: [],
+      images: block.images ?? [],
+    }))
+
+    if (parsed.length === 0) {
+      errorPopup.show('Impossible de générer des blocs. Vérifiez que les colonnes Numéro, Libellé et Nombre sont présentes.')
+      return
+    }
+
+    blocks.value = parsed
+    selectedIndex.value = null
+  }
+
   return {
     // state
     documentTitle,
@@ -233,5 +257,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     updateTextZone,
     removeTextZone,
     isContentEmpty,
+    loadFromClipboard,
   }
 })
