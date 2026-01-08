@@ -91,12 +91,13 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   function removeBlock(i: number) {
-    if (i === 0) {
-      alert('Le bloc de base ne peut pas être supprimé.')
+    if (i < 0 || i >= blocks.value.length) return
+    
+    if (i === 0 && blocks.value.length === 1) {
+      errorPopup.show('Impossible de supprimer le premier bloc. Créez au moins un second bloc avant de supprimer le premier.')
       return
     }
-    if (i < 0 || i >= blocks.value.length) return
-    // Ouvrir la popup de confirmation
+    
     blockToDeleteIndex.value = i
     deletePopup.show('block', confirmDelete)
   }
