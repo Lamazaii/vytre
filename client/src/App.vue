@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
+import ConfirmSavePopUp from './components/popup/ConfirmSavePopUp.vue';
 import Element from './components/blockElement/element.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
@@ -17,11 +18,13 @@ import draggable from 'vuedraggable'
 import { usePopupStore } from './stores/popupStore'
 import { useDeletePopupStore } from './stores/deletePopupStore'
 import { useErrorPopupStore } from './stores/errorPopupStore'
+import { useConfirmSavePopupStore } from './stores/confirmSavePopupStore'
 
 const blocksStore = useBlocksStore()
 const popupStore = usePopupStore()
 const deletePopupStore = useDeletePopupStore()
 const errorPopupStore = useErrorPopupStore()
+const confirmSavePopupStore = useConfirmSavePopupStore()
 const imageCropStore = useImageCropStore()
 
 const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
@@ -34,6 +37,7 @@ const anyPopupOpen = computed(() => {
     popupStore.isOpen === true ||
     deletePopupStore.isVisible === true ||
     errorPopupStore.isOpen === true ||
+    confirmSavePopupStore.isOpen === true ||
     imageCropStore.isCropperOpen === true
   )
 })
@@ -178,6 +182,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
       @confirm="handleSaveConfirm"
       @cancel="handleSaveCancel"
     />
+
+    <ConfirmSavePopUp />
 
     <DeletePopup/>
     <ErrorPopup/>

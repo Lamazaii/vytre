@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 import { useDeletePopupStore } from './deletePopupStore'
+import { useConfirmSavePopupStore } from './confirmSavePopupStore'
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
@@ -21,6 +22,7 @@ function isContentEmpty(html: string): boolean {
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
   const deletePopup = useDeletePopupStore()
+  const confirmSavePopup = useConfirmSavePopupStore()
   const documentTitle = ref('Titre du document')
   const blocks = ref<Array<Block & { textZones?: string[] }>>([
     { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [] as Image[], textZones: [] }
@@ -77,7 +79,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       if (!response.ok) throw new Error('Erreur lors du POST');
 
-      errorPopup.show("Document sauvegardé avec succès !");
+      confirmSavePopup.show("Document sauvegardé avec succès !");
     } catch (error) {
       console.error(error);
       errorPopup.show("Erreur lors de la sauvegarde du document.");
