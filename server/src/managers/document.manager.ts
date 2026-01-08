@@ -6,7 +6,8 @@ interface ImageInput {
 
 interface BlockInput {
     text?: string;
-    nbOfRepeats?: number;
+    step: number;
+    nbOfRepeats: number;
     images?: ImageInput[];
 }
 
