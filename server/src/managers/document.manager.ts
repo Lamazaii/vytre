@@ -6,7 +6,6 @@ interface ImageInput {
 
 interface BlockInput {
     text?: string;
-    step: number;
     nbOfRepeats?: number;
     images?: ImageInput[];
 }
@@ -23,9 +22,9 @@ export const create = async (data: DocumentInput) => {
             title: data.title,
             version: data.version,
             blocks: {
-                create: data.blocks?.map((block) => ({
+                create: data.blocks?.map((block, index) => ({
                     text: block.text ?? '',
-                    step: block.step,
+                    step: index + 1,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
                     images: {
                         create: block.images?.map((img) => ({
