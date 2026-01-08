@@ -3,8 +3,8 @@
     <div class="popup-container">
       <div class="popup-header">
         <div class="header-content">
-          <img :src="warningIcon" alt="Warning" class="warning-icon" />
-          <h2>ATTENTION</h2>
+          <img :src="tickicon" alt="Tick icon" class="tick-icon" />
+          <h2>Enregistré</h2>
         </div>
         <button class="close-btn" @click="close" aria-label="Fermer">✕</button>
       </div>
@@ -20,10 +20,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useErrorPopupStore } from '../../stores/errorPopupStore'
-import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
-
-const store = useErrorPopupStore()
+import { useConfirmSavePopupStore } from '../../stores/confirmSavePopupStore'
+import tickicon from '../../assets/savePopUp/tickIcon.svg'
+const store = useConfirmSavePopupStore()
 const isOpen = computed(() => store.isOpen)
 const message = computed(() => store.message)
 const close = () => store.close()
@@ -49,7 +48,7 @@ const close = () => store.close()
 }
 
 .popup-header {
-  background-color: #DC2626;
+  background-color: #000000;
   color: white;
   height : 60px;
   width : auto;
@@ -67,9 +66,10 @@ const close = () => store.close()
   gap: 10px;
 }
 
-.warning-icon {
+.tick-icon {
   width: 22px;
   height: 22px;
+  color: green;
 }
 
 .popup-header h2 {
@@ -124,7 +124,7 @@ const close = () => store.close()
   border-radius: 4px;
   cursor: pointer;
   font-weight: 700;
-  background-color: #DC2626;
+  background-color: #615a5a;
   color: white;
   transition: background-color 0.2s ease;
 }
