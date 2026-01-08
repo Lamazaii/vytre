@@ -9,7 +9,6 @@
         "start": "node dist/bin/www.js"
     },
     "dependencies": {
-        "@prisma/adapter-mssql": "^7.1.0",
         "@prisma/client": "^5.22.0",
         "cookie-parser": "~1.4.4",
         "cors": "^2.8.5",

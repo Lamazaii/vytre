@@ -1,5 +1,6 @@
 import express from 'express';
 import HomeController from '../controllers/home.controller';
+import documentsRouter from './documents.router';
 
 const router = express.Router();
 const homeController = new HomeController();
@@ -15,5 +16,6 @@ const homeController = new HomeController();
  *         description: Page d'accueil récupérée avec succès
  */
 router.get('/', homeController.renderHome);
+router.use('/documents', documentsRouter);
 
 export default router;

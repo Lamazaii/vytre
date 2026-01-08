@@ -2,6 +2,7 @@ import createError from 'http-errors';
 import express, { NextFunction, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
+import cors from 'cors';
 // eslint-disable-next-line n/no-extraneous-import
 import swaggerUi from 'swagger-ui-express';
 // eslint-disable-next-line n/no-extraneous-import
@@ -11,6 +12,12 @@ import indexRouter from './src/routes/index.router';
 import usersRouter from './src/routes/users.router';
 
 const app = express();
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173', // URL de votre client Vite
+  credentials: true
+}));
 
 // Swagger configuration
 const swaggerOptions = {
@@ -35,8 +42,8 @@ const specs = swaggerJsdoc(swaggerOptions);
 
 // view engine setup
 app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cookieParser());
 
 // Swagger documentation route
