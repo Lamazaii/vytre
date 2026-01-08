@@ -8,16 +8,38 @@ import TitleBar from './components/titleBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
 import { storeToRefs } from 'pinia'
 import draggable from 'vuedraggable'
+import { usePopupStore } from './stores/popupStore'
+import { useDeletePopupStore } from './stores/deletePopupStore'
+import { useErrorPopupStore } from './stores/errorPopupStore'
 
 const blocksStore = useBlocksStore()
+const popupStore = usePopupStore()
+const deletePopupStore = useDeletePopupStore()
+const errorPopupStore = useErrorPopupStore()
 
 const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const clipboardText = ref('')
+
+const anyPopupOpen = computed(() => {
+  return (
+    saveDialogOpen.value === true ||
+    popupStore.isOpen === true ||
+    deletePopupStore.isVisible === true ||
+    errorPopupStore.isOpen === true
+  )
+})
+
+watch(anyPopupOpen, (open) => {
+  const appEl = document.getElementById('app')
+  if (appEl) {
+    appEl.classList.toggle('no-scroll', open)
+  }
+}, { immediate: true })
 
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)

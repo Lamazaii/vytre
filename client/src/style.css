@@ -17,6 +17,10 @@
   background-color: #F3F4F6;
 }
 
+#app.no-scroll {
+  overflow-y: hidden;
+}
+
 body {
   margin: 0;
   padding: 0;

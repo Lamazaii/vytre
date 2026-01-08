@@ -1,13 +1,13 @@
 <template>
   <div v-if="isOpen && imageSrc" class="cropper-modal-overlay">
     <div class="cropper-card" @click.stop>
-      <header class="cropper-header">
+      <div class="cropper-header">
         <div class="cropper-title-group">
           <img :src="cropIconActive" alt="Rogner" class="cropper-title-icon" />
           <h3 class="cropper-title">Rogner l'image</h3>
         </div>
         <button class="cropper-close-button" @click="handleClose" aria-label="Fermer">✕</button>
-      </header>
+      </div>
       <div class="cropper-body">
         <div class="cropper-engine-wrapper">
           <cropper
@@ -39,7 +39,6 @@ const cropperRef = ref<any>(null)
 
 const isOpen = computed(() => imageCropStore.isCropperOpen)
 const imageSrc = computed(() => {
-  // fourni par le store ou via props
   return imageCropStore.imageToCropSrc || null
 })
 
@@ -64,7 +63,7 @@ function handleConfirm() {
 
 <style scoped>
 .cropper-modal-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(2px);
