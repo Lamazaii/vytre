@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
-import Element from './components/blockElement/element.vue';
+import BlockWrapper from './components/blockElement/BlockWrapper.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
-import TitleBar from './components/titleBar/titleBar.vue';
+import TitleBar from './components/optionBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
@@ -138,22 +138,15 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         @end="onDragEnd"
       >
         <template #item="{element: block, index: i}">
-          <Element
+          <BlockWrapper
             :key="block.id"
-            :numero="block.step" 
-            :description="block.text"
-            :modelValue="block.nbOfRepeats"
-            :images="block.images"
+            :block="block"
             :blockIndex="i"
             :active="selectedIndex === i"
-            :modified="block.modified"
             :canDelete="blocks.length > 1"
             @select="toggleSelect(i)"
             @delete="removeBlock(i)"
             @modified="(v) => setModified(i, v)"
-            @update:description="(v: string) => blocksStore.updateBlockDescription(i, v)"
-            @update:modelValue="(v: number) => block.nbOfRepeats = v"
-            @update:images="(v: any) => block.images = v"
           />
         </template>
       </draggable>
