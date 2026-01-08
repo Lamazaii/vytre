@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CopyPastePopup from './components/popup/ClipBoardPopup/CopyPastePopup.vue';
+import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
 import Element from './components/blockElement/element.vue';
 import AddBlockZone from './components/addBlock/addBlockZone.vue';
