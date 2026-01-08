@@ -66,8 +66,6 @@
       </div>
     </div>
   </div>
-
-  <CropPopup @crop="handleCropComplete" />
 </template>
 
 
@@ -78,7 +76,6 @@ import { useBlocksStore } from '../../stores/blockStores'
 import { useImageCropStore } from '../../stores/imageCropStore'
 import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import TiptapEditor from '../editor/TiptapEditor.vue'
-import CropPopup from '../popup/CropPopup.vue'
 import trash from '../../assets/blockImage/trash.svg'
 import trashRed from '../../assets/blockImage/trashRed.svg'
 import type { Image } from '../../types/Image'
@@ -123,17 +120,6 @@ const toggleSelectImage = (id: string) => {
     imageCropStore.clearSelection()
   } else {
     imageCropStore.selectImage(id, props.blockIndex ?? 0)
-  }
-}
-
-const handleCropComplete = (croppedImageData: string) => {
-  if (imageCropStore.selectedImageId) {
-    const index = images.value.findIndex(img => img.id === imageCropStore.selectedImageId)
-    if (index !== -1 && images.value[index]) {
-      images.value[index].imagePath = croppedImageData
-      emit('update:images', [...images.value])
-      emit('modified', true)
-    }
   }
 }
 
@@ -223,24 +209,6 @@ watch(welcomeText, (newValue) => {
     blocksStore.updateBlockDescription(props.blockIndex, newValue)
   }
   emit('update:description', newValue)
-})
-
-// Watcher pour la demande de rognage depuis la barre d'outils
-watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  // Ne traiter que si le crop a été demandé pour ce bloc
-  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex) {
-    const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
-    if (imageToEdit) {
-      imageCropStore.openCropper(imageToEdit.imagePath)
-    }
-  }
-})
-
-// Synchroniser l'état du cropper avec le store
-watch(() => imageCropStore.isCropperOpen, (isOpen) => {
-  if (!isOpen) {
-    // Le cropper a été fermé
-  }
 })
 
 onMounted(() => {

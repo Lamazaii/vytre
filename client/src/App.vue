@@ -8,8 +8,10 @@ import TitleBar from './components/titleBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
 import DeletePopup from './components/popup/DeletePopup.vue';
 import ErrorPopup from './components/popup/ErrorPopup.vue';
+import CropPopup from './components/popup/CropPopup.vue';
 import { ref, computed, watch } from 'vue'
 import { useBlocksStore } from './stores/blockStores';
+import { useImageCropStore } from './stores/imageCropStore';
 import { storeToRefs } from 'pinia'
 import draggable from 'vuedraggable'
 import { usePopupStore } from './stores/popupStore'
@@ -20,6 +22,7 @@ const blocksStore = useBlocksStore()
 const popupStore = usePopupStore()
 const deletePopupStore = useDeletePopupStore()
 const errorPopupStore = useErrorPopupStore()
+const imageCropStore = useImageCropStore()
 
 const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
@@ -86,6 +89,32 @@ function handleClipboardSubmit(value: string) {
 function handleClipboardCancel() {
   clipboardText.value = ''
 }
+
+function handleCropComplete(croppedImageData: string) {
+  if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
+    const blockIndex = imageCropStore.blockIndex
+    const block = blocks.value[blockIndex]
+    if (block && block.images) {
+      const imageIndex = block.images.findIndex(img => img.id === imageCropStore.selectedImageId)
+      if (imageIndex !== -1 && block.images[imageIndex]) {
+        block.images[imageIndex].imagePath = croppedImageData
+        blocksStore.setModified(blockIndex, true)
+      }
+    }
+  }
+}
+
+watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  if (timestamp > 0 && imageCropStore.blockIndex !== null) {
+    const block = blocks.value[imageCropStore.blockIndex]
+    if (block && block.images) {
+      const imageToEdit = block.images.find(img => img.id === imageCropStore.selectedImageId)
+      if (imageToEdit) {
+        imageCropStore.openCropper(imageToEdit.imagePath)
+      }
+    }
+  }
+})
 </script>
 
 <template>
@@ -148,6 +177,7 @@ function handleClipboardCancel() {
 
     <DeletePopup/>
     <ErrorPopup/>
+    <CropPopup @crop="handleCropComplete" />
 </template>
 
 <style scoped>
