@@ -33,7 +33,8 @@ const anyPopupOpen = computed(() => {
     saveDialogOpen.value === true ||
     popupStore.isOpen === true ||
     deletePopupStore.isVisible === true ||
-    errorPopupStore.isOpen === true
+    errorPopupStore.isOpen === true ||
+    imageCropStore.isCropperOpen === true
   )
 })
 
