@@ -2,11 +2,17 @@
 
 import { z } from 'zod';
 
+// on définit à quoi ressemble une image valide
+const imageSchema = z.object({
+  imagePath: z.string().min(1, "Le chemin de l'image est obligatoire"),
+});
+
 // on définit à quoi ressemble un bloc valide
 const blockSchema = z.object({
-  text: z.string().min(1, "Le texte est obligatoire"),
+  text: z.string().optional().default(''),
   step: z.number().int().positive("L'étape doit être un entier positif"),
-  nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1"),
+  nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1").optional().default(1),
+  images: z.array(imageSchema).optional().default([]),
 });
 
 // on définit le Document entier
