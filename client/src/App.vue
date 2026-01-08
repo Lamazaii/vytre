@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import CopyPastePopup from './components/popup/CopyPastePopup.vue';
 import SavePopUp from './components/popup/SavePopUp.vue';
-import BlockWrapper from './components/blockElement/BlockWrapper.vue';
-import AddBlockZone from './components/addBlock/addBlockZone.vue';
+import BlockWrapper from './components/blocks/BlockWrapper.vue';
+import AddBlockZone from './components/blocks/addBlockZone.vue';
 import OptionBar from './components/optionBar/optionBar.vue';
 import TitleBar from './components/optionBar/titleBar.vue';
 import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
@@ -150,10 +150,10 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
           />
         </template>
       </draggable>
-    </div>
 
-    <div class="addBlock"> 
-      <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
+      <div class="addBlock"> 
+        <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
+      </div>
     </div>
 
        <CopyPastePopup
@@ -202,8 +202,8 @@ header {
 
 .addBlock {
   display: flex;
-  align-items: center;
   justify-content: center;
+  width: 98%;
 }
 
 .popUp{
