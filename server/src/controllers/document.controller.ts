@@ -5,6 +5,7 @@ import { createDocumentSchema } from '../validators/document.validator';
 export const createDocument = async (req: Request, res: Response) => {
   try {
     console.log("Tentative de création d'un document...");
+    console.log("Body reçu:", JSON.stringify(req.body, null, 2));
 
     // 1. On valide les données reçues du Front (req.body)
     const validation = createDocumentSchema.safeParse(req.body);
@@ -28,6 +29,9 @@ export const createDocument = async (req: Request, res: Response) => {
   } catch (error) {
     // Si le serveur plante (ex: base de données éteinte)
     console.error("Erreur controller :", error);
-    res.status(500).json({ message: "Erreur interne du serveur" });
+    res.status(500).json({ 
+      message: "Erreur interne du serveur",
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 };
