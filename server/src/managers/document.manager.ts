@@ -44,3 +44,61 @@ export const create = async (data: DocumentInput) => {
         },
     });
 };
+
+export const getAll = async () => {
+    return await prisma.document.findMany({
+        include: {
+            blocks: {
+                include: {
+                    images: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+    });
+};
+
+export const getById = async (id: number) => {
+    return await prisma.document.findUnique({
+        where: { id },
+        include: {
+            blocks: {
+                include: {
+                    images: true,
+                },
+            },
+        },
+    });
+};
+
+export const update = async (id: number, data: DocumentInput) => {
+    return await prisma.document.update({
+        where: { id },
+        data: {
+            title: data.title,
+            version: data.version,
+            blocks: {
+                deleteMany: {},
+                create: data.blocks?.map((block) => ({
+                    text: block.text ?? '',
+                    step: block.step,
+                    nbOfRepeats: block.nbOfRepeats ?? 1,
+                    images: {
+                        create: block.images?.map((img) => ({
+                            imagePath: img.imagePath,
+                        })) ?? [],
+                    },
+                })),
+            },
+        },
+        include: {
+            blocks: {
+                include: {
+                    images: true,
+                },
+            },
+        },
+    });
+};

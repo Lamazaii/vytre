@@ -5,15 +5,20 @@ const imageSchema = z.object({
 });
 
 const blockSchema = z.object({
+  id: z.number().optional(),
   text: z.string().optional().default(''),
-  step: z.number().int().min(1, "Le numéro d'étape doit être au moins 1"),
+  step: z.number().optional(),
   nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1").optional().default(1),
   images: z.array(imageSchema).optional().default([]),
 });
 
-export const createDocumentSchema = z.object({
+export const documentSchema = z.object({
+  id: z.number().optional(),
   title: z.string().min(1, "Le titre ne peut pas être vide"),
   version: z.string().min(1, "La version est requise"),
   blocks: z.array(blockSchema).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
+export type DocumentValidation = z.infer<typeof documentSchema>;
