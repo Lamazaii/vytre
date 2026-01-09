@@ -12,9 +12,13 @@
     </div>
 
     <div class="documentsList">
+      <div v-if="store.loadingDocuments" class="loadingMessage">Chargement des documents...</div>
+      <div v-else-if="store.documentsError" class="errorMessage">{{ store.documentsError }}</div>
+      <div v-else-if="store.allDocuments.length === 0" class="emptyMessage">Aucun document trouvé</div>
       <div 
-        v-for="(doc, index) in documents" 
-        :key="index"
+        v-else
+        v-for="(doc, index) in store.allDocuments" 
+        :key="doc.id || index"
         class="documentCard"
       >
         <div class="docIcon">
@@ -23,7 +27,7 @@
         <div class="docInfo">
           <h3>{{ doc.title }}</h3>
           <div class="docMeta">
-            <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ doc.time }}</span>
+            <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ formatDate(doc.updatedAt ?? new Date()) }}</span>
           </div>
         </div>
         <div class="docActions">
@@ -40,31 +44,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import {onMounted } from 'vue'
 import fileIcon from '../../assets/menu/file-text.svg'
+import { useBlocksStore } from '../../stores/blockStores'
+import type { Document } from '../../types/Document'
 import timeImage from '../../assets/menu/timer.svg'
 import readIcon from '../../assets/optionBarImage/visibility.svg'
 import editIcon from '../../assets/menu/edit.svg'
+
 
 const emit = defineEmits<{
   (e: 'selectMode', mode: 'editor' | 'reader'): void
 }>()
 
-const documents = ref([
-  { title: 'Nouveau Document', time: 'À l\'instant', type: 'TECHNIQUE' },
-  { title: 'Nouveau Document', time: 'À l\'instant', type: 'TECHNIQUE' },
-  { title: 'Rapport de Projet Annuel', time: 'Il y a 2h', type: 'TECHNIQUE' },
-  { title: 'Notes Réunion Technique', time: 'Hier', type: 'TECHNIQUE' },
-  { title: 'Spécifications Design', time: 'Il y a 3 jours', type: 'TECHNIQUE' },
-])
+const store = useBlocksStore()
 
-function openDocument(doc: any) {
+function formatDate(dateString: Date): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'À l\'instant'
+  if (diffMins < 60) return `Il y a ${diffMins}m`
+  if (diffHours < 24) return `Il y a ${diffHours}h`
+  if (diffDays < 7) return `Il y a ${diffDays}j`
+  
+  return date.toLocaleDateString('fr-FR')
+}
+
+function openDocument(doc: Document) {
   console.log('Ouverture en lecture:', doc)
 }
 
-function editDocument(doc: any) {
+function editDocument(doc: Document) {
+  console.log('Édition du document:', doc)
+  store.loadDocument(doc.id!)
   emit('selectMode', 'editor')
 }
+
+onMounted(() => {
+  store.loadAllDocuments()
+})
 </script>
 
 <style scoped>
@@ -135,6 +158,26 @@ function editDocument(doc: any) {
   margin: 0 80px;
   margin-top: 25px;
   gap : 15px;
+}
+
+.loadingMessage,
+.emptyMessage {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  width: 100%;
+}
+
+.errorMessage {
+  padding: 15px 20px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 5px;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
 }
 
 
