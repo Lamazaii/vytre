@@ -94,7 +94,7 @@ function handleConfirm() {
 
 <style scoped>
 .overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     display: flex;
     justify-content: center;
