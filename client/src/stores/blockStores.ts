@@ -53,7 +53,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   async function saveDocument() {
     try {
-      const documentToPost: Document = {
+      const documentToSend: Document = {
         title: currentDocument.value.title,
         version: currentDocument.value.version,
         blocks: blocks.value.map((b) => {
@@ -62,7 +62,7 @@ export const useBlocksStore = defineStore('blocks', () => {
         })
       };
 
-      const validation = documentSchema.safeParse(documentToPost);
+      const validation = documentSchema.safeParse(documentToSend);
 
       if (!validation.success) {
         const firstError = validation.error.issues[0];
@@ -70,7 +70,11 @@ export const useBlocksStore = defineStore('blocks', () => {
         return;
       }
 
-      const savedDocument = await documentService.create(documentToPost);
+      const hasId = typeof currentDocument.value.id === 'number';
+
+      const savedDocument = hasId
+        ? await documentService.update(currentDocument.value.id!, documentToSend)
+        : await documentService.create(documentToSend);
 
       currentDocument.value = {
         id: savedDocument.id,
