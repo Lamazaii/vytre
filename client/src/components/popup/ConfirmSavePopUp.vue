@@ -4,7 +4,7 @@
       <div class="popup-header">
         <div class="header-content">
           <img :src="tickicon" alt="Tick icon" class="tick-icon" />
-          <h2>Enregistré</h2>
+          <h2>{{ store.title }}</h2>
         </div>
         <button class="close-btn" @click="close" aria-label="Fermer">✕</button>
       </div>

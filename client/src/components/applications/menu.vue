@@ -6,7 +6,7 @@
       </div>
       
       <div class="searchSection">
-        <input type="text" placeholder="Rechercher..." class="searchInput" />
+        <input type="text" v-model="searchQuery" placeholder="Rechercher..." class="searchInput" />
         <button class="newButton" @click="$emit('selectMode', 'editor')">+ Nouveau</button>
       </div>
     </div>
@@ -14,10 +14,10 @@
     <div class="documentsList">
       <div v-if="store.loadingDocuments" class="loadingMessage">Chargement des documents...</div>
       <div v-else-if="store.documentsError" class="errorMessage">{{ store.documentsError }}</div>
-      <div v-else-if="store.allDocuments.length === 0" class="emptyMessage">Aucun document trouvé</div>
+      <div v-else-if="filteredDocuments.length === 0" class="emptyMessage">Aucun document trouvé</div>
       <div 
         v-else
-        v-for="(doc, index) in store.allDocuments" 
+        v-for="(doc, index) in filteredDocuments" 
         :key="doc.id || index"
         class="documentCard"
       >
@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import fileIcon from '../../assets/menu/file-text.svg'
 import { useBlocksStore } from '../../stores/blockStores'
 import type { Document } from '../../types/Document'
@@ -58,6 +58,17 @@ const emit = defineEmits<{
 }>()
 
 const store = useBlocksStore()
+const searchQuery = ref('')
+
+const filteredDocuments = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return store.allDocuments
+  }
+  const query = searchQuery.value.toLowerCase()
+  return store.allDocuments.filter(doc => 
+    doc.title.toLowerCase().includes(query)
+  )
+})
 
 function formatDate(dateString: Date): string {
   const date = new Date(dateString)

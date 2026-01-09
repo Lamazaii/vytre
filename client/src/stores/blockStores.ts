@@ -88,7 +88,7 @@ export const useBlocksStore = defineStore('blocks', () => {
         updatedAt: savedDocument.updatedAt
       };
 
-      confirmSavePopup.show("Document sauvegardé avec succès !");
+      confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
@@ -120,7 +120,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       selectedIndex.value = null;
       
-      confirmSavePopup.show("Document chargé avec succès !");
+      confirmSavePopup.show("Document chargé avec succès !", "Ouverture");
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement du document.";

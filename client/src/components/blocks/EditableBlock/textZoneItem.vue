@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import TiptapEditor from '../../editor/TiptapEditor.vue'
+import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
 
 defineProps<{ modelValue: string }>();
