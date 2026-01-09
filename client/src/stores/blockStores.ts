@@ -53,16 +53,16 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   async function saveDocument() {
     try {
-      const documentToPost: Document = {
+      const documentToSend: Document = {
         title: currentDocument.value.title,
         version: currentDocument.value.version,
         blocks: blocks.value.map((b) => {
-          const { modified, textZones, ...blockData } = b;
+          const { modified, ...blockData } = b;
           return blockData;
         })
       };
 
-      const validation = documentSchema.safeParse(documentToPost);
+      const validation = documentSchema.safeParse(documentToSend);
 
       if (!validation.success) {
         const firstError = validation.error.issues[0];
@@ -70,7 +70,11 @@ export const useBlocksStore = defineStore('blocks', () => {
         return;
       }
 
-      const savedDocument = await documentService.create(documentToPost);
+      const hasId = typeof currentDocument.value.id === 'number';
+
+      const savedDocument = hasId
+        ? await documentService.update(currentDocument.value.id!, documentToSend)
+        : await documentService.create(documentToSend);
 
       currentDocument.value = {
         id: savedDocument.id,
@@ -84,6 +88,38 @@ export const useBlocksStore = defineStore('blocks', () => {
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
+      errorPopup.show(errorMessage);
+    }
+  }
+
+  async function loadDocument(id: number) {
+    try {
+      const document = await documentService.getById(id);
+      
+      currentDocument.value = {
+        id: document.id,
+        title: document.title,
+        version: document.version,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt
+      };
+
+      documentTitle.value = document.title;
+
+      blocks.value = document.blocks.map((block: any) => ({
+        ...block,
+        modified: false,
+        textZones: typeof block.textZones === 'string' 
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
+      }));
+
+      selectedIndex.value = null;
+      
+      confirmSavePopup.show("Document chargé avec succès !");
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement du document.";
       errorPopup.show(errorMessage);
     }
   }
@@ -250,6 +286,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     // actions
     toggleSelect,
     saveDocument,
+    loadDocument,
     setModified,
     addEmptyBlockIfAllowed,
     addTextZone,
