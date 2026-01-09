@@ -57,7 +57,7 @@ export const useBlocksStore = defineStore('blocks', () => {
         title: currentDocument.value.title,
         version: currentDocument.value.version,
         blocks: blocks.value.map((b) => {
-          const { modified, textZones, ...blockData } = b;
+          const { modified, ...blockData } = b;
           return blockData;
         })
       };
@@ -88,6 +88,36 @@ export const useBlocksStore = defineStore('blocks', () => {
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
+      errorPopup.show(errorMessage);
+    }
+  }
+
+  async function loadDocument(id: number) {
+    try {
+      const document = await documentService.getById(id);
+      
+      currentDocument.value = {
+        id: document.id,
+        title: document.title,
+        version: document.version,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt
+      };
+
+      documentTitle.value = document.title;
+
+      blocks.value = document.blocks.map((block) => ({
+        ...block,
+        modified: false,
+        textZones: JSON.parse(block.textZones || '[]')
+      }));
+
+      selectedIndex.value = null;
+      
+      confirmSavePopup.show("Document chargé avec succès !");
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement du document.";
       errorPopup.show(errorMessage);
     }
   }
@@ -254,6 +284,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     // actions
     toggleSelect,
     saveDocument,
+    loadDocument,
     setModified,
     addEmptyBlockIfAllowed,
     addTextZone,

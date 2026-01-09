@@ -9,6 +9,7 @@ const blockSchema = z.object({
   step: z.number().int().min(1, "Le numéro d'étape doit être au moins 1"),
   nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1").optional().default(1),
   images: z.array(imageSchema).optional().default([]),
+  textZones: z.array(z.string()).optional().default([]),
 });
 
 export const createDocumentSchema = z.object({
