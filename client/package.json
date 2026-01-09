@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "dependencies": {
     "@tiptap/extension-color": "^3.14.0",
@@ -15,6 +16,7 @@
     "@tiptap/extension-underline": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
     "@tiptap/vue-3": "^3.14.0",
+    "pinia": "^2.2.6",
     "vue": "^3.5.24",
     "zod": "^4.3.5"
   },
@@ -22,6 +24,10 @@
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
+    "@vue/test-utils": "^2.4.6",
+    "@pinia/testing": "^0.1.7",
+    "jsdom": "^26.0.0",
+    "vitest": "^2.1.4",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vue-tsc": "^3.1.4"
