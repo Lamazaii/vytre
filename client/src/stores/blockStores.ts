@@ -51,6 +51,10 @@ export const useBlocksStore = defineStore('blocks', () => {
     version: '1.0.0'
   })
 
+  const allDocuments = ref<Document[]>([])
+  const loadingDocuments = ref(false)
+  const documentsError = ref<string | null>(null)
+
   async function saveDocument() {
     try {
       const documentToSend: Document = {
@@ -84,7 +88,7 @@ export const useBlocksStore = defineStore('blocks', () => {
         updatedAt: savedDocument.updatedAt
       };
 
-      confirmSavePopup.show("Document sauvegardé avec succès !");
+      confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
@@ -116,11 +120,26 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       selectedIndex.value = null;
       
-      confirmSavePopup.show("Document chargé avec succès !");
+      confirmSavePopup.show("Document chargé avec succès !", "Ouverture");
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement du document.";
       errorPopup.show(errorMessage);
+    }
+  }
+
+  async function loadAllDocuments() {
+    try {
+      loadingDocuments.value = true
+      documentsError.value = null
+      const documents = await documentService.getAll()
+      allDocuments.value = documents
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement des documents.";
+      documentsError.value = errorMessage
+    } finally {
+      loadingDocuments.value = false
     }
   }
 
@@ -281,12 +300,16 @@ export const useBlocksStore = defineStore('blocks', () => {
     blocks,
     selectedIndex,
     blockToDeleteIndex,
+    allDocuments,
+    loadingDocuments,
+    documentsError,
     // getters
     canAdd,
     // actions
     toggleSelect,
     saveDocument,
     loadDocument,
+    loadAllDocuments,
     setModified,
     addEmptyBlockIfAllowed,
     addTextZone,

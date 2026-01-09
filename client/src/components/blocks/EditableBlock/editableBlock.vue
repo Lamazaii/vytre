@@ -62,7 +62,7 @@ import { useDeletePopupStore } from '../../../stores/deletePopupStore'
 import TextZoneItem from './textZoneItem.vue'
 import ImageItem from './imageItem.vue'
 import ImageUploader from './imageUploader.vue'
-import TiptapEditor from '../../editor/TiptapEditor.vue'
+import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
 
 import trash from '../../../assets/blockImage/trash.svg'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
