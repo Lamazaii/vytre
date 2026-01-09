@@ -27,6 +27,7 @@ model Block {
   text         String
   step         Int
   nbOfRepeats  Int
+  textZones    String?  @db.NVarChar(Max)
 
   documentId   Int
   document     Document @relation(fields: [documentId], references: [id])
