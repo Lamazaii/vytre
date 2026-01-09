@@ -23,15 +23,15 @@
         <div class="docInfo">
           <h3>{{ doc.title }}</h3>
           <div class="docMeta">
-            <span class="docTime">⏱️ {{ doc.time }}</span>
+            <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ doc.time }}</span>
           </div>
         </div>
         <div class="docActions">
           <button class="actionButton read" @click="openDocument(doc)">
-            👁️ Lire
+            <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
           </button>
           <button class="actionButton edit" @click="editDocument(doc)">
-            ✏️ Modifier
+            <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
           </button>
         </div>
       </div>
@@ -42,6 +42,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import fileIcon from '../../assets/menu/file-text.svg'
+import timeImage from '../../assets/menu/timer.svg'
+import readIcon from '../../assets/optionBarImage/visibility.svg'
+import editIcon from '../../assets/menu/edit.svg'
 
 const emit = defineEmits<{
   (e: 'selectMode', mode: 'editor' | 'reader'): void
@@ -158,13 +161,13 @@ function editDocument(doc: any) {
 }
 
 .docIcon {
-  font-size: 32px;
-  min-width: 50px;
-  text-align: center;
-}
-
-.docInfo {
-  flex: 1;
+  margin-left : 20px;
+  background-color: #f0f0f0;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .docInfo h3 {
@@ -176,7 +179,6 @@ function editDocument(doc: any) {
 
 .docMeta {
   display: flex;
-  gap: 15px;
   font-size: 12px;
   color: #999;
 }
@@ -184,15 +186,26 @@ function editDocument(doc: any) {
 .docTime {
   display: flex;
   align-items: center;
-  gap: 5px;
+}
+
+.timeIcon {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  opacity: 0.6;
 }
 
 .docActions {
   display: flex;
   gap: 10px;
+  margin-left: auto;
+  margin-right: 20px;
 }
 
 .actionButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 16px;
   border: none;
   border-radius: 5px;
@@ -202,19 +215,23 @@ function editDocument(doc: any) {
   transition: all 0.3s ease;
 }
 
+.buttonIcon {
+  width: 16px;
+  height: 16px;
+}
+
 .actionButton.read {
-  color: #999;
   background-color: transparent;
-  border: 1px solid #e0e0e0;
+  font-weight: 700;
 }
 
 .actionButton.read:hover {
-  color: #333;
   background-color: #f5f5f5;
 }
 
 .actionButton.edit {
   color: #DC2626;
+  font-weight: 700;
   background-color: transparent;
   border: 1px solid transparent;
 }
