@@ -106,10 +106,12 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       documentTitle.value = document.title;
 
-      blocks.value = document.blocks.map((block) => ({
+      blocks.value = document.blocks.map((block: any) => ({
         ...block,
         modified: false,
-        textZones: JSON.parse(block.textZones || '[]')
+        textZones: typeof block.textZones === 'string' 
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
       }));
 
       selectedIndex.value = null;
