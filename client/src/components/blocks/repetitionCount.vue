@@ -7,7 +7,9 @@
           <input 
             v-model.number="inputValue"
             type="number" 
-            min="1"
+            min="0.001"
+            max="9999"
+            step="0.001"
             class="repetitionInput"
             @input="handleInput"
             @blur="handleBlur"
@@ -43,16 +45,26 @@
   const handleInput = () => {
     const val = Number(inputValue.value);
     if (inputValue.value !== '' && !isNaN(val)) {
-      emit('update:modelValue', val);
+      const rounded = Math.round(val * 1000) / 1000;
+      emit('update:modelValue', rounded);
     }
   };
 
   const handleBlur = () => {
     const numericValue = Number(inputValue.value);
 
-    if (inputValue.value === '' || numericValue < 1) {
-      inputValue.value = 1;
-      emit('update:modelValue', 1);
+    if (inputValue.value === '' || numericValue < 0) {
+      inputValue.value = 0;
+      emit('update:modelValue', 0);
+    } else if (numericValue > 9999) {
+      inputValue.value = 9999;
+      emit('update:modelValue', 9999);
+    } else {
+      const rounded = Math.round(numericValue * 1000) / 1000;
+      if (rounded !== numericValue) {
+        inputValue.value = rounded;
+        emit('update:modelValue', rounded);
+      }
     }
   };
 
