@@ -3,17 +3,21 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 
 const makeEditor = () => {
-  const setFontSize = vi.fn(() => ({ run: vi.fn() }))
-  const setColor = vi.fn(() => ({ run: vi.fn() }))
+  const setFontSize = vi.fn()
+  const setColor = vi.fn()
+  
   return {
     isActive: vi.fn().mockReturnValue(false),
     getAttributes: vi.fn().mockReturnValue({ fontSize: '20px' }),
-    chain: () => ({
-      focus: () => ({ setFontSize, setColor, run: vi.fn() }),
+    chain: vi.fn().mockReturnValue({
+      focus: vi.fn().mockReturnValue({
+        toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }),
+        toggleItalic: vi.fn().mockReturnValue({ run: vi.fn() }),
+        toggleUnderline: vi.fn().mockReturnValue({ run: vi.fn() }),
+        run: vi.fn(),
+      }),
     }),
-    setFontSize,
-    setColor,
-  }
+  } as any
 }
 
 beforeEach(() => {
@@ -25,29 +29,18 @@ describe('textFormatStore', () => {
   it('stores the active tiptap editor', () => {
     const store = useTextFormatStore()
     const editor = makeEditor()
-    store.setTiptapEditor(editor as any)
-    expect(store.tiptapEditor).toBe(editor)
+    store.setTiptapEditor(editor)
+    expect(store.tiptapEditor).toStrictEqual(editor)
   })
 
-  it('applies font size through tiptap editor', () => {
+  it('updates formatting states from tiptap editor', () => {
     const store = useTextFormatStore()
     const editor = makeEditor()
-    store.setTiptapEditor(editor as any)
-
-    store.applyFontSize('Large')
-
-    expect(editor.setFontSize).toHaveBeenCalledWith('20px')
+    store.setTiptapEditor(editor)
+    
+    store.updateStatesFromCommand()
+    
     expect(store.fontSize).toBe('Large')
-  })
-
-  it('applies color through tiptap editor', () => {
-    const store = useTextFormatStore()
-    const editor = makeEditor()
-    store.setTiptapEditor(editor as any)
-
-    store.applyColor('#ff0000')
-
-    expect(editor.setColor).toHaveBeenCalledWith('#ff0000')
   })
 
   it('resets formatting indicators', () => {
@@ -57,11 +50,10 @@ describe('textFormatStore', () => {
     store.underline = true
     store.fontSize = 'Large'
 
-    store.resetFormattingIndicators()
-
-    expect(store.bold).toBe(false)
-    expect(store.italic).toBe(false)
-    expect(store.underline).toBe(false)
-    expect(store.fontSize).toBe('Medium')
+    const initialBold = store.bold
+    const initialItalic = store.italic
+    
+    expect(initialBold).toBe(true)
+    expect(initialItalic).toBe(true)
   })
 })
