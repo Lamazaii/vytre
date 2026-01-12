@@ -38,6 +38,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
+  margin-right: 60px;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, filter 0.2s ease;
 }
 

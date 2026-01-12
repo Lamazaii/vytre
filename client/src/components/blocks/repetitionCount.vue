@@ -87,6 +87,7 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  width: 100px;
 }
 
 .label {
@@ -130,7 +131,7 @@
 
 .repetitionInput {
   width: 100%;
-  max-width: 35px;
+  max-width: 80px;
   height: 100%;
   border: none;
   text-align: center;
