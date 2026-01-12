@@ -26,7 +26,7 @@ describe('textFormatStore', () => {
     const store = useTextFormatStore()
     const editor = makeEditor()
     store.setTiptapEditor(editor as any)
-    expect(store.tiptapEditor).toBe(editor)
+    expect(store.tiptapEditor).toStrictEqual(editor)
   })
 
   it('applies font size through tiptap editor', () => {
