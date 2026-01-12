@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
 import ReaderViewBlock from '../readerView/readerViewBlock.vue'
+import TitleBar from '../optionBar/titleBar.vue'
 
 const blocksStore = useBlocksStore()
 
@@ -8,19 +9,11 @@ const emit = defineEmits<{
   (e: 'selectMode', mode: 'editor' | 'menu'): void
 }>()
 
-const handleSave = async () => {
-  await blocksStore.saveDocument()
-}
-
-const handleToggleChange = (value: { left: boolean; right: boolean }) => {
-  if (value.left) {
-    emit('selectMode', 'menu')
-  }
-}
 </script>
 
 <template>
   <div id="app" class="app-lector">
+    <TitleBar :isReadOnly="true"/>
     <div class="readerWindowContent">
       <div class="blockHeader">
         <div class="headerNumber">N°</div>
@@ -97,6 +90,7 @@ const handleToggleChange = (value: { left: boolean; right: boolean }) => {
 .blockHeader {
   display: flex;
   justify-content: space-between;
+  padding: 0px 16px 0px 35px;
   font-weight: bold;
   font-size: 14px;
   color: #545454;
@@ -105,7 +99,6 @@ const handleToggleChange = (value: { left: boolean; right: boolean }) => {
 }
 
 .headerNumber {
-  margin-left: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,14 +106,13 @@ const handleToggleChange = (value: { left: boolean; right: boolean }) => {
 
 .headerDescription {
   margin-right: auto;
-  padding-left: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-left : 60px;
 }
 
 .headerRep {
-  margin-right: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
