@@ -2,8 +2,8 @@
   <div class="repetitionCountWrapper">
     <span class="label">RÉP.</span>
     <div class="repetitionCount">
-      <div class="repetitionBox">
-        <div class="repetitionInner">
+      <div class="repetitionBox" :style="{ width: boxWidth + 'px' }">
+        <div class="repetitionInner" :style="{ width: innerWidth + 'px' }">
           <input 
             v-model.number="inputValue"
             type="number" 
@@ -13,6 +13,7 @@
             class="repetitionInput"
             @input="handleInput"
             @blur="handleBlur"
+            ref="inputRef"
           />
         </div>
       </div>
@@ -22,7 +23,7 @@
 
 <script setup lang="ts">
   
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
 
   interface Props {
     modelValue?: number;
@@ -37,6 +38,16 @@
   }>();
 
   const inputValue = ref<number | string>(props.modelValue);
+  const inputRef = ref<HTMLInputElement | null>(null);
+
+  const inputWidth = computed(() => {
+    const valueStr = String(inputValue.value);
+    const length = valueStr.length;
+    return Math.max(40, Math.min(length * 12 + 16, 120));
+  });
+
+  const innerWidth = computed(() => inputWidth.value + 4);
+  const boxWidth = computed(() => innerWidth.value + 20);
 
   watch(() => props.modelValue, (newVal) => {
     inputValue.value = newVal;
@@ -92,7 +103,8 @@
 }
 
 .repetitionBox {
-  width: 60px;
+  min-width: 60px;
+  max-width: 100px;
   height: 60px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
@@ -100,10 +112,12 @@
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
+  transition: width 0.2s ease;
 }
 
 .repetitionInner {
-  width: 40px;
+  min-width: 40px;
+  max-width: 80px;
   height: 30px;
   border: 2px solid #e0e0e0;
   border-radius: 4px;
@@ -111,10 +125,12 @@
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
+  transition: width 0.2s ease;
 }
 
 .repetitionInput {
   width: 100%;
+  max-width: 35px;
   height: 100%;
   border: none;
   text-align: center;
