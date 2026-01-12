@@ -64,9 +64,9 @@
   const handleBlur = () => {
     const numericValue = Number(inputValue.value);
 
-    if (inputValue.value === '' || numericValue < 0) {
-      inputValue.value = 0;
-      emit('update:modelValue', 0);
+    if (inputValue.value === '' || numericValue < 0.001) {
+      inputValue.value = 1;
+      emit('update:modelValue', 1);
     } else if (numericValue > 9999) {
       inputValue.value = 9999;
       emit('update:modelValue', 9999);
