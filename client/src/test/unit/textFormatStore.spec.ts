@@ -26,34 +26,70 @@ beforeEach(() => {
 })
 
 describe('textFormatStore', () => {
-  it('stores the active tiptap editor', () => {
-    const store = useTextFormatStore()
-    const editor = makeEditor()
-    store.setTiptapEditor(editor)
-    expect(store.tiptapEditor).toStrictEqual(editor)
+  describe('Editor Management', () => {
+    it('stores the active tiptap editor', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      expect(store.tiptapEditor).toStrictEqual(editor)
+    })
+
+    it('clears editor when null is passed', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      store.setTiptapEditor(null)
+      expect(store.tiptapEditor).toBeNull()
+    })
   })
 
-  it('updates formatting states from tiptap editor', () => {
-    const store = useTextFormatStore()
-    const editor = makeEditor()
-    store.setTiptapEditor(editor)
-    
-    store.updateStatesFromCommand()
-    
-    expect(store.fontSize).toBe('Large')
+  describe('Formatting State', () => {
+    it('initializes with default formatting state', () => {
+      const store = useTextFormatStore()
+      expect(store.bold).toBe(false)
+      expect(store.italic).toBe(false)
+      expect(store.underline).toBe(false)
+      expect(store.fontSize).toBe('Medium')
+    })
+
+    it('updates formatting states from tiptap editor', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Large')
+    })
+
+    it('maps small font size correctly', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.getAttributes = vi.fn().mockReturnValue({ fontSize: '12px' })
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Small')
+    })
   })
 
-  it('resets formatting indicators', () => {
-    const store = useTextFormatStore()
-    store.bold = true
-    store.italic = true
-    store.underline = true
-    store.fontSize = 'Large'
+  describe('Active Element', () => {
+    it('sets active element', () => {
+      const store = useTextFormatStore()
+      const mockEl = document.createElement('div')
+      store.setActiveEl(mockEl)
+      expect(store.activeEl).toBe(mockEl)
+    })
+  })
 
-    const initialBold = store.bold
-    const initialItalic = store.italic
-    
-    expect(initialBold).toBe(true)
-    expect(initialItalic).toBe(true)
+  describe('Selection Handling', () => {
+    it('saves selection without errors', () => {
+      const store = useTextFormatStore()
+      const mockRange = new Range()
+      const mockSel = {
+        rangeCount: 1,
+        getRangeAt: vi.fn().mockReturnValue(mockRange),
+      } as any
+      
+      vi.spyOn(document, 'getSelection').mockReturnValue(mockSel)
+      expect(() => store.saveSelection()).not.toThrow()
+    })
   })
 })
