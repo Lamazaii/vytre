@@ -127,6 +127,7 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
 </script>
 
 <template>
+  <div id="app" class="app-editor">
     <header>
       <div class="OptionBarFixed">
         <TitleBar/>
@@ -182,6 +183,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
     <DeletePopup/>
     <ErrorPopup/>
     <CropPopup @crop="handleCropComplete" />
+
+  </div>
 </template>
 
 <style scoped>
