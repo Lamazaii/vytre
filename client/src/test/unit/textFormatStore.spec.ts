@@ -3,8 +3,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useTextFormatStore } from '../../stores/textFormatStore'
 
 const makeEditor = () => {
-  const setFontSize = vi.fn()
-  const setColor = vi.fn()
+  const setFontSize = vi.fn().mockReturnValue({ run: vi.fn() })
+  const setColor = vi.fn().mockReturnValue({ run: vi.fn() })
   
   return {
     isActive: vi.fn().mockReturnValue(false),
@@ -14,6 +14,8 @@ const makeEditor = () => {
         toggleBold: vi.fn().mockReturnValue({ run: vi.fn() }),
         toggleItalic: vi.fn().mockReturnValue({ run: vi.fn() }),
         toggleUnderline: vi.fn().mockReturnValue({ run: vi.fn() }),
+        setColor: setColor,
+        setFontSize: setFontSize,
         run: vi.fn(),
       }),
     }),
@@ -90,6 +92,179 @@ describe('textFormatStore', () => {
       
       vi.spyOn(document, 'getSelection').mockReturnValue(mockSel)
       expect(() => store.saveSelection()).not.toThrow()
+    })
+
+    it('handles missing selection gracefully', () => {
+      const store = useTextFormatStore()
+      vi.spyOn(document, 'getSelection').mockReturnValue(null)
+      expect(() => store.saveSelection()).not.toThrow()
+    })
+
+    it('restores selection without errors', () => {
+      const store = useTextFormatStore()
+      expect(() => store.restoreSelection()).not.toThrow()
+    })
+  })
+
+  describe('Formatting Actions', () => {
+    it('applies bold formatting', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      
+      store.applyBold()
+      
+      expect(editor.chain).toHaveBeenCalled()
+    })
+
+    it('applies italic formatting', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      
+      store.applyItalic()
+      
+      expect(editor.chain).toHaveBeenCalled()
+    })
+
+    it('applies underline formatting', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      
+      store.applyUnderline()
+      
+      expect(editor.chain).toHaveBeenCalled()
+    })
+
+    it('applies color formatting', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      
+      store.applyColor('#FF0000')
+      
+      expect(editor.chain).toHaveBeenCalled()
+      // Verify the setColor method would be called in the chain
+    })
+
+    it('applies font size', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      store.setTiptapEditor(editor)
+      
+      store.applyFontSize('Large')
+      
+      expect(editor.chain).toHaveBeenCalled()
+    })
+
+    it('handles formatting without editor', () => {
+      const store = useTextFormatStore()
+      
+      expect(() => store.applyBold()).not.toThrow()
+      expect(() => store.applyItalic()).not.toThrow()
+      expect(() => store.applyUnderline()).not.toThrow()
+    })
+  })
+
+  describe('Font Size Detection', () => {
+    it('detects medium font size', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.getAttributes = vi.fn().mockReturnValue({ fontSize: '16px' })
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Medium')
+    })
+
+    it('handles missing fontSize attribute', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.getAttributes = vi.fn().mockReturnValue({})
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Medium')
+    })
+
+    it('detects small font size', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.getAttributes = vi.fn().mockReturnValue({ fontSize: '12px' })
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Small')
+    })
+
+    it('detects large font size', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.getAttributes = vi.fn().mockReturnValue({ fontSize: '20px' })
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.fontSize).toBe('Large')
+    })
+  })
+
+  describe('Formatting State Updates', () => {
+    it('updates bold state from editor', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.isActive = vi.fn((format: string) => format === 'bold')
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.bold).toBe(true)
+    })
+
+    it('updates italic state from editor', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.isActive = vi.fn((format: string) => format === 'italic')
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.italic).toBe(true)
+    })
+
+    it('updates underline state from editor', () => {
+      const store = useTextFormatStore()
+      const editor = makeEditor()
+      editor.isActive = vi.fn((format: string) => format === 'underline')
+      store.setTiptapEditor(editor)
+      store.updateStatesFromCommand()
+      expect(store.underline).toBe(true)
+    })
+  })
+
+  describe('Reset Formatting', () => {
+    it('resets all formatting indicators to defaults', () => {
+      const store = useTextFormatStore()
+      store.bold = true
+      store.italic = true
+      store.underline = true
+      store.fontSize = 'Large'
+
+      store.resetFormattingIndicators()
+
+      expect(store.bold).toBe(false)
+      expect(store.italic).toBe(false)
+      expect(store.underline).toBe(false)
+      expect(store.fontSize).toBe('Medium')
+    })
+  })
+
+  describe('Active Element', () => {
+    it('stores active element', () => {
+      const store = useTextFormatStore()
+      const element = document.createElement('div')
+      store.setActiveEl(element)
+      expect(store.activeEl).toBe(element)
+    })
+
+    it('clears active element when null', () => {
+      const store = useTextFormatStore()
+      const element = document.createElement('div')
+      store.setActiveEl(element)
+      store.setActiveEl(null)
+      expect(store.activeEl).toBeNull()
     })
   })
 })
