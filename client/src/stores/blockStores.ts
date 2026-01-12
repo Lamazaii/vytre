@@ -35,7 +35,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   const canAdd = computed(() => {
     if (blocks.value.length === 0) return true
     const last = blocks.value[blocks.value.length - 1]
-    const hasText = !!last?.modified
+    const hasText = last?.text ? !isContentEmpty(last.text) : false
     const hasImages = (last?.images?.length ?? 0) > 0
     return hasText || hasImages
   })
