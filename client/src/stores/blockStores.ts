@@ -112,7 +112,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
-        modified: false,
+        modified: true,
         textZones: typeof block.textZones === 'string' 
           ? JSON.parse(block.textZones || '[]')
           : (block.textZones || [])
