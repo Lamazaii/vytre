@@ -92,6 +92,7 @@ function handleClose() {
 }
 
 .closeButton:hover {
+  color:#333333
 
 }
 
