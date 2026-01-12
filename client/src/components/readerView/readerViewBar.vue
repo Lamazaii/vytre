@@ -1,41 +1,45 @@
 <template>
     <div class="readerViewBar">
-      <div class="toogleGroupContainer">
-        <IconToggleGroup
-          :personIcon="personEditIcon"
-          :visibilityIcon="visibilityIcon"
-          :leftActive="!popupStore.isReaderOpen"
-          :rightActive="popupStore.isReaderOpen"
-          @change="handleToggleChange"
-        />
-      </div>
-
-        <div class="SaveButtonSpacer">
-          <button class="saveButton" type="button" @click="emit('save')">
-                <img class="saveButtonIcon" :src="floppyDiskIcon" alt="Enregistrer" />
-                <span class="saveButtonLabel" >ENREGISTRER</span>
-            </button>
+      <div class="leftSection"></div>
+      <h2 class="title">Prévisualisation du mode lecteur</h2>
+      <div class="rightSection">
+        <div class="toogleGroupContainer">
+          <IconToggleGroup
+            :personIcon="personEditIcon"
+            :visibilityIcon="visibilityIcon"
+            :leftActive="!popupStore.isReaderOpen"
+            :rightActive="popupStore.isReaderOpen"
+            @change="handleToggleChange"
+          />
         </div>
+        <button class="closeButton" @click="handleClose" title="Fermer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
+    
 
 </template>
 
 <script setup lang="ts">
-import floppyDiskIcon from "../../assets/optionBarImage/floppyDisk.svg";
 import visibilityIcon from "../../assets/optionBarImage/visibility.svg";
 import personEditIcon from "../../assets/optionBarImage/personEdit.svg";
 import IconToggleGroup from "../optionBar/iconToggleGroup.vue";
 import { usePopupStore } from '../../stores/popupStore'
 
 const popupStore = usePopupStore()
-const emit = defineEmits<{
-  save: []
-}>()
+
 
 function handleToggleChange(value: { left: boolean; right: boolean }) {
   if (value.left) {
     popupStore.closeReader()
   }
+}
+
+function handleClose() {
+  popupStore.closeReader()
 }
 </script>
 
@@ -44,45 +48,55 @@ function handleToggleChange(value: { left: boolean; right: boolean }) {
 .readerViewBar {
   height: 54px;
   width: 911px;
-  background-color: #f9f9f9;
+  background-color: #FFFFFF;
   display: flex;
-  justify-content: right;
+  justify-content: space-between;
   align-items: center;
-  gap : 50px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
-.saveButton {
-  display: inline-flex;
-  margin-right: 10px;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: #dc2626;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.4px;
-  cursor: pointer;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
-  transition: filter 0.15s ease;
+.leftSection {
+  flex: 1;
 }
 
-.saveButtonIcon {
-  width: 18px;
-  height: 18px;
-  filter: brightness(0) invert(1);
-}
-
-.saveButtonLabel {
-  font-family: 'Segoe UI', sans-serif;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
+.title {
+  font-size: 17px;
+  color: #333333;
+  margin: 0;
   text-align: center;
+  flex: 1;
+}
+
+.rightSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 50px;
+}
+
+.closeButton {
+  background-color: #dc2626;
+  border: none;
+  cursor: pointer;
+  width: 36px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+
+}
+
+.closeButton:active {
+  background-color: #bd2130;
 }
 
 </style>
