@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { useBlocksStore } from '../../stores/blockStores'
 import BlockWrapper from '../../components/blocks/BlockWrapper.vue'
 import type { Block } from '../../types/Blocks'
 
@@ -211,5 +213,59 @@ describe('BlockWrapper.vue', () => {
       },
     })
     expect(wrapper.find('.rep-count').exists()).toBe(true)
+  })
+
+  it('met à jour la description via EditableBlock et appelle le store', async () => {
+    const wrapper = mount(BlockWrapper, {
+      props: {
+        block: { ...mockBlock },
+        blockIndex: 0,
+        active: false,
+        canDelete: true,
+      },
+      global: {
+        plugins: [createTestingPinia({ stubActions: true })],
+        stubs: {
+          StepNumber: { template: '<div></div>' },
+          RepetitionCount: { template: '<div></div>' },
+          EditableBlock: {
+            template: '<div class="editable-block" @click="$emit(\'update:description\', \'Nouvelle desc\')"></div>',
+          },
+        },
+      },
+    })
+
+    const store = useBlocksStore()
+    const editable = wrapper.find('.editable-block')
+    await editable.trigger('click')
+
+    expect(store.updateBlockDescription).toHaveBeenCalledWith(0, 'Nouvelle desc')
+    expect(wrapper.props('block').text).toBe('Nouvelle desc')
+  })
+
+  it('met à jour les images via EditableBlock', async () => {
+    const wrapper = mount(BlockWrapper, {
+      props: {
+        block: { ...mockBlock, images: [] },
+        blockIndex: 1,
+        active: false,
+        canDelete: true,
+      },
+      global: {
+        plugins: [createTestingPinia({ stubActions: true })],
+        stubs: {
+          StepNumber: { template: '<div></div>' },
+          RepetitionCount: { template: '<div></div>' },
+          EditableBlock: {
+            template: '<div class="editable-block" @click="$emit(\'update:images\', [{ imagePath: \'img.png\' }])"></div>',
+          },
+        },
+      },
+    })
+
+    const editable = wrapper.find('.editable-block')
+    await editable.trigger('click')
+
+    expect(wrapper.props('block').images?.[0]?.imagePath).toBe('img.png')
   })
 })

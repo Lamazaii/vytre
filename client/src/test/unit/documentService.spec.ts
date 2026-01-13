@@ -137,4 +137,71 @@ describe('documentService', () => {
       await expect(documentService.delete(999)).rejects.toThrow()
     })
   })
+
+  describe('getAll', () => {
+    it('fetches all documents successfully', async () => {
+      const mockDocuments = [
+        { id: 1, title: 'Doc 1', version: '1.0', blocks: [], createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, title: 'Doc 2', version: '1.0', blocks: [], createdAt: new Date(), updatedAt: new Date() },
+      ]
+
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockDocuments,
+      })
+
+      const result = await documentService.getAll()
+      
+      expect(result).toEqual(mockDocuments)
+      expect(result).toHaveLength(2)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+
+    it('throws error when fetching all documents fails', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      })
+
+      await expect(documentService.getAll()).rejects.toThrow('Erreur lors de la récupération des documents')
+    })
+
+    it('returns empty array when no documents exist', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+
+      const result = await documentService.getAll()
+      
+      expect(result).toEqual([])
+      expect(result).toHaveLength(0)
+    })
+  })
+
+  describe('error handling', () => {
+    it('throws specific error message from API on create failure', async () => {
+      const errorMessage = 'Document title is required'
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: errorMessage }),
+      })
+
+      await expect(documentService.create({ title: '', version: '1.0', blocks: [] }))
+        .rejects.toThrow(errorMessage)
+    })
+
+    it('throws default error message when API error has no message', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({}),
+      })
+
+      await expect(documentService.create({ title: 'Test', version: '1.0', blocks: [] }))
+        .rejects.toThrow('Erreur lors de la création du document')
+    })
+  })
 })

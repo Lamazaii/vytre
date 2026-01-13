@@ -1,11 +1,22 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Menu from '../../components/applications/menu.vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+
+// Mock du fetch global
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve([]),
+  })
+) as any
 
 describe('Menu.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // Réinitialiser le mock fetch
+    vi.clearAllMocks()
   })
 
   // Test rendering
@@ -52,19 +63,136 @@ describe('Menu.vue', () => {
     }
   })
 
-  // Test search input exists
-  it('has search input for documents', () => {
-    const wrapper = mount(Menu)
-    expect(wrapper.find('.searchInput').exists()).toBe(true)
+  it('appelle loadAllDocuments au montage', () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              allDocuments: [],
+              loadingDocuments: false,
+              documentsError: null,
+            },
+          },
+        })],
+      },
+    })
+
+    const store: any = wrapper.vm.store
+    expect(store.loadAllDocuments).toHaveBeenCalledTimes(1)
   })
 
-  // Test search functionality
-  it('filters documents based on search query', async () => {
-    const wrapper = mount(Menu)
-    const searchInput = wrapper.find('.searchInput')
-    
-    await searchInput.setValue('test')
-    
-    expect((searchInput.element as HTMLInputElement).value).toBe('test')
+  it('affiche le message de chargement', () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              loadingDocuments: true,
+              allDocuments: [],
+              documentsError: null,
+            },
+          },
+        })],
+      },
+    })
+
+    expect(wrapper.find('.loadingMessage').exists()).toBe(true)
+  })
+
+  it('affiche le message d’erreur', () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              loadingDocuments: false,
+              allDocuments: [],
+              documentsError: 'Oups',
+            },
+          },
+        })],
+      },
+    })
+
+    expect(wrapper.find('.errorMessage').text()).toContain('Oups')
+  })
+
+  it('affiche le message vide quand aucun document', () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              loadingDocuments: false,
+              allDocuments: [],
+              documentsError: null,
+            },
+          },
+        })],
+      },
+    })
+
+    expect(wrapper.find('.emptyMessage').exists()).toBe(true)
+  })
+
+  it('affiche la liste et les actions sur les documents', async () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              loadingDocuments: false,
+              documentsError: null,
+              allDocuments: [
+                { id: 1, title: 'Doc A', version: '1', blocks: [] },
+                { id: 2, title: 'Doc B', version: '1', blocks: [] },
+              ],
+            },
+          },
+        })],
+      },
+    })
+
+    expect(wrapper.findAll('.documentCard')).toHaveLength(2)
+
+    const store: any = wrapper.vm.store
+    const editBtn = wrapper.find('.actionButton.edit')
+    await editBtn.trigger('click')
+
+    expect(store.loadDocument).toHaveBeenCalledWith(1)
+    expect(wrapper.emitted('selectMode')?.[0]).toEqual(['editor'])
+  })
+
+  it('filtre les documents via la recherche', async () => {
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              loadingDocuments: false,
+              documentsError: null,
+              allDocuments: [
+                { id: 1, title: 'Alpha', version: '1', blocks: [] },
+                { id: 2, title: 'Beta', version: '1', blocks: [] },
+              ],
+            },
+          },
+        })],
+      },
+    })
+
+    const input = wrapper.find('.searchInput')
+    await input.setValue('alpha')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.documentCard')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Alpha')
   })
 })
