@@ -34,6 +34,7 @@ const emit = defineEmits<{
 </template>
 
 <style>
+@import '../../assets/styles/readerShared.css';
 
 .readerViewBar {
   height: 54px;
@@ -80,41 +81,10 @@ const emit = defineEmits<{
 }
 
 .readerWindowContent {
-  height: calc(772px - 54px);
+  height: 100%;
   width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   background-color: #E5E7EB;
-}
-
-.blockHeader {
-  display: flex;
-  justify-content: space-between;
-  padding: 0px 16px 0px 35px;
-  font-weight: bold;
-  font-size: 14px;
-  color: #545454;
-  height: 54px;
-  background-color: #E5E7EB;
-}
-
-.headerNumber {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.headerDescription {
-  margin-right: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-left : 60px;
-}
-
-.headerRep {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 </style>

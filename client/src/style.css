@@ -14,13 +14,12 @@
   justify-content: flex-start;
   background-color: #F3F4F6;
   box-sizing: border-box;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
 .app-menu, .app-editor {
   max-width: 1468px;
   width: 1468px;
+  height : 717px;
   overflow-y: scroll;
 }
 

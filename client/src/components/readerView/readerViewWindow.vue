@@ -47,6 +47,8 @@ const closeReaderView = () => {
 </script>
 
 <style scoped>
+@import '../../assets/styles/readerShared.css';
+
 .overlay {
     position: fixed;
     inset: 0;
@@ -81,35 +83,4 @@ const closeReaderView = () => {
     overflow-y: auto;
     overflow-x: hidden;
 }
-.blockHeader {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    font-size: 14px;
-    color: #545454;
-    height: 54px;
-}
-
-.headerNumber {
-    margin-left: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.headerDescription {
-    margin-right: auto;
-    padding-left: 90px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.headerRep {
-    margin-right: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 </style>

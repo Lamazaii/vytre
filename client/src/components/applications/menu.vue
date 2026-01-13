@@ -106,6 +106,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
 .menuContainer {
   width: 100%;
   background-color: #F3F4F6;
