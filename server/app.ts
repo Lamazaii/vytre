@@ -8,8 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 // eslint-disable-next-line n/no-extraneous-import
 import swaggerJsdoc from 'swagger-jsdoc';
 
-import indexRouter from './src/routes/index.router';
-import usersRouter from './src/routes/users.router';
+import documentsRouter from './src/routes/documents.router';
 
 const app = express();
 
@@ -49,8 +48,7 @@ app.use(cookieParser());
 // Swagger documentation route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/documents', documentsRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
