@@ -1,21 +1,33 @@
 <template>
-  <div class="titleBar">
-    <div class="titleBarContent">
-      <h1 class="SimpleBar">|</h1>
-      <input 
-        v-model="blocksStore.documentTitle" 
-        class="documentTitle" 
-        type="text" 
-        placeholder="Titre du document"
+  <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly }">
+
+    <div class = "SimpleBar"></div>
+
+    <div class="inputZone">
+      <input
+      maxlength="80"
+      id="documentTitleInput"
+      name="documentTitle"
+      v-model="blocksStore.documentTitle" 
+      :class="{ 'documentTitle--readonly': isReadOnly }"
+      type="text" 
+      placeholder="Titre du document"
+      :readonly="isReadOnly"
+      :disabled="isReadOnly"
       @keydown.enter="handleEnter" 
       @focus="handleFocus"
       />
     </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
+
+defineProps<{
+  isReadOnly?: boolean
+}>()
 
 const blocksStore = useBlocksStore()
 
@@ -39,50 +51,73 @@ function handleFocus(event: Event) {
 .titleBar {
   background-color: #000000;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   height: 45px;
   width: 100%;
   max-width: 1468px;
-  z-index: 1000;
+  gap : 5px;
 }
 
-.titleBarContent {
-  display: inline-flex;
+.titleBar--readonly {
+  height: 35px;
+}
+
+.titleBar--readonly .titleBarContent {
+  max-height: 35px;
+}
+
+.inputZone {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  max-height: 45px;
+  width: auto;
 }
 
-.SimpleBar {
-  font-size: 24px;
-  font-weight: 900;
-  color: #E30613;
-  display: block;
-  line-height: 1;
-  height: 29px;
+.SimpleBar{
+  background-color :#dc2626;
+  height : 26px;
+  width : 4px;
 }
 
-.documentTitle {
-  margin: 0;
-  padding: 4px 8px;
+.titleBar--readonly .SimpleBar {
+  font-size: 16px;
+  height: 20px;
+  width: 3px;
+  display:flex;
+  align-items: center;
+}
+
+#documentTitleInput {
   font-weight: 300;
   color: #ffffff;
   font-size: 16px;
   line-height: 1;
   background: transparent;
   border: none;
-  outline: none;
   font-family: inherit;
-  min-width: 200px;
-  width: auto;
   border-radius: 4px;
   box-sizing: border-box;
+  width: auto;  
+  min-width: 100px; 
+  max-width: 100%; 
+  field-sizing: content;
+}
+
+.titleBar--readonly .documentTitle,
+#documentTitleInput--readonly {
+  font-size: 13px;
+  min-width: auto;
+  cursor: default;
 }
 
 .documentTitle:focus {
   background: rgba(255, 255, 255, 0.1);
   border : 2px solid #E30613;
+}
+
+.documentTitle--readonly:focus {
+  background: transparent;
+  border: none;
 }
 
 </style>
