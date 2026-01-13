@@ -8,7 +8,7 @@ const blockSchema = z.object({
   id: z.number().optional(),
   text: z.string().optional().default(''),
   step: z.number().optional(),
-  nbOfRepeats: z.number().int().min(1, "Le nombre de répétitions doit être au moins 1").optional().default(1),
+  nbOfRepeats: z.number().optional().default(1),
   images: z.array(imageSchema).optional().default([]),
 });
 

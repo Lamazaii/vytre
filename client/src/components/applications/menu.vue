@@ -1,4 +1,5 @@
 <template>
+  <div id="app" class="app-menu">
   <div class="menuContainer">
     <div class="headerContent">
       <div class="titleSection">
@@ -40,6 +41,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
@@ -88,6 +90,8 @@ function formatDate(dateString: Date): string {
 
 function openDocument(doc: Document) {
   console.log('Ouverture en lecture:', doc)
+  store.loadDocument(doc.id!)
+  emit('selectMode', 'reader')
 }
 
 function editDocument(doc: Document) {
@@ -104,7 +108,7 @@ onMounted(() => {
 <style scoped>
 .menuContainer {
   width: 100%;
-  background-color: #f8f8f8;
+  background-color: #F3F4F6;
   padding: 0;
   min-height: 717px;
 }
