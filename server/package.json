@@ -6,7 +6,9 @@
     "scripts": {
         "dev": "nodemon --exec ts-node ./bin/www",
         "build": "tsc",
-        "start": "node dist/bin/www.js"
+        "start": "node dist/bin/www.js",
+        "test": "jest",
+        "test:coverage": "jest --coverage"
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
@@ -34,13 +36,17 @@
         "@types/mssql": "^9.1.8",
         "@types/node": "^22.19.3",
         "@types/node-sass-middleware": "^0.0.35",
+        "@types/supertest": "^6.0.3",
         "@types/swagger-jsdoc": "^6.0.4",
         "@types/swagger-ui-express": "^4.1.8",
         "eslint": "^9.39.1",
         "eslint-plugin-n": "^17.23.1",
+        "jest": "^30.2.0",
         "jiti": "^2.6.1",
         "nodemon": "^3.1.11",
         "prisma": "^5.22.0",
+        "supertest": "^7.2.2",
+        "ts-jest": "^29.4.6",
         "ts-node": "^10.9.2",
         "tslib": "^2.8.0",
         "typescript": "^5.9.3",

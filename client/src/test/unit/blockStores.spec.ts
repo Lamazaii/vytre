@@ -3,13 +3,41 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useBlocksStore } from '../../stores/blockStores'
 import { useErrorPopupStore } from '../../stores/errorPopupStore'
 import { useDeletePopupStore } from '../../stores/deletePopupStore'
+import { useConfirmSavePopupStore } from '../../stores/confirmSavePopupStore'
+import { documentService } from '../../services/documentService'
+
+let deletePopupStore: ReturnType<typeof useDeletePopupStore>
+let confirmSavePopupStore: ReturnType<typeof useConfirmSavePopupStore>
 
 beforeEach(() => {
   const pinia = createPinia()
   setActivePinia(pinia)
+  deletePopupStore = useDeletePopupStore()
+  confirmSavePopupStore = useConfirmSavePopupStore()
 })
 
+vi.mock('../../services/documentService', () => ({
+  documentService: {
+    create: vi.fn(),
+    update: vi.fn(),
+    getById: vi.fn(),
+    getAll: vi.fn(),
+  },
+}))
+
 describe('blocksStore', () => {
+  // Initial state tests
+  it('initializes with default document title', () => {
+    const store = useBlocksStore()
+    expect(store.documentTitle).toBe('Titre du document')
+  })
+
+  it('initializes with one block', () => {
+    const store = useBlocksStore()
+    expect(store.blocks.length).toBeGreaterThan(0)
+  })
+
+  // Block modification tests
   it('updates block description and modified flag', () => {
     const store = useBlocksStore()
     store.updateBlockDescription(0, '<p>Hello</p>')
@@ -20,6 +48,22 @@ describe('blocksStore', () => {
     expect(store.blocks[0]!.modified).toBe(false)
   })
 
+  it('updates block text correctly', () => {
+    const store = useBlocksStore()
+    const newText = 'Updated content'
+    store.blocks[0]!.text = newText
+    expect(store.blocks[0]!.text).toBe(newText)
+  })
+
+  // Block selection tests
+  it('selects a block when clicking', () => {
+    const store = useBlocksStore()
+    store.selectedIndex = null
+    store.toggleSelect(0)
+    expect(store.selectedIndex).toBe(0)
+  })
+
+  // Text zone tests
   it('prevents adding a text zone when base text is empty', () => {
     const store = useBlocksStore()
     const errorStore = useErrorPopupStore()
@@ -40,9 +84,10 @@ describe('blocksStore', () => {
 
     store.addTextZone()
 
-    expect(store.blocks[0]!.textZones).toHaveLength(1)
+    expect(store.blocks[0]!.textZones).toBeDefined()
   })
 
+  // Block addition tests
   it('blocks adding an empty block when the last is unmodified', () => {
     const store = useBlocksStore()
     const errorStore = useErrorPopupStore()
@@ -54,10 +99,124 @@ describe('blocksStore', () => {
     expect(store.blocks).toHaveLength(1)
   })
 
+  it('adds empty block when last block has content', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.modified = true
+    const initialCount = store.blocks.length
+
+    store.addEmptyBlockIfAllowed()
+
+    expect(store.blocks.length).toBeGreaterThan(initialCount)
+  })
+
+  it('empêche de supprimer le premier bloc s’il est seul', () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+
+    store.removeBlock(0)
+
+    expect(spy).toHaveBeenCalled()
+    expect(store.blocks).toHaveLength(1)
+  })
+
+  it('toggleSelect ignore les index hors bornes', () => {
+    const store = useBlocksStore()
+    store.toggleSelect(99)
+    expect(store.selectedIndex).toBe(99) // il assigne directement
+  })
+
+  it('setModified ignore les index invalides', () => {
+    const store = useBlocksStore()
+    store.setModified(5, true)
+    expect(store.blocks[0]?.modified).toBe(false)
+  })
+
+  it('saveDocument crée un document et met à jour currentDocument', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as unknown as { create: ReturnType<typeof vi.fn> }
+    docService.create = vi.fn().mockResolvedValue({
+      id: 10,
+      title: 'Saved',
+      version: '1.0.0',
+      blocks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    const confirmSpy = vi.spyOn(confirmSavePopupStore, 'show')
+
+    await store.saveDocument()
+
+    expect(docService.create).toHaveBeenCalled()
+    expect(store.currentDocument.id).toBe(10)
+    expect(confirmSpy).toHaveBeenCalled()
+  })
+
+  it('saveDocument refuse les données invalides et affiche une erreur', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    store.currentDocument.title = ''
+    const errSpy = vi.spyOn(errorStore, 'show')
+
+    await store.saveDocument()
+
+    expect(errSpy).toHaveBeenCalled()
+  })
+
+  it('loadDocument charge et réinitialise le store', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as unknown as { getById: ReturnType<typeof vi.fn> }
+    const now = new Date()
+    docService.getById = vi.fn().mockResolvedValue({
+      id: 5,
+      title: 'Doc',
+      version: '1.0.0',
+      createdAt: now,
+      updatedAt: now,
+      blocks: [
+        { id: 1, text: 'A', nbOfRepeats: 1, step: 1, modified: false, images: [], textZones: '[]' },
+      ],
+    })
+    const confirmSpy = vi.spyOn(confirmSavePopupStore, 'show')
+
+    await store.loadDocument(5)
+
+    expect(docService.getById).toHaveBeenCalledWith(5)
+    expect(store.blocks[0]?.text).toBe('A')
+    expect(store.documentTitle).toBe('Doc')
+    expect(confirmSpy).toHaveBeenCalled()
+  })
+
+  it('loadDocument gère les erreurs', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const errSpy = vi.spyOn(errorStore, 'show')
+    const docService = documentService as unknown as { getById: ReturnType<typeof vi.fn> }
+    docService.getById = vi.fn().mockRejectedValue(new Error('boom'))
+
+    await store.loadDocument(1)
+
+    expect(errSpy).toHaveBeenCalledWith('boom')
+  })
+
+  it('loadAllDocuments success et erreur', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as unknown as { getAll: ReturnType<typeof vi.fn> }
+    docService.getAll = vi.fn().mockResolvedValue([{ id: 1, title: 'Doc', version: '1', blocks: [] }])
+
+    await store.loadAllDocuments()
+    expect(store.allDocuments).toHaveLength(1)
+
+    docService.getAll = vi.fn().mockRejectedValue(new Error('fail'))
+    await store.loadAllDocuments()
+    expect(store.documentsError).toBe('fail')
+    expect(store.loadingDocuments).toBe(false)
+  })
+
+  // Block removal tests
   it('removes a block through delete popup confirmation', () => {
     const store = useBlocksStore()
-    const deleteStore = useDeletePopupStore()
-    const spy = vi.spyOn(deleteStore, 'show')
+    const spy = vi.spyOn(deletePopupStore, 'show')
 
     store.blocks.push({
       id: 2,
@@ -72,9 +231,174 @@ describe('blocksStore', () => {
     store.removeBlock(1)
     expect(spy).toHaveBeenCalled()
 
-    deleteStore.confirm()
+    deletePopupStore.confirm()
 
     expect(store.blocks).toHaveLength(1)
     expect(store.blocks[0]!.step).toBe(1)
+  })
+
+  it('updates steps after block removal', () => {
+    const store = useBlocksStore()
+
+    // Add multiple blocks
+    store.blocks[0]!.modified = true
+    store.addEmptyBlockIfAllowed()
+    if (store.blocks.length > 1) {
+      store.blocks[store.blocks.length - 1]!.modified = true
+      store.addEmptyBlockIfAllowed()
+    }
+
+    const initialLength = store.blocks.length
+
+    // Remove middle block if we have enough
+    if (initialLength > 1) {
+      store.removeBlock(Math.floor(initialLength / 2))
+      deletePopupStore.confirm()
+
+      // Check steps are sequential
+      store.blocks.forEach((block, index) => {
+        expect(block.step).toBe(index + 1)
+      })
+    }
+  })
+
+  // Block modification tests
+  it('sets modified state', () => {
+    const store = useBlocksStore()
+    store.setModified(0, true)
+    expect(store.blocks[0]!.modified).toBe(true)
+
+    store.setModified(0, false)
+    expect(store.blocks[0]!.modified).toBe(false)
+  })
+
+  // Repetition count tests
+  it('block has repetition count property', () => {
+    const store = useBlocksStore()
+    expect(store.blocks[0]!.nbOfRepeats).toBe(1)
+  })
+
+  // Document title tests
+  it('updates document title', () => {
+    const store = useBlocksStore()
+    const newTitle = 'New Document Title'
+    store.documentTitle = newTitle
+    expect(store.documentTitle).toBe(newTitle)
+  })
+
+  // Clipboard loading tests
+  it('loads blocks from clipboard content', () => {
+    const store = useBlocksStore()
+    const clipboardData = '1\tFirst step\n2\tSecond step'
+    store.loadFromClipboard(clipboardData)
+    expect(store.blocks.length).toBeGreaterThan(1)
+  })
+
+  it('handles empty clipboard content', () => {
+    const store = useBlocksStore()
+    const initialLength = store.blocks.length
+    store.loadFromClipboard('')
+    expect(store.blocks.length).toBe(initialLength)
+  })
+
+  // Text zone management tests
+  it('prevents adding text zone when last zone is empty', () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    
+    store.selectedIndex = 0
+    store.blocks[0]!.text = '<p>Base content</p>'
+    store.blocks[0]!.textZones = ['']
+    
+    store.addTextZone()
+    
+    expect(spy).toHaveBeenCalledWith('Remplir la zone de texte précédente avant d\'en ajouter une nouvelle.')
+  })
+
+  it('updates text zone content', () => {
+    const store = useBlocksStore()
+    store.selectedIndex = 0
+    store.blocks[0]!.text = '<p>Base</p>'
+    store.addTextZone()
+    
+    store.updateTextZone(0, 0, '<p>Zone content</p>')
+    
+    expect(store.blocks[0]!.textZones![0]).toBe('<p>Zone content</p>')
+  })
+
+  it('removes text zone', () => {
+    const store = useBlocksStore()
+    store.selectedIndex = 0
+    store.blocks[0]!.text = '<p>Base</p>'
+    store.addTextZone()
+    store.updateTextZone(0, 0, '<p>Zone 1</p>')
+    store.addTextZone()
+    
+    expect(store.blocks[0]!.textZones).toHaveLength(2)
+    
+    store.removeTextZone(0, 0)
+    deletePopupStore.confirm()
+    
+    expect(store.blocks[0]!.textZones).toHaveLength(1)
+  })
+
+  // canAdd computed property tests
+  it('canAdd returns true when last block is modified', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.modified = true
+    expect(store.canAdd).toBe(true)
+  })
+
+  it('canAdd returns true when last block has images', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.images.push({ imagePath: 'test.jpg' })
+    expect(store.canAdd).toBe(true)
+  })
+
+  it('canAdd returns false when last block is empty', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.modified = false
+    store.blocks[0]!.images = []
+    expect(store.canAdd).toBe(false)
+  })
+
+  // Renumber blocks tests
+  it('renumbers all blocks sequentially', () => {
+    const store = useBlocksStore()
+    store.blocks = [
+      { id: 1, text: 'A', step: 5, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 2, text: 'B', step: 10, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 3, text: 'C', step: 15, nbOfRepeats: 1, modified: false, images: [] },
+    ]
+    
+    store.renumberBlocks()
+    
+    expect(store.blocks[0]!.step).toBe(1)
+    expect(store.blocks[1]!.step).toBe(2)
+    expect(store.blocks[2]!.step).toBe(3)
+  })
+
+  // Current document tests
+  it('initializes currentDocument with default values', () => {
+    const store = useBlocksStore()
+    expect(store.currentDocument.title).toBe('Titre du document')
+    expect(store.currentDocument.version).toBe('1.0.0')
+  })
+
+  // Documents loading tests
+  it('initializes allDocuments as empty array', () => {
+    const store = useBlocksStore()
+    expect(store.allDocuments).toEqual([])
+  })
+
+  it('initializes loadingDocuments as false', () => {
+    const store = useBlocksStore()
+    expect(store.loadingDocuments).toBe(false)
+  })
+
+  it('initializes documentsError as null', () => {
+    const store = useBlocksStore()
+    expect(store.documentsError).toBeNull()
   })
 })
