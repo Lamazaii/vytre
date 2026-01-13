@@ -1,22 +1,28 @@
 <template>
-  <div class="element-container">
-    <div class="element-content">
-      <div class="drag-handle" title="Déplacer le bloc">
-        <StepNumber :numero="block.step" :active="active"/>
-      </div>
-      <EditableBlock
-        :description="block.text"
-        :images="block.images"
-        :blockIndex="blockIndex"
-        :active="active"
-        :canDelete="canDelete"
-        @select="emit('select')"
-        @delete="emit('delete')"
-        @modified="(v) => emit('modified', v)"
-        @update:description="(v) => handleUpdateDescription(v)"
-        @update:images="(v) => handleUpdateImages(v)"
-      />
-      <RepetitionCount v-model="nbOfRepeats" />
+  <div class="wrapper">
+    <div class="element-container">
+      <div class="element-content">
+        <div class="drag-handle" title="Déplacer le bloc">
+          <StepNumber :numero="block.step" :active="active"/>
+        </div>
+        <EditableBlock
+          :description="block.text"
+          :images="block.images"
+          :blockIndex="blockIndex"
+          :active="active"
+          :canDelete="canDelete"
+          @select="emit('select')"
+          @delete="emit('delete')"
+          @modified="(v) => emit('modified', v)"
+          @update:description="(v) => handleUpdateDescription(v)"
+          @update:images="(v) => handleUpdateImages(v)"
+        />
+        <RepetitionCount v-model="nbOfRepeats" />
+
+    </div>
+    </div>
+    <div v-if="showAddBlockZone" class="addBlock">
+      <AddBlockZone @add="emit('addBlock')" :disabled="!canAddBlock" />
     </div>
   </div>
 </template>
@@ -28,12 +34,15 @@ import RepetitionCount from './repetitionCount.vue'
 import EditableBlock from './EditableBlock/editableBlock.vue'
 import type { Block as BlockType } from '../../types/Blocks'
 import { useBlocksStore } from '../../stores/blockStores'
+import AddBlockZone from './addBlockZone.vue'
 
 interface Props {
   block: BlockType
   blockIndex: number
   active: boolean
   canDelete: boolean
+  showAddBlockZone?: boolean
+  canAddBlock?: boolean
 }
 
 const props = defineProps<Props>()
@@ -42,6 +51,7 @@ const emit = defineEmits<{
   'select': []
   'delete': []
   'modified': [value: boolean]
+  'addBlock': []
 }>()
 
 const blocksStore = useBlocksStore()
