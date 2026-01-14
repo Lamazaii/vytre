@@ -57,7 +57,6 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   async function saveDocument() {
     try {
-
       // Filter out empty blocks before saving
       const filteredBlocks = blocks.value.filter((b) => {
         const hasText = b.text && !isContentEmpty(b.text);
@@ -65,6 +64,12 @@ export const useBlocksStore = defineStore('blocks', () => {
         const hasNonEmptyZone = b.textZones && b.textZones.some((z) => z && !isContentEmpty(z));
         return hasText || hasImages || hasNonEmptyZone;
       });
+
+      // Block save if document is empty
+      if (filteredBlocks.length === 0) {
+        errorPopup.show('Impossible de sauvegarder un document vide.');
+        return;
+      }
 
       // Prepare document data to send
       const documentToSend: Document = {
