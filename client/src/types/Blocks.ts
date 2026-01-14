@@ -6,6 +6,7 @@ export interface Block {
   step: number;
   nbOfRepeats: number;
   images: Image[];
+  textZones?: string[];
 
 
   modified?: boolean;

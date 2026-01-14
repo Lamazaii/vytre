@@ -67,10 +67,11 @@ const placeholder = computed(
 
 <style scoped>
 .overlay {
-	position: absolute;
+	position: fixed;
 	inset: 0;
 	display: flex;
 	justify-content: center;
+	align-items: center;
 	background: rgba(0, 0, 0, 0.55);
 	backdrop-filter: blur(2px);
 	z-index: 4000;

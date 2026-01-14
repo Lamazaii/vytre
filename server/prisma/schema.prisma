@@ -26,7 +26,8 @@ model Block {
   id           Int      @id @default(autoincrement())
   text         String
   step         Int
-  nbOfRepeats  Int
+  nbOfRepeats  Float
+  textZones    String?  @db.NVarChar(Max)
 
   documentId   Int
   document     Document @relation(fields: [documentId], references: [id])

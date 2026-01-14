@@ -1,231 +1,32 @@
 <script setup lang="ts">
-import CopyPastePopup from './components/popup/CopyPastePopup.vue';
-import SavePopUp from './components/popup/SavePopUp.vue';
-import ConfirmSavePopUp from './components/popup/ConfirmSavePopUp.vue';
+import { ref } from 'vue'
+import Menu from './components/applications/menu.vue'
+import Editor from './components/applications/editor.vue'
+import Lector from './components/applications/lector.vue'
 
-import BlockWrapper from './components/blocks/BlockWrapper.vue';
-import AddBlockZone from './components/blocks/addBlockZone.vue';
-import OptionBar from './components/optionBar/optionBar.vue';
-import TitleBar from './components/optionBar/titleBar.vue';
-import ReaderViewWindow from './components/readerView/readerViewWindow.vue';
-import DeletePopup from './components/popup/DeletePopup.vue';
-import ErrorPopup from './components/popup/ErrorPopup.vue';
-import CropPopup from './components/popup/CropPopup.vue';
-import { ref, computed, watch } from 'vue'
-import { useBlocksStore } from './stores/blockStores';
-import { useImageCropStore } from './stores/imageCropStore';
-import { storeToRefs } from 'pinia'
-import draggable from 'vuedraggable'
-import { usePopupStore } from './stores/popupStore'
-import { useDeletePopupStore } from './stores/deletePopupStore'
-import { useErrorPopupStore } from './stores/errorPopupStore'
-import { useConfirmSavePopupStore } from './stores/confirmSavePopupStore'
+const currentMode = ref<'menu' | 'editor' | 'reader'>('menu')
 
-const blocksStore = useBlocksStore()
-const popupStore = usePopupStore()
-const deletePopupStore = useDeletePopupStore()
-const errorPopupStore = useErrorPopupStore()
-const confirmSavePopupStore = useConfirmSavePopupStore()
-const imageCropStore = useImageCropStore()
-
-const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
-const saveDialogOpen = ref(false)
-const clipboardText = ref('')
-
-const anyPopupOpen = computed(() => {
-  return (
-    saveDialogOpen.value === true ||
-    popupStore.isOpen === true ||
-    deletePopupStore.isVisible === true ||
-    errorPopupStore.isOpen === true ||
-    confirmSavePopupStore.isOpen === true ||
-    imageCropStore.isCropperOpen === true
-  )
-})
-
-watch(anyPopupOpen, (open) => {
-  const appEl = document.getElementById('app')
-  if (appEl) {
-    appEl.classList.toggle('no-scroll', open)
-  }
-}, { immediate: true })
-
-function setModified(i: number, value: boolean) {
-  blocksStore.setModified(i, value)
+function selectMode(mode: 'editor' | 'reader' | 'menu') {
+  currentMode.value = mode
 }
-
-function openSaveDialog() {
-  saveDialogOpen.value = true
-}
-
-function handleSaveCancel() {
-  saveDialogOpen.value = false
-}
-
-async function handleSaveConfirm(value: string) {
-  blocksStore.currentDocument.title = value || documentTitle.value
-  
-
-  saveDialogOpen.value = false
-  
-
-  await blocksStore.saveDocument()
-}
-
-function toggleSelect(i: number) {
-  blocksStore.toggleSelect(i)
-}
-
-function addEmptyBlockIfAllowed() {
-  blocksStore.addEmptyBlockIfAllowed()
-}
-
-function removeBlock(i: number) {
-  blocksStore.removeBlock(i)
-}
-
-function onDragEnd() {
-  blocks.value.forEach((block, index) => {
-    block.step = index + 1
-  })
-}
-
-function handleClipboardSubmit(value: string) {
-  blocksStore.loadFromClipboard(value)
-  clipboardText.value = value
-}
-
-function handleClipboardCancel() {
-  clipboardText.value = ''
-}
-
-function handleCropComplete(croppedImageData: string) {
-  if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
-    const blockIndex = imageCropStore.blockIndex
-    const block = blocks.value[blockIndex]
-    if (block && block.images) {
-      const imageIndex = block.images.findIndex(img => img.id === imageCropStore.selectedImageId)
-      if (imageIndex !== -1 && block.images[imageIndex]) {
-        block.images[imageIndex].imagePath = croppedImageData
-        blocksStore.setModified(blockIndex, true)
-      }
-    }
-  }
-}
-
-watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  if (timestamp > 0 && imageCropStore.blockIndex !== null) {
-    const block = blocks.value[imageCropStore.blockIndex]
-    if (block && block.images) {
-      const imageToEdit = block.images.find(img => img.id === imageCropStore.selectedImageId)
-      if (imageToEdit) {
-        imageCropStore.openCropper(imageToEdit.imagePath)
-      }
-    }
-  }
-})
 </script>
 
 <template>
-    <header>
-      <div class="OptionBarFixed">
-        <TitleBar/>
-        <OptionBar @save="openSaveDialog" />
-      </div>
-    </header>
-
-    <div class="block">
-      <draggable 
-        v-model="blocks" 
-        item-key="id"
-        ghost-class="ghost"
-        handle=".drag-handle"
-        @end="onDragEnd"
-      >
-        <template #item="{element: block, index: i}">
-          <BlockWrapper
-            :key="block.id"
-            :block="block"
-            :blockIndex="i"
-            :active="selectedIndex === i"
-            :canDelete="blocks.length > 1"
-            @select="toggleSelect(i)"
-            @delete="removeBlock(i)"
-            @modified="(v) => setModified(i, v)"
-          />
-        </template>
-      </draggable>
-
-      <div class="addBlock"> 
-        <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
-      </div>
-    </div>
-
-       <CopyPastePopup
-        class="popUp"
-        v-model="clipboardText"
-        @submit="handleClipboardSubmit"
-        @cancel="handleClipboardCancel"
-      />
-
-    <ReaderViewWindow @save="openSaveDialog"/>
-
-    <SavePopUp
-      :isOpen="saveDialogOpen"
-      v-model="documentTitle"
-      @confirm="handleSaveConfirm"
-      @cancel="handleSaveCancel"
-    />
-
-    <ConfirmSavePopUp />
-
-    <DeletePopup/>
-    <ErrorPopup/>
-    <CropPopup @crop="handleCropComplete" />
+  <Menu v-if="currentMode === 'menu'" @selectMode="selectMode" />
+  <Editor v-else-if="currentMode === 'editor'"/>
+  <Lector v-else-if="currentMode === 'reader'" @selectMode="selectMode" class="lector"/>
 </template>
 
-<style scoped>
-
-header {
-  width: 100%;
-  max-width: 1468px;
-  height : auto;
-  display: flex;
-  flex-direction: column;
+<style>
+.lector {
+  max-width: 911px;
+  width : 911px;
+  height: 772px;
+  min-height: 772px;
+  max-height: 772px;
 }
 
-.OptionBarFixed {
-  position: fixed;
-  width: 100%;
-  z-index: 3000;
+#app.no-scroll {
+  overflow: hidden;
 }
-
-.OptionBarSpacer {
-  width: 100%;
-  height: 94px;
-  display: block;
-  margin-bottom: 12px;
-}
-
-.addBlock {
-  display: flex;
-  justify-content: center;
-  width: 98%;
-}
-
-.popUp{
-  display: flex;
-  padding-top: 158px;
-}
-
-.ghost {
-  opacity: 0.5;
-  background: #c8ebfb;
-}
-
-.block {
-  margin-top: 140px;
-  z-index: 0;
-}
-
 </style>
