@@ -16,7 +16,7 @@ datasource db {
 model Document {
   id        Int      @id @default(autoincrement())
   title     String
-  version   String
+  version   Int
   blocks    Block[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

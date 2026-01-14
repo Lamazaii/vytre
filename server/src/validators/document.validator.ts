@@ -24,8 +24,8 @@ const blockSchema = z.object({
 });
 
 export const createDocumentSchema = z.object({
-  title: z.string().min(1, 'Le titre ne peut pas être vide'),
-  version: z.string().min(1, 'La version est requise'),
-  blocks: z.array(blockSchema).optional(),
+    title: z.string().min(1, 'Le titre ne peut pas être vide'),
+    version: z.number().min(1, 'La version est requise'),
+    blocks: z.array(blockSchema).optional(),
 });
 

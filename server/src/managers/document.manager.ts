@@ -14,7 +14,7 @@ interface BlockInput {
 
 interface DocumentInput {
     title: string;
-    version: string;
+    version: number;
     blocks?: BlockInput[];
 }
 

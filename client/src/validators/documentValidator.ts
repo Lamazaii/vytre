@@ -15,7 +15,7 @@ const blockSchema = z.object({
 export const documentSchema = z.object({
   id: z.number().optional(),
   title: z.string().min(1, "Le titre ne peut pas être vide"),
-  version: z.string().min(1, "La version est requise"),
+  version: z.number().min(1, "La version est requise"),
   blocks: z.array(blockSchema).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
