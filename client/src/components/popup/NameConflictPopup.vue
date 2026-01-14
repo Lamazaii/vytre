@@ -42,16 +42,12 @@ import warningIcon from '../../assets/savePopUp/floppy-disk.svg'
 const nameConflictStore = useNameConflictPopupStore()
 const { isOpen, documentName } = storeToRefs(nameConflictStore)
 
-function handleOverwrite() {
-    nameConflictStore.close()
-}
-
 function handleRename() {
-    nameConflictStore.close()
+    nameConflictStore.handleValidate()
 }
 
 function handleCancel() {
-    nameConflictStore.close()
+    nameConflictStore.handleRename()
 }
 </script>
 
