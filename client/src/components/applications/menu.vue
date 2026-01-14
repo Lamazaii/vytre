@@ -23,7 +23,7 @@
       
       <div class="searchSection">
         <input type="text" v-model="searchQuery" placeholder="Rechercher..." class="searchInput" />
-        <button class="newButton" @click="$emit('selectMode', 'editor')">+ Nouveau</button>
+        <button v-if="viewMode === 'editor'" class="newButton" @click="$emit('selectMode', 'editor')">+ Nouveau</button>
       </div>
     </div>
 
