@@ -32,6 +32,10 @@ const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore
 const saveDialogOpen = ref(false)
 const clipboardText = ref('')
 
+const emit = defineEmits<{
+  (e: 'selectMode', mode: 'menu'): void
+}>()
+
 const anyPopupOpen = computed(() => {
   return (
     saveDialogOpen.value === true ||
@@ -99,6 +103,10 @@ function handleClipboardCancel() {
   clipboardText.value = ''
 }
 
+function handleHome() {
+  emit('selectMode', 'menu')
+}
+
 function handleCropComplete(croppedImageData: string) {
   if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
     const blockIndex = imageCropStore.blockIndex
@@ -130,7 +138,7 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   <div id="app" class="app-editor">
     <header>
       <div class="OptionBarFixed">
-        <TitleBar/>
+        <TitleBar @home="handleHome" />
         <OptionBar @save="openSaveDialog" />
       </div>
     </header>
