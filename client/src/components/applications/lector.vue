@@ -9,11 +9,15 @@ const emit = defineEmits<{
   (e: 'selectMode', mode: 'editor' | 'menu'): void
 }>()
 
+function handleHome() {
+  emit('selectMode', 'menu')
+}
+
 </script>
 
 <template>
   <div id="app" class="app-lector">
-    <TitleBar :isReadOnly="true"/>
+    <TitleBar :isReadOnly="true" @home="handleHome"/>
     <div class="readerWindowContent">
       <div class="blockHeader">
         <div class="headerNumber">N°</div>

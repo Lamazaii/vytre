@@ -1,7 +1,7 @@
 <template>
   <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly, 'titleBar--menu': isMenu }">
 
-    <button v-if="!isReadOnly && !isMenu" class="homeButton" @click="$emit('home')" aria-label="Retour au menu">
+    <button v-if="!isMenu" class="homeButton" @click="$emit('home')" aria-label="Retour au menu">
       <img :src="homeIcon" alt="Home" class="homeIcon" />
     </button>
 
