@@ -1,10 +1,12 @@
 <template>
-  <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly }">
+  <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly, 'titleBar--menu': isMenu }">
 
     <div class = "SimpleBar"></div>
 
     <div class="inputZone">
+      <div v-if="customTitle" class="customTitle">{{ customTitle }}</div>
       <input
+      v-else
       maxlength="80"
       id="documentTitleInput"
       name="documentTitle"
@@ -27,6 +29,8 @@ import { useBlocksStore } from '../../stores/blockStores'
 
 defineProps<{
   isReadOnly?: boolean
+  isMenu?: boolean
+  customTitle?: string
 }>()
 
 const blocksStore = useBlocksStore()
@@ -63,6 +67,11 @@ function handleFocus(event: Event) {
   height: 35px;
 }
 
+.titleBar--menu {
+  min-height: 40px;
+  max-width: 100%;
+}
+
 .titleBar--readonly .titleBarContent {
   max-height: 35px;
 }
@@ -70,7 +79,6 @@ function handleFocus(event: Event) {
 .inputZone {
   display: flex;
   align-items: center;
-  width: auto;
 }
 
 .SimpleBar{
@@ -81,10 +89,12 @@ function handleFocus(event: Event) {
 
 .titleBar--readonly .SimpleBar {
   font-size: 16px;
-  height: 20px;
-  width: 3px;
   display:flex;
   align-items: center;
+}
+
+.customTitle {
+  color: #ffffff;
 }
 
 #documentTitleInput {
