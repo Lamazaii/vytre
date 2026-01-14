@@ -15,6 +15,10 @@
             class="cropper-engine"
             :src="imageSrc"
             :stencil-props="{ aspectRatio: null }"
+            :min-width="50"
+            :min-height="50"
+            :max-width="10000"
+            :max-height="10000"
           />
         </div>
       </div>
