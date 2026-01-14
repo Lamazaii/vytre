@@ -16,7 +16,7 @@ datasource db {
 model Document {
   id        Int      @id @default(autoincrement())
   title     String
-  version   String
+  version   Int
   blocks    Block[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -26,7 +26,7 @@ model Block {
   id           Int      @id @default(autoincrement())
   text         String
   step         Int
-  nbOfRepeats  Int
+  nbOfRepeats  Float
   textZones    String?  @db.NVarChar(Max)
 
   documentId   Int

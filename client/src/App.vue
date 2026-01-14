@@ -21,9 +21,9 @@ function selectMode(mode: 'editor' | 'reader' | 'menu') {
 .lector {
   max-width: 911px;
   width : 911px;
-  height: 100%;
-  max-height: 717px;
-  min-height: 717px;
+  height: 772px;
+  min-height: 772px;
+  max-height: 772px;
 }
 
 #app.no-scroll {

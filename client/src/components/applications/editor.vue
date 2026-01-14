@@ -213,7 +213,7 @@ header {
 .addBlock {
   display: flex;
   justify-content: center;
-  width: 98%;
+  width: 100%;
 }
 
 .popUp{

@@ -1,9 +1,24 @@
 <template>
-  <div id="app" class="app-menu">
-  <div class="menuContainer">
+  <div id="app" class="app-menu" :class="{ 'app-menu--reader': viewMode === 'reader' }">
+    <TitleBar :isReadOnly="true" :isMenu="true" customTitle="Mes Documents" />
+  <div class="menuContainer" :class="{ 'menuContainer--reader': viewMode === 'reader' }">
     <div class="headerContent">
-      <div class="titleSection">
-        <h2>Mes Documents</h2>
+
+      <div class="modeToggle">
+        <button 
+          class="toggleButton" 
+          :class="{ active: viewMode === 'reader' }"
+          @click="viewMode = 'reader'"
+        >
+          Lecteur
+        </button>
+        <button 
+          class="toggleButton" 
+          :class="{ active: viewMode === 'editor' }"
+          @click="viewMode = 'editor'"
+        >
+          Éditeur
+        </button>
       </div>
       
       <div class="searchSection">
@@ -35,7 +50,7 @@
           <button class="actionButton read" @click="openDocument(doc)">
             <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
           </button>
-          <button class="actionButton edit" @click="editDocument(doc)">
+          <button v-if="viewMode === 'editor'" class="actionButton edit" @click="editDocument(doc)">
             <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
           </button>
         </div>
@@ -53,6 +68,7 @@ import type { Document } from '../../types/Document'
 import timeImage from '../../assets/menu/timer.svg'
 import readIcon from '../../assets/optionBarImage/visibility.svg'
 import editIcon from '../../assets/menu/edit.svg'
+import TitleBar from '../optionBar/titleBar.vue'
 
 
 const emit = defineEmits<{
@@ -61,6 +77,7 @@ const emit = defineEmits<{
 
 const store = useBlocksStore()
 const searchQuery = ref('')
+const viewMode = ref<'editor' | 'reader'>('editor')
 
 const filteredDocuments = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -106,27 +123,73 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
+.app-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.app-menu--reader {
+  max-width: 911px;
+  margin: 0 auto;
+}
+
 .menuContainer {
   width: 100%;
   background-color: #F3F4F6;
   padding: 0;
   min-height: 717px;
+  transition: all 0.3s ease;
+}
+
+.menuContainer--reader {
+  max-width: 911px;
 }
 
 .headerContent {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 40px;
   border-bottom: 1px solid #e0e0e0;
-  margin : 0 80px;
+  padding : 15px 80px;
+  transition: padding 0.3s ease;
 }
 
-.titleSection {
-  font-size: 16px;
-  font-weight: 600;
+.menuContainer--reader .headerContent {
+  padding: 15px 40px;
+}
+
+
+.modeToggle {
+  display: flex;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+}
+
+.toggleButton {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: transparent;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.toggleButton:hover {
   color: #333;
-  margin: 0;
+}
+
+.toggleButton.active {
+  background-color: white;
+  color: #DC2626;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .searchSection {
@@ -173,6 +236,11 @@ onMounted(() => {
   margin: 0 80px;
   margin-top: 25px;
   gap : 15px;
+  transition: margin 0.3s ease;
+}
+
+.menuContainer--reader .documentsList {
+  margin: 25px 40px 0 40px;
 }
 
 .loadingMessage,

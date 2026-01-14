@@ -12,9 +12,9 @@ import { documentSchema } from '../validators/documentValidator'
 
 
 /**
- * Vérifie si un contenu HTML est vide (en ignorant les balises)
- * @param html - Contenu HTML à vérifier
- * @returns true si le contenu est vide, false sinon
+ * Verify if the given HTML content is empty (no text)
+ * @param html - HTML content to verify
+ * @returns true if the content is empty, false otherwise
  */
 function isContentEmpty(html: string): boolean {
   const textContent = html.replace(/<[^>]*>/g, '').trim()
@@ -35,7 +35,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   const canAdd = computed(() => {
     if (blocks.value.length === 0) return true
     const last = blocks.value[blocks.value.length - 1]
-    const hasText = !!last?.modified
+    const hasText = last?.text ? !isContentEmpty(last.text) : false
     const hasImages = (last?.images?.length ?? 0) > 0
     return hasText || hasImages
   })
@@ -43,12 +43,12 @@ export const useBlocksStore = defineStore('blocks', () => {
   const currentDocument = ref<{
     id?: number;
     title: string;
-    version: string;
+    version: number;
     createdAt?: Date;
     updatedAt?: Date;
   }>({
     title: 'Titre du document',
-    version: '1.0.0'
+    version: 1
   })
 
   const allDocuments = ref<Document[]>([])
@@ -57,15 +57,30 @@ export const useBlocksStore = defineStore('blocks', () => {
 
   async function saveDocument() {
     try {
+      // Filter out empty blocks before saving
+      const filteredBlocks = blocks.value.filter((b) => {
+        const hasText = b.text && !isContentEmpty(b.text);
+        const hasImages = b.images && b.images.length > 0;
+        const hasNonEmptyZone = b.textZones && b.textZones.some((z) => z && !isContentEmpty(z));
+        return hasText || hasImages || hasNonEmptyZone;
+      });
+
+      // Block save if document is empty
+      if (filteredBlocks.length === 0) {
+        errorPopup.show('Impossible de sauvegarder un document vide.');
+        return;
+      }
+
+      // Prepare document data to send
       const documentToSend: Document = {
         title: currentDocument.value.title,
         version: currentDocument.value.version,
-        blocks: blocks.value.map((b) => {
+        blocks: filteredBlocks.map((b) => {
           const { modified, ...blockData } = b;
           return blockData;
         })
       };
-
+      // Validate document data
       const validation = documentSchema.safeParse(documentToSend);
 
       if (!validation.success) {
@@ -74,8 +89,8 @@ export const useBlocksStore = defineStore('blocks', () => {
         return;
       }
 
+      // Create or update document based on presence of ID
       const hasId = typeof currentDocument.value.id === 'number';
-
       const savedDocument = hasId
         ? await documentService.update(currentDocument.value.id!, documentToSend)
         : await documentService.create(documentToSend);
@@ -83,7 +98,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       currentDocument.value = {
         id: savedDocument.id,
         title: savedDocument.title,
-        version: savedDocument.version,
+        version: savedDocument.version + 1,
         createdAt: savedDocument.createdAt,
         updatedAt: savedDocument.updatedAt
       };
@@ -95,7 +110,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       errorPopup.show(errorMessage);
     }
   }
-
+  // Load a document by ID
   async function loadDocument(id: number) {
     try {
       const document = await documentService.getById(id);
@@ -112,7 +127,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
-        modified: false,
+        modified: true,
         textZones: typeof block.textZones === 'string' 
           ? JSON.parse(block.textZones || '[]')
           : (block.textZones || [])
@@ -128,6 +143,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     }
   }
 
+  // Load all documents
   async function loadAllDocuments() {
     try {
       loadingDocuments.value = true
@@ -143,15 +159,18 @@ export const useBlocksStore = defineStore('blocks', () => {
     }
   }
 
+  // Toggle selection of a block
   function toggleSelect(i: number) {
     selectedIndex.value = i
   }
 
+  // Mark a block as modified or not
   function setModified(i: number, value: boolean) {
     if (!blocks.value[i]) return
     blocks.value[i] = { ...blocks.value[i], modified: value }
   }
 
+  // Add an empty block if allowed (if last block is not empty)
   function addEmptyBlockIfAllowed() {
     if (!canAdd.value) {
       errorPopup.show("Modifier un bloc avant d'en ajouter un nouveau.")
@@ -168,6 +187,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     })
   }
 
+  // Add a new text zone to the selected block
   function addTextZone() {
     if (selectedIndex.value === null) return
     const block = blocks.value[selectedIndex.value]
@@ -191,12 +211,14 @@ export const useBlocksStore = defineStore('blocks', () => {
     block.textZones.push('')
   }
 
+  // Renumber blocks after changes
   function renumberBlocks() {
     blocks.value.forEach((block, i) => {
       block.step = i + 1
     })
   }
 
+  // Remove a block at index i
   function removeBlock(i: number) {
     if (i < 0 || i >= blocks.value.length) return
     
@@ -208,7 +230,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     blockToDeleteIndex.value = i
     deletePopup.show('block', confirmDelete)
   }
-
+  // Confirm deletion of a block
   function confirmDelete() {
     if (blockToDeleteIndex.value === null) return
     const i = blockToDeleteIndex.value
@@ -223,9 +245,9 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
-   * Met à jour la description principale d'un bloc
-   * @param index - Index du bloc à mettre à jour
-   * @param html - Nouveau contenu HTML
+   * Update the main description of a block
+   * @param index - Index of the block to update
+   * @param html - New HTML content
    */
   function updateBlockDescription(index: number, html: string) {
     if (index < 0 || index >= blocks.value.length) return
@@ -233,8 +255,6 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (!block) return
     
     block.text = html
-    
-    // Vérifier si le contenu est vide (après suppression des balises HTML)
     const textContent = html.replace(/<[^>]*>/g, '').trim()
     const isModified = textContent.length > 0
     
@@ -242,10 +262,10 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
-   * Met à jour une zone de texte spécifique dans un bloc
-   * @param blockIndex - Index du bloc
-   * @param zoneIndex - Index de la zone de texte
-   * @param html - Nouveau contenu HTML
+   * Update a specific text zone in a block
+   * @param blockIndex - Index of the block
+   * @param zoneIndex - Index of the text zone
+   * @param html - New HTML content
    */
   function updateTextZone(blockIndex: number, zoneIndex: number, html: string) {
     if (blockIndex < 0 || blockIndex >= blocks.value.length) return
@@ -257,9 +277,9 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
-   * Supprime une zone de texte d'un bloc
-   * @param blockIndex - Index du bloc
-   * @param zoneIndex - Index de la zone de texte à supprimer
+   * Delete a specific text zone from a block
+   * @param blockIndex - Index of the block
+   * @param zoneIndex - Index of the text zone to delete
    */
   function removeTextZone(blockIndex: number, zoneIndex: number) {
     if (blockIndex < 0 || blockIndex >= blocks.value.length) return
@@ -270,6 +290,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     block.textZones.splice(zoneIndex, 1)
   }
 
+  // Load blocks from clipboard text
   function loadFromClipboard(rawText: string) {
     const trimmed = rawText.trim()
     if (!trimmed) {

@@ -13,7 +13,7 @@
                         <div class="headerRep">REP.</div>
                     </div>
                     <ReaderViewBlock
-                        v-for="block in blocksStore.blocks"
+                        v-for="block in noEmptyBlocks"
                         :key="block.id"
                         :numero="block.step" 
                         :description="block.text"
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
 import { useBlocksStore } from '../../stores/blockStores'
 import ReaderViewBar from './readerViewBar.vue'
@@ -44,9 +45,22 @@ const closeReaderView = () => {
     popupStore.closeReader()
 }
 
+const noEmptyBlocks = computed(() => {
+    return blocksStore.blocks.filter(block => {
+        const hasText = block.text && block.text.trim() !== ''
+        const hasImages = block.images && block.images.length > 0
+        const hasTextZones = block.textZones && block.textZones.length > 0 && 
+                            block.textZones.some(zone => zone.trim() !== '')
+        
+        return hasText || hasImages || hasTextZones
+    })
+})
+
 </script>
 
 <style scoped>
+@import '../../assets/styles/readerShared.css';
+
 .overlay {
     position: fixed;
     inset: 0;
@@ -81,35 +95,4 @@ const closeReaderView = () => {
     overflow-y: auto;
     overflow-x: hidden;
 }
-.blockHeader {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    font-size: 14px;
-    color: #545454;
-    height: 54px;
-}
-
-.headerNumber {
-    margin-left: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.headerDescription {
-    margin-right: auto;
-    padding-left: 90px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.headerRep {
-    margin-right: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 </style>
