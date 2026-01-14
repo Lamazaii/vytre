@@ -13,7 +13,7 @@ function selectMode(mode: 'editor' | 'reader' | 'menu') {
 
 <template>
   <Menu v-if="currentMode === 'menu'" @selectMode="selectMode" />
-  <Editor v-else-if="currentMode === 'editor'"/>
+  <Editor v-else-if="currentMode === 'editor'" @selectMode="selectMode" />
   <Lector v-else-if="currentMode === 'reader'" @selectMode="selectMode" class="lector"/>
 </template>
 

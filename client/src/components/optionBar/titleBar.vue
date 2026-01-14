@@ -1,6 +1,10 @@
 <template>
   <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly, 'titleBar--menu': isMenu }">
 
+    <button v-if="!isReadOnly && !isMenu" class="homeButton" @click="$emit('home')" aria-label="Retour au menu">
+      <img :src="homeIcon" alt="Home" class="homeIcon" />
+    </button>
+
     <div class = "SimpleBar"></div>
 
     <div class="inputZone">
@@ -26,11 +30,16 @@
 
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
+import homeIcon from '../../assets/menu/home.svg'
 
 defineProps<{
   isReadOnly?: boolean
   isMenu?: boolean
   customTitle?: string
+}>()
+
+defineEmits<{
+  (e: 'home'): void
 }>()
 
 const blocksStore = useBlocksStore()
@@ -61,6 +70,7 @@ function handleFocus(event: Event) {
   width: 100%;
   max-width: 1468px;
   gap : 5px;
+  position: relative;
 }
 
 .titleBar--readonly {
@@ -79,6 +89,29 @@ function handleFocus(event: Event) {
 .inputZone {
   display: flex;
   align-items: center;
+}
+
+.homeButton {
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  transition: opacity 0.2s;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  left: 10px;
+}
+
+.homeButton:hover {
+  opacity: 0.7;
+}
+
+.homeIcon {
+  width: 25px;
+  height: 25px;
 }
 
 .SimpleBar{
