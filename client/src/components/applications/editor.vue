@@ -2,6 +2,7 @@
 import CopyPastePopup from '../popup/CopyPastePopup.vue';
 import SavePopUp from '../popup/SavePopUp.vue';
 import ConfirmSavePopUp from '../popup/ConfirmSavePopUp.vue';
+import NameConflictPopup from '../popup/NameConflictPopup.vue';
 
 import BlockWrapper from '../blocks/BlockWrapper.vue';
 import AddBlockZone from '../blocks/addBlockZone.vue';
@@ -73,7 +74,11 @@ async function handleSaveConfirm(value: string) {
   saveDialogOpen.value = false
   
 
-  await blocksStore.saveDocument()
+  const result = await blocksStore.saveDocument()
+
+  if (result === 'rename') {
+    saveDialogOpen.value = true
+  }
 }
 
 function toggleSelect(i: number) {
@@ -187,6 +192,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
     />
 
     <ConfirmSavePopUp />
+
+    <NameConflictPopup />
 
     <DeletePopup/>
     <ErrorPopup/>

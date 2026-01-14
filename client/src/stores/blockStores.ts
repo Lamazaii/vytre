@@ -4,6 +4,8 @@ import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 import { useDeletePopupStore } from './deletePopupStore'
 import { useConfirmSavePopupStore } from './confirmSavePopupStore'
+import { useNameConflictPopupStore } from './nameConflictPopupStore'
+
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
@@ -25,6 +27,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
   const deletePopup = useDeletePopupStore()
   const confirmSavePopup = useConfirmSavePopupStore()
+  const nameConflictPopup = useNameConflictPopupStore()
   const documentTitle = ref('Titre du document')
   const blocks = ref<Array<Block & { textZones?: string[] }>>([
     { id: 1, text: '', step: 1, nbOfRepeats: 1, modified: false, images: [] as Image[], textZones: [] }
@@ -55,7 +58,7 @@ export const useBlocksStore = defineStore('blocks', () => {
   const loadingDocuments = ref(false)
   const documentsError = ref<string | null>(null)
 
-  async function saveDocument() {
+  async function saveDocument(): Promise<'success' | 'rename' | void> {
     try {
       // Filter out empty blocks before saving
       const filteredBlocks = blocks.value.filter((b) => {
@@ -69,6 +72,19 @@ export const useBlocksStore = defineStore('blocks', () => {
       if (filteredBlocks.length === 0) {
         errorPopup.show('Impossible de sauvegarder un document vide.');
         return;
+      }
+
+      const nameExists = await documentService.checkNameExists(
+        currentDocument.value.title,
+        currentDocument.value.id
+      );
+
+      if (nameExists) {
+        const userAction = await nameConflictPopup.show(currentDocument.value.title);
+        
+        if (userAction === 'rename') {
+          return 'rename';
+        }
       }
 
       // Prepare document data to send
@@ -104,6 +120,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       };
 
       confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
+      return 'success';
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
