@@ -4,6 +4,7 @@ import type { Block } from '../types/Blocks'
 import { useErrorPopupStore } from './errorPopupStore'
 import { useDeletePopupStore } from './deletePopupStore'
 import { useConfirmSavePopupStore } from './confirmSavePopupStore'
+
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
