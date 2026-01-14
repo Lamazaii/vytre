@@ -101,12 +101,12 @@ describe('blocksStore', () => {
 
   it('adds empty block when last block has content', () => {
     const store = useBlocksStore()
-    store.blocks[0]!.modified = true
     const initialCount = store.blocks.length
+    store.blocks[0]!.text = '<p>Some content</p>'
 
     store.addEmptyBlockIfAllowed()
 
-    expect(store.blocks.length).toBeGreaterThan(initialCount)
+    expect(store.blocks.length).toBe(initialCount + 1)
   })
 
   it('empêche de supprimer le premier bloc s’il est seul', () => {
@@ -344,15 +344,24 @@ describe('blocksStore', () => {
   })
 
   // canAdd computed property tests
-  it('canAdd returns true when last block is modified', () => {
+  it('canAdd returns true when last block has text content', () => {
     const store = useBlocksStore()
-    store.blocks[0]!.modified = true
+    // Start fresh - empty text
+    store.blocks[0]!.text = ''
+    expect(store.canAdd).toBe(false)
+    
+    // Set text content
+    store.blocks[0]!.text = '<p>Some text content</p>'
     expect(store.canAdd).toBe(true)
   })
 
   it('canAdd returns true when last block has images', () => {
     const store = useBlocksStore()
-    store.blocks[0]!.images.push({ imagePath: 'test.jpg' })
+    store.blocks[0]!.images.push({
+      id: '1',
+      imagePath: 'test.jpg',
+      blockId: 1,
+    })
     expect(store.canAdd).toBe(true)
   })
 

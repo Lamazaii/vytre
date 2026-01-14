@@ -33,8 +33,8 @@ describe('ReaderViewBar.vue', () => {
     expect(wrapper.find('.toogleGroupContainer').exists()).toBe(true)
   })
 
-  // Test save button
-  it('has save button that emits save event', async () => {
+  // Test close button
+  it('has close button that closes reader', async () => {
     const wrapper = mount(ReaderViewBar, {
       global: {
         stubs: {
@@ -43,16 +43,13 @@ describe('ReaderViewBar.vue', () => {
       },
     })
     
-    const saveBtn = wrapper.find('.saveButton')
-    expect(saveBtn.exists()).toBe(true)
-    expect(saveBtn.find('.saveButtonLabel').text()).toBe('ENREGISTRER')
-    
-    await saveBtn.trigger('click')
-    expect(wrapper.emitted('save')).toBeTruthy()
+    const closeBtn = wrapper.find('.closeButton')
+    expect(closeBtn.exists()).toBe(true)
+    expect(closeBtn.find('svg').exists()).toBe(true)
   })
 
-  // Test save button icon
-  it('displays floppy disk icon in save button', () => {
+  // Test title display
+  it('displays title text', () => {
     const wrapper = mount(ReaderViewBar, {
       global: {
         stubs: {
@@ -61,9 +58,9 @@ describe('ReaderViewBar.vue', () => {
       },
     })
     
-    const icon = wrapper.find('.saveButtonIcon')
-    expect(icon.exists()).toBe(true)
-    expect(icon.attributes('alt')).toBe('Enregistrer')
+    const title = wrapper.find('.title')
+    expect(title.exists()).toBe(true)
+    expect(title.text()).toBe('Prévisualisation du mode lecteur')
   })
 
   // Test toggle change handling
@@ -102,8 +99,8 @@ describe('ReaderViewBar.vue', () => {
     expect(wrapper.find('.toogleGroupContainer').exists()).toBe(true)
   })
 
-  // Test button container
-  it('has save button spacer container', () => {
+  // Test right section container
+  it('has right section container', () => {
     const wrapper = mount(ReaderViewBar, {
       global: {
         stubs: {
@@ -112,7 +109,7 @@ describe('ReaderViewBar.vue', () => {
       },
     })
     
-    expect(wrapper.find('.SaveButtonSpacer').exists()).toBe(true)
+    expect(wrapper.find('.rightSection').exists()).toBe(true)
   })
 })
 

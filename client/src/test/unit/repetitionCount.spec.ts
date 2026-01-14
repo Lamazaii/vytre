@@ -40,7 +40,7 @@ describe('RepetitionCount.vue', () => {
     const input = wrapper.find('input')
     expect(input.exists()).toBe(true)
     expect(input.attributes('type')).toBe('number')
-    expect(input.attributes('min')).toBe('1')
+    expect(input.attributes('min')).toBe('0.001')
   })
 
   // Test v-model binding
