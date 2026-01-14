@@ -1,5 +1,6 @@
 import request from 'supertest';
 import app from '../app';
+import * as documentManager from '../src/managers/document.manager';
 
 interface Image {
     imagePath?: string;
@@ -31,13 +32,37 @@ jest.mock('../src/managers/document.manager', () => {
         Promise.resolve({ id: 1, ...data, blocks: data.blocks ?? [] }));
 
     const getAll = jest.fn<Promise<DocumentShape[]>, []>(() =>
-        Promise.resolve([{ id: 1, title: 'Doc', version: '1.0.0', blocks: [] }]));
+        Promise.resolve([
+            {
+                id: 1,
+                title: 'Doc',
+                version: '1.0.0',
+                blocks: [],
+            },
+        ],
+        ));
 
     const getById = jest.fn<Promise<DocumentShape | null>, [number]>((id) =>
-        Promise.resolve(id === 1 ? { id, title: 'Doc', version: '1.0.0', blocks: [] } : null));
+        Promise.resolve(
+            id === 1
+                ? {
+                    id,
+                    title: 'Doc',
+                    version: '1.0.0',
+                    blocks: [],
+                }
+                : null,
+        ),
+    );
 
-    const update = jest.fn<Promise<DocumentShape>, [number, CreateInput]>((id, data) =>
-        Promise.resolve({ id, ...data, blocks: data.blocks ?? [] }));
+    const update = jest.fn<Promise<DocumentShape>, [number, CreateInput]>(
+        (id, data) =>
+            Promise.resolve({
+                id,
+                ...data,
+                blocks: data.blocks ?? [],
+            },
+            ));
 
     return { create, getAll, getById, update };
 });
@@ -134,6 +159,71 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
+        });
+    });
+
+    describe('Global error and edge cases', () => {
+        it('returns 404 on unknown route', async () => {
+            const res = await request(app).get('/unknownroute');
+            expect(res.status).toBe(404);
+            expect(res.body).toHaveProperty('error');
+        });
+
+        it('returns 500 if DocumentManager.create throws', async () => {
+            (documentManager.create as jest.Mock).mockImplementationOnce(() => {
+                throw new Error('fail');
+            });
+            const payload = {
+                title: 'err',
+                version: '1.0.0',
+                blocks: [],
+            };
+            const res = await request(app)
+                .post('/documents')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 if DocumentManager.getAll throws', async () => {
+            (documentManager.getAll as jest.Mock).mockImplementationOnce(() => {
+                throw new Error('fail');
+            });
+            const res = await request(app).get('/documents');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 if DocumentManager.getById throws', async () => {
+            (documentManager.getById as jest.Mock)
+                .mockImplementationOnce(() => {
+                    throw new Error('fail');
+                });
+            const res = await request(app).get('/documents/1');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 if DocumentManager.update throws', async () => {
+            (documentManager.update as jest.Mock).mockImplementationOnce(() => {
+                throw new Error('fail');
+            });
+            const payload = {
+                title: 'err',
+                version: '1.0.0',
+                blocks: [],
+            };
+            const res = await request(app)
+                .put('/documents/1')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
         });
     });
 });
