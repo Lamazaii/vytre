@@ -68,7 +68,7 @@ function handleFocus(event: Event) {
 }
 
 .titleBar--menu {
-  min-height: 40px;
+  min-height: 45px;
   max-width: 100%;
 }
 
