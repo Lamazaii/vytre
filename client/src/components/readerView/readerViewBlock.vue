@@ -94,8 +94,7 @@ const closeImageModal = () => {
   width: 30px;
   height: 30px;
   color: rgba(0, 0, 0, 0.42);
-  font-weight: bold;
-  font-size: 12px;
+  font-size: 22px;
 }
 
 .blockContent {
@@ -167,5 +166,6 @@ const closeImageModal = () => {
     align-items: center;
     justify-content: center;
     width: 10px;
+    font-size: 24px;
 }
 </style>
