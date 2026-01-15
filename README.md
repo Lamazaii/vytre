@@ -88,12 +88,6 @@ vytre/
 - **ReaderViewWindow.vue** : Conteneur de prévisualisation en temps réel
 - Filtre automatiquement les blocs vides pour une lecture optimale
 
-#### **Modal de Zoom d'Image (ImageZoomPopUp.vue)**
-- **Taille par défaut configurable** (500x500px par défaut)
-- **Ratio dynamique** : préserve les proportions de l'image originale
-- **Positionnement intelligent** : bouton de fermeture toujours visible en haut à droite
-- **Backdrop filter** : effet de flou sur l'arrière-plan pour meilleure lisibilité
-- **Responsive** : s'adapte à toutes les tailles d'écran
 
 #### **BlockStores (Pinia)**
 - Gestion centralisée des blocs opérationnels
@@ -109,29 +103,16 @@ vytre/
 
 ### 1. Cloner le dépôt
 ```bash
-git clone <votre-repo>
+git clone https://github.com/Lamazaii/vytre.git
 cd vytre
 ```
 
-### 2. Installer les dépendances
-Pour installer toutes les dépendances du projet (racine, client et serveur) :
+### 2. Installer et configurer le projet
 ```bash
 npm run setup
 ```
 
-Cette commande installe automatiquement :
-- Les dépendances racine (concurrently, etc.)
-- Les dépendances du **client** (Vue, Pinia, TipTap, etc.)
-- Les dépendances du **server** (Express, Prisma, etc.)
-
-### 3. Configuration de la base de données
-```bash
-cd server
-cp .env.example .env  # Créer et configurer votre fichier .env
-npx prisma migrate dev  # Appliquer les migrations
-npx prisma generate  # Générer le client Prisma
-cd ..
-```
+Cette commande unique installe toutes les dépendances et configure automatiquement le projet.
 
 ##  Usage
 
