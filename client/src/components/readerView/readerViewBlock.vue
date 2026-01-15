@@ -31,6 +31,8 @@
     :isOpen="isModalOpen" 
     :imageSrc="selectedImageSrc" 
     :imageAlt="selectedImageAlt"
+    :defaultHeight="500"
+    :defaultWidth="500"
     @close="closeImageModal" 
   />
 </template>
