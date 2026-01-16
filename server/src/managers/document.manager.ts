@@ -96,29 +96,34 @@ export const getById = async (id: number) => {
 };
 
 
-// Update a document by its ID
+/// Update a document by ID and synchronize its nested relations (blocks & images)
 export const update = async (id: number, data: DocumentInput) => {
-    // Filter empty blocks on the server side
+
+    // 1. Data Cleaning: Keep only blocks containing actual content
+    // The Regex removes HTML tags (e.g., <p></p>) to ensure text isn't just empty markup
     const filteredBlocks = (data.blocks ?? []).filter((block) => {
         const hasText =
-        block.text && block.text.replace(/<[^>]*>/g, '').trim().length > 0;
+            block.text && block.text.replace(/<[^>]*>/g, '').trim().length > 0;
         const hasImages = block.images && block.images.length > 0;
         const hasNonEmptyZone = block.textZones?.some((z) =>
             z && z.replace(/<[^>]*>/g, '').trim().length > 0);
         return hasText ?? hasImages ?? hasNonEmptyZone;
     });
+
     return await prisma.document.update({
         where: { id },
         data: {
             title: data.title,
             version: data.version,
             blocks: {
+                // 2. Sync Strategy: Wipe existing blocks to avoid duplicates
                 deleteMany: {},
+                // 3. Re-creation: Map and insert the newly filtered blocks and their images
                 create: filteredBlocks.map((block) => ({
                     text: block.text ?? '',
                     step: block.step,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
-                    textZones: JSON.stringify(block.textZones ?? []),
+                    textZones: JSON.stringify(block.textZones ?? []), // Store as JSON for flexibility
                     images: {
                         create: block.images?.map((img) => ({
                             imagePath: img.imagePath,
@@ -127,11 +132,10 @@ export const update = async (id: number, data: DocumentInput) => {
                 })),
             },
         },
+        // 4. Eager Loading: Return the updated document including all nested relations
         include: {
             blocks: {
-                include: {
-                    images: true,
-                },
+                include: { images: true },
             },
         },
     });

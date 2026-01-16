@@ -1,14 +1,18 @@
 <template>
   <div class="textOptionBar">
+    <!-- Formatting buttons: bold, italic, underline -->
     <div class="formatGroup">
+      <!-- Bold (Ctrl+B) -->
       <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
       </button>
 
+      <!-- Italic (Ctrl+I) -->
       <button class="formatButton" :class="{ active: italic }" @mousedown.prevent @click="applyItalic" title="Italic">
         <img :src="italic ? italicIconActive : italicIcon" alt="Italic" />
       </button>
 
+      <!-- Underline (Ctrl+U) -->
       <button class="formatButton" :class="{ active: underline }" @mousedown.prevent @click="applyUnderline" title="Underline">
         <img :src="underline ? underlineIconActive : underlineIcon" alt="Underline" />
       </button>
@@ -20,6 +24,7 @@
       </button>
     </div>
 
+    <!-- Font size and color controls -->
     <div class="textControls">
       <select class="fontSize" v-model="fontSize" @change="handleSizeChange" aria-label="Text size">
         <option value="Small">Petit</option>
@@ -27,6 +32,7 @@
         <option value="Large">Grand</option>
       </select>
 
+      <!-- Color picker -->
       <div class="colorPicker" ref="colorRoot">
         <button class="colorButton" @click="toggleColorPicker" :aria-expanded="showColor" aria-haspopup="true" title="Color">
           <span class="colorPreview" :style="{ background: color }"></span>
@@ -45,6 +51,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+// SVG icons for formatting buttons
 import boldIcon from "../../assets/textOptionBar/bold.svg"
 import boldIconActive from "../../assets/textOptionBar/boldActive.svg"
 import italicIcon from "../../assets/textOptionBar/italic.svg"
@@ -61,6 +68,7 @@ import { useBlocksStore } from '../../stores/blockStores'
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 
+// Formatting state: bold, italic, underline, fontSize
 const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
 
@@ -69,6 +77,7 @@ const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
+// Preset colors
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 
 function handleSizeChange() {

@@ -134,16 +134,20 @@ describe('blocksStore', () => {
 
   it('saveDocument crée un document et met à jour currentDocument', async () => {
     const store = useBlocksStore()
-    const docService = documentService as unknown as { create: ReturnType<typeof vi.fn> }
+    const docService = documentService as unknown as { create: ReturnType<typeof vi.fn>; checkNameExists: ReturnType<typeof vi.fn> }
     docService.create = vi.fn().mockResolvedValue({
       id: 10,
       title: 'Saved',
-      version: '1.0.0',
+      version: 1,
       blocks: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     })
+    docService.checkNameExists = vi.fn().mockResolvedValue(false)
     const confirmSpy = vi.spyOn(confirmSavePopupStore, 'show')
+
+    // Add content to a block so the document is not empty
+    store.updateBlockDescription(0, '<p>Test content</p>')
 
     await store.saveDocument()
 
@@ -392,7 +396,7 @@ describe('blocksStore', () => {
   it('initializes currentDocument with default values', () => {
     const store = useBlocksStore()
     expect(store.currentDocument.title).toBe('Titre du document')
-    expect(store.currentDocument.version).toBe('1.0.0')
+    expect(store.currentDocument.version).toBe(1)
   })
 
   // Documents loading tests

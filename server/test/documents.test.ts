@@ -16,13 +16,13 @@ interface Block {
 interface DocumentShape {
     id: number;
     title: string;
-    version: string;
+    version: number;
     blocks: Block[];
 }
 
 interface CreateInput {
     title: string;
-    version: string;
+    version: number;
     blocks?: Block[];
 }
 
@@ -36,7 +36,7 @@ jest.mock('../src/managers/document.manager', () => {
             {
                 id: 1,
                 title: 'Doc',
-                version: '1.0.0',
+                version: 1,
                 blocks: [],
             },
         ],
@@ -48,7 +48,7 @@ jest.mock('../src/managers/document.manager', () => {
                 ? {
                     id,
                     title: 'Doc',
-                    version: '1.0.0',
+                    version: 1,
                     blocks: [],
                 }
                 : null,
@@ -82,7 +82,7 @@ describe('Documents routes', () => {
         it('creates document and returns 201 on valid payload', async () => {
             const payload = {
                 title: 'Document test',
-                version: '1.0.0',
+                version: 1,
                 blocks: [
                     {
                         text: 'ceci est un test',
@@ -135,7 +135,7 @@ describe('Documents routes', () => {
         it('updates document and returns 200 on valid payload', async () => {
             const payload = {
                 title: 'Document mis à jour',
-                version: '2.0.0',
+                version: 2,
                 blocks: [
                     { text: 'mis à jour', step: 1, nbOfRepeats: 2, images: [] },
                 ],
@@ -175,7 +175,7 @@ describe('Documents routes', () => {
             });
             const payload = {
                 title: 'err',
-                version: '1.0.0',
+                version: 1,
                 blocks: [],
             };
             const res = await request(app)
@@ -214,7 +214,7 @@ describe('Documents routes', () => {
             });
             const payload = {
                 title: 'err',
-                version: '1.0.0',
+                version: 1,
                 blocks: [],
             };
             const res = await request(app)
