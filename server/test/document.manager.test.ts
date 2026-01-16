@@ -25,7 +25,7 @@ describe('DocumentManager', () => {
             (prisma.document.create as jest.Mock).mockResolvedValue({ id: 1 });
             const data = {
                 title: 'Test',
-                version: '1.0.0',
+                version: 1,
                 blocks: [
                     { text: 'abc',
                         step: 1,
@@ -62,7 +62,7 @@ describe('DocumentManager', () => {
             (prisma.document.update as jest.Mock).mockResolvedValue({ id: 1 });
             const data = {
                 title: 'Test',
-                version: '1.0.0',
+                version: 2,
                 blocks: [
                     { text: 'abc',
                         step: 1,
