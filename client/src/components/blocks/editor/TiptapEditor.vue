@@ -11,10 +11,14 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { Editor, EditorContent } from '@tiptap/vue-3'
+// StarterKit: bold, italic, lists, paragraphs
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+// Underline: text underlining (not in StarterKit)
 import Underline from '@tiptap/extension-underline'
+// TextStyle: enables custom inline styles
 import { TextStyle } from '@tiptap/extension-text-style'
+// Color: text color support
 import { Color } from '@tiptap/extension-color'
 import { Extension } from '@tiptap/core'
 
@@ -37,6 +41,7 @@ const emit = defineEmits<{
 
 const editor = ref<Editor | undefined>(undefined)
 
+// Custom extension for font size (e.g., 12px, 16px, 20px)
 const FontSize = Extension.create({
   name: 'fontSize',
 
@@ -53,7 +58,9 @@ const FontSize = Extension.create({
         attributes: {
           fontSize: {
             default: null,
-            parseHTML: element => element.style.fontSize.replace(/['"´`]/g, ''),
+            // Parse font-size from HTML
+            parseHTML: element => element.style.fontSize.replace(/['"`´`]/g, ''),
+            // Render as inline CSS
             renderHTML: attributes => {
               if (!attributes.fontSize) {
                 return {}
@@ -70,11 +77,13 @@ const FontSize = Extension.create({
 
   addCommands() {
     return {
+      // Apply font size to selection
       setFontSize: (fontSize: string) => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize })
           .run()
       },
+      // Remove font size from selection
       unsetFontSize: () => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize: null })
@@ -94,6 +103,7 @@ const isEmpty = computed(() => {
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
+      // StarterKit: bold, italic, strike, lists
       StarterKit.configure({
         heading: false,
         codeBlock: false,
@@ -102,10 +112,10 @@ onMounted(() => {
         placeholder: props.placeholder,
         emptyEditorClass: 'is-editor-empty',
       }),
-      Underline,
-      TextStyle,
-      Color,
-      FontSize,
+      Underline,  // Text underlining
+      TextStyle,  // Required for Color and FontSize
+      Color,      // Text color
+      FontSize,   // Custom font size
     ],
     content: props.modelValue,
     editorProps: {
@@ -189,14 +199,17 @@ defineExpose({
   text-align: left;
 }
 
+/* Bold text (StarterKit) */
 .tiptap-editor-wrapper :deep(strong) {
   font-weight: bold;
 }
 
+/* Italic text (StarterKit) */
 .tiptap-editor-wrapper :deep(em) {
   font-style: italic;
 }
 
+/* Underlined text (Underline extension) */
 .tiptap-editor-wrapper :deep(u) {
   text-decoration: underline;
 }
