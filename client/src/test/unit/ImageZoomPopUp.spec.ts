@@ -82,7 +82,7 @@ describe('ImageZoomPopUp.vue', () => {
     })
     const closeBtn = wrapper.find('.close-button')
     expect(closeBtn.exists()).toBe(true)
-    expect(closeBtn.text()).toBe('×')
+    expect(closeBtn.find('svg').exists()).toBe(true)
     
     await closeBtn.trigger('click')
     expect(wrapper.emitted('close')).toBeTruthy()

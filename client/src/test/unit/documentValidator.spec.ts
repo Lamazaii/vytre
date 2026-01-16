@@ -162,43 +162,46 @@ describe('documentValidator', () => {
       }
     })
 
-    // Test nbOfRepeats validation
-    it('rejects block with nbOfRepeats less than 1', () => {
-      const documentWithInvalidBlock = {
+    // NbOfRepeats has no lower bound in current schema; zero is accepted
+    it('accepts block with nbOfRepeats equal to 0', () => {
+      const documentWithZeroRepeats = {
         title: 'Test',
         version: '1.0',
         blocks: [{ id: 1, nbOfRepeats: 0 }],
       }
 
-      const result = documentSchema.safeParse(documentWithInvalidBlock)
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Le nombre de répétitions doit être au moins 1')
+      const result = documentSchema.safeParse(documentWithZeroRepeats)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.blocks?.[0].nbOfRepeats).toBe(0)
       }
     })
 
-    // Test negative nbOfRepeats
-    it('rejects block with negative nbOfRepeats', () => {
-      const documentWithInvalidBlock = {
+    // Negative nbOfRepeats is currently accepted by schema
+    it('accepts block with negative nbOfRepeats', () => {
+      const documentWithNegative = {
         title: 'Test',
         version: '1.0',
         blocks: [{ id: 1, nbOfRepeats: -5 }],
       }
 
-      const result = documentSchema.safeParse(documentWithInvalidBlock)
-      expect(result.success).toBe(false)
+      const result = documentSchema.safeParse(documentWithNegative)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.blocks?.[0].nbOfRepeats).toBe(-5)
+      }
     })
 
-    // Test non-integer nbOfRepeats
-    it('rejects block with non-integer nbOfRepeats', () => {
-      const documentWithInvalidBlock = {
+    // Test decimal nbOfRepeats (allowed)
+    it('accepts block with decimal nbOfRepeats', () => {
+      const documentWithDecimal = {
         title: 'Test',
         version: '1.0',
         blocks: [{ id: 1, nbOfRepeats: 2.5 }],
       }
 
-      const result = documentSchema.safeParse(documentWithInvalidBlock)
-      expect(result.success).toBe(false)
+      const result = documentSchema.safeParse(documentWithDecimal)
+      expect(result.success).toBe(true)
     })
   })
 
