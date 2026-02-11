@@ -2,15 +2,19 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Editor } from '@tiptap/core'
 
+// Text formatting store: manages bold, italic, underline, font size, and color
+// Supports both Tiptap editor and contentEditable elements
 export const useTextFormatStore = defineStore('textFormat', () => {
+  // Formatting state
   const bold = ref(false)
   const italic = ref(false)
   const underline = ref(false)
   const fontSize = ref('Medium')
 
-  const activeEl = ref<HTMLElement | null>(null)
-  const lastRange = ref<Range | null>(null)
-  const tiptapEditor = ref<Editor | null>(null)
+  // Editor references
+  const activeEl = ref<HTMLElement | null>(null)      // Active contentEditable element
+  const lastRange = ref<Range | null>(null)           // Saved text selection
+  const tiptapEditor = ref<Editor | null>(null)       // Tiptap editor instance
 
   function setTiptapEditor(editor: Editor | null) {
     tiptapEditor.value = editor
@@ -20,6 +24,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     activeEl.value = el
   }
 
+  // Save current text selection
   function saveSelection() {
     try {
       const sel = document.getSelection()
@@ -28,6 +33,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     } catch {}
   }
 
+  // Restore saved text selection
   function restoreSelection() {
     try {
       const sel = document.getSelection()
@@ -41,13 +47,16 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     } catch {}
   }
 
+  // Update formatting indicators based on current selection
   function updateStatesFromCommand() {
     try {
       if (tiptapEditor.value) {
+        // Tiptap: check active marks
         bold.value = tiptapEditor.value.isActive('bold')
         italic.value = tiptapEditor.value.isActive('italic')
         underline.value = tiptapEditor.value.isActive('underline')
         
+        // Get font size from textStyle
         const attrs = tiptapEditor.value.getAttributes('textStyle')
         if (attrs.fontSize) {
           const size = attrs.fontSize
@@ -62,6 +71,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
           fontSize.value = 'Medium'
         }
       } else {
+        // ContentEditable: use deprecated queryCommandState
         bold.value = document.queryCommandState('bold')
         italic.value = document.queryCommandState('italic')
         underline.value = document.queryCommandState('underline')
@@ -79,6 +89,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     } catch {}
   }
 
+  // Execute formatting command on contentEditable (legacy)
   function execCommand(cmd: string, value?: string) {
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().run()
@@ -91,6 +102,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     updateStatesFromCommand()
   }
 
+  // Toggle bold
   const applyBold = () => {
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleBold().run()
@@ -100,6 +112,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
   
+  // Toggle italic
   const applyItalic = () => {
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleItalic().run()
@@ -109,6 +122,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
   
+  // Toggle underline
   const applyUnderline = () => {
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleUnderline().run()
@@ -118,6 +132,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
   
+  // Apply text color
   const applyColor = (value: string) => {
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().setColor(value).run()
@@ -126,6 +141,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
 
+  // Apply font size: Small (12px), Medium (16px), Large (20px)
   const applyFontSize = (sizeLabel: string) => {
     if (tiptapEditor.value) {
       const sizeMap: Record<string, string> = {
@@ -147,6 +163,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
 
+  // Reset formatting indicators to default
   function resetFormattingIndicators() {
     bold.value = false
     italic.value = false

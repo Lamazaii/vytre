@@ -78,4 +78,9 @@ export const documentService = {
 
     return response.json();
   },
+
+  async checkNameExists(title: string, excludeId?: number): Promise<boolean> {
+    const documents = await this.getAll();
+    return documents.some(doc => doc.title === title && doc.id !== excludeId);
+  },
 };

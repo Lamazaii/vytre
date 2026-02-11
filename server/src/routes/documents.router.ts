@@ -18,8 +18,8 @@
  *                 type: string
  *                 example: "Mon Premier Document"
  *               version:
- *                 type: string
- *                 example: "1.0.0"
+ *                 type: integer
+ *                 example: 1
  *               blocks:
  *                 type: array
  *                 items:
@@ -47,7 +47,7 @@
  *                             example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
  *           example:
  *             title: "Document test"
- *             version: "1.0.0"
+ *             version: 1
  *             blocks:
  *               - text: "ceci est un test"
  *                 step: 1
@@ -115,8 +115,8 @@
  *                 type: string
  *                 example: "Document Mis à Jour"
  *               version:
- *                 type: string
- *                 example: "2.0.0"
+ *                 type: integer
+ *                 example: 2
  *               blocks:
  *                 type: array
  *                 items:
@@ -144,7 +144,7 @@
  *                             example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
  *           example:
  *             title: "Document mis à jour"
- *             version: "2.0.0"
+ *             version: 2
  *             blocks:
  *               - text: "ceci est un test mis à jour"
  *                 step: 1

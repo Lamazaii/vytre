@@ -48,7 +48,7 @@ export const getDocumentById = async (req: Request, res: Response) => {
         const { id } = req.params;
         console.log(`Récupération du document ID: ${id}`);
 
-        const document = await DocumentManager.getById(Number.parseInt(id));
+        const document = await DocumentManager.getById(Number.parseInt(id as string));
 
         if (!document) {
             res.status(404).json({ message: 'Document non trouvé' });
@@ -82,7 +82,7 @@ export const updateDocument = async (req: Request, res: Response) => {
         }
 
         const updatedDoc =
-        await DocumentManager.update(Number.parseInt(id), validation.data);
+        await DocumentManager.update(Number.parseInt(id as string), validation.data);
 
         console.log('Document mis à jour avec succès :', updatedDoc.id);
         res.status(200).json(updatedDoc);

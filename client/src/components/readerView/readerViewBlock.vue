@@ -31,6 +31,8 @@
     :isOpen="isModalOpen" 
     :imageSrc="selectedImageSrc" 
     :imageAlt="selectedImageAlt"
+    :defaultHeight="500"
+    :defaultWidth="500"
     @close="closeImageModal" 
   />
 </template>
@@ -75,26 +77,32 @@ const closeImageModal = () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  width:auto;
+  max-width: 911px;
   height: auto;
   min-height: 60px;
-  margin: 5px 0;
+  margin: 5px 0px;
+  padding: 0px 25px;
 }
 
 .stepNumber {
-  border-radius: 50%;
+  border-radius: 20px;
+  padding-bottom: 1px;
   display: flex;
+  text-align: center;
   align-items: center;
   justify-content: center;
   border: 2px solid rgba(0, 0, 0, 0.42);
   width: 30px;
   height: 30px;
   color: rgba(0, 0, 0, 0.42);
-  font-weight: bold;
-  margin-left:14px;
+  font-size: 22px;
 }
 
 .blockContent {
   background-color: #FFFFFF;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,6 +111,7 @@ const closeImageModal = () => {
   width: 700px;
   font-size: 16px;
 }
+
 
 .contentWrapper {
   display: flex;
@@ -155,10 +164,10 @@ const closeImageModal = () => {
 }
 
 .repetitionValue {
-    margin-right: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 10px;
+    font-size: 24px;
 }
 </style>

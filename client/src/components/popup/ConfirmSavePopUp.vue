@@ -4,7 +4,7 @@
       <div class="popup-header">
         <div class="header-content">
           <img :src="tickicon" alt="Tick icon" class="tick-icon" />
-          <h2>Enregistré</h2>
+          <h2>{{ store.title }}</h2>
         </div>
         <button class="close-btn" @click="close" aria-label="Fermer">✕</button>
       </div>
@@ -30,7 +30,7 @@ const close = () => store.close()
 
 <style scoped>
 .popup-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
