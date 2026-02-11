@@ -7,4 +7,5 @@ export interface Document {
     blocks : Block[];
     createdAt? : Date;
     updatedAt? : Date;
+    state?: string; // "En édition" | "Actif" | "Archivé"
 }

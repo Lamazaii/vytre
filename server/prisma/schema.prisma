@@ -20,6 +20,7 @@ model Document {
   blocks    Block[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  state     String @default("En édition")
 }
 
 model Block {

@@ -83,6 +83,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document test',
                 version: 1,
+                state: 'En édition',
                 blocks: [
                     {
                         text: 'ceci est un test',
@@ -153,6 +154,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document mis à jour',
                 version: 2,
+                state: 'Actif',
                 blocks: [
                     { text: 'mis à jour', step: 1, nbOfRepeats: 2, images: [] },
                 ],

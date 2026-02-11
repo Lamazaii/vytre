@@ -19,6 +19,7 @@ export const documentSchema = z.object({
   blocks: z.array(blockSchema).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
+  state: z.enum(["En édition", "Actif", "Archivé"]).default("En édition"),
 });
 
 export type DocumentValidation = z.infer<typeof documentSchema>;

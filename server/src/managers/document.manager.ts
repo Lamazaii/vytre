@@ -16,6 +16,7 @@ interface DocumentInput {
     title: string;
     version: number;
     blocks?: BlockInput[];
+    state?: 'En édition' | 'Actif' | 'Archivé';
 }
 
 /*
@@ -35,6 +36,7 @@ export const create = async (data: DocumentInput) => {
         data: {
             title: data.title,
             version: data.version,
+            state: data.state ?? 'En édition',
             blocks: {
                 create: filteredBlocks.map((block) => ({
                     text: block.text ?? '',
@@ -115,6 +117,7 @@ export const update = async (id: number, data: DocumentInput) => {
         data: {
             title: data.title,
             version: data.version,
+            state: data.state ?? 'En édition',
             blocks: {
                 // 2. Sync Strategy: Wipe existing blocks to avoid duplicates
                 deleteMany: {},

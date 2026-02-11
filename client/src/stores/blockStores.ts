@@ -49,9 +49,11 @@ export const useBlocksStore = defineStore('blocks', () => {
     version: number;
     createdAt?: Date;
     updatedAt?: Date;
+    state?: string;
   }>({
     title: 'Titre du document',
-    version: 1
+    version: 1,
+    state: 'En édition'
   })
 
   const allDocuments = ref<Document[]>([])
@@ -137,7 +139,8 @@ export const useBlocksStore = defineStore('blocks', () => {
         title: document.title,
         version: document.version,
         createdAt: document.createdAt,
-        updatedAt: document.updatedAt
+        updatedAt: document.updatedAt,
+        state: document.state ?? 'En édition'
       };
 
       documentTitle.value = document.title;
@@ -163,7 +166,8 @@ export const useBlocksStore = defineStore('blocks', () => {
   function createNewDocument() {
     currentDocument.value = {
       title: 'Titre du document',
-      version: 1
+      version: 1,
+      state: 'En édition'
     }
     documentTitle.value = 'Titre du document'
     blocks.value = [
