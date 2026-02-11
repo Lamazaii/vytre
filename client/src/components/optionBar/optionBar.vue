@@ -27,6 +27,15 @@
             <img class="tab-item-icon" :src="iconImage" alt="Illustration" />
             <span class="tab-item-label">IMAGE</span>
           </button>
+
+          <button
+            :class="['tab-item', { 'tab-item--active': activeTab === 'form' }]"
+            type="button"
+            @click="activeTab = 'form'"
+          >
+            <img class="tab-item-icon" :src="iconShape" alt="Formes" />
+            <span class="tab-item-label">FORMES</span>
+          </button>
         </nav>
       </div>
 
@@ -53,6 +62,10 @@
     <div v-if="activeTab === 'image'" class="contextual-toolbar-wrapper">
       <ImageOptionBar />
     </div>
+    <div v-if="activeTab === 'form'" class="contextual-toolbar-wrapper">
+      <FormOptionBar />
+    </div>
+
   </div>
 </template>
 
@@ -63,14 +76,16 @@ import iconImage from "../../assets/optionBarImage/imageIcon.svg";
 import iconEditMode from "../../assets/optionBarImage/personEdit.svg";
 import iconText from "../../assets/optionBarImage/textField.svg";
 import iconViewMode from "../../assets/optionBarImage/visibility.svg";
+import iconShape from "../../assets/optionBarImage/shapeIcon.svg";
 
 import IconToggleGroup from "./iconToggleGroup.vue";
 import TextOptionBar from "./textOptionBar.vue";
+import FormOptionBar from "./formOptionBar.vue";
 import ImageOptionBar from "./imageOptionBar.vue";
 import { ref } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
 
-const activeTab = ref<'text' | 'image'>('text')
+const activeTab = ref<'text' | 'image' | 'form'>('text')
 const popupStore = usePopupStore()
 const emit = defineEmits<{
   save: []
