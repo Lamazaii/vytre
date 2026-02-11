@@ -52,11 +52,26 @@ describe('Menu.vue', () => {
 
   // Test new document button emits event
   it('emits selectMode event when new button clicked', async () => {
-    const wrapper = mount(Menu)
+    const wrapper = mount(Menu, {
+      global: {
+        plugins: [createTestingPinia({
+          stubActions: true,
+          initialState: {
+            blocks: {
+              allDocuments: [],
+              loadingDocuments: false,
+              documentsError: null,
+            },
+          },
+        })],
+      },
+    })
     const newButton = wrapper.find('.newButton')
     
     await newButton.trigger('click')
     
+    const store: any = wrapper.vm.store
+    expect(store.createNewDocument).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('selectMode')).toBeTruthy()
     if (wrapper.emitted('selectMode')) {
       expect(wrapper.emitted('selectMode')[0]).toEqual(['editor'])
