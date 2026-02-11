@@ -23,7 +23,7 @@
       
       <div class="searchSection">
         <input type="text" v-model="searchQuery" placeholder="Rechercher..." class="searchInput" />
-        <button v-if="viewMode === 'editor'" class="newButton" @click="$emit('selectMode', 'editor')">+ Nouveau</button>
+        <button v-if="viewMode === 'editor'" class="newButton" @click="handleNewDocument">+ Nouveau</button>
       </div>
     </div>
 
@@ -114,6 +114,11 @@ function openDocument(doc: Document) {
 function editDocument(doc: Document) {
   console.log('Édition du document:', doc)
   store.loadDocument(doc.id!)
+  emit('selectMode', 'editor')
+}
+
+function handleNewDocument() {
+  store.createNewDocument()
   emit('selectMode', 'editor')
 }
 

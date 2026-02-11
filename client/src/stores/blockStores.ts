@@ -160,6 +160,27 @@ export const useBlocksStore = defineStore('blocks', () => {
     }
   }
 
+  function createNewDocument() {
+    currentDocument.value = {
+      title: 'Titre du document',
+      version: 1
+    }
+    documentTitle.value = 'Titre du document'
+    blocks.value = [
+      {
+        id: 1,
+        text: '',
+        step: 1,
+        nbOfRepeats: 1,
+        modified: false,
+        images: [] as Image[],
+        textZones: []
+      }
+    ]
+    selectedIndex.value = null
+    blockToDeleteIndex.value = null
+  }
+
   // Load all documents
   async function loadAllDocuments() {
     try {
@@ -347,6 +368,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     toggleSelect,
     saveDocument,
     loadDocument,
+    createNewDocument,
     loadAllDocuments,
     setModified,
     addEmptyBlockIfAllowed,
