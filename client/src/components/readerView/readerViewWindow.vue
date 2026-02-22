@@ -20,6 +20,7 @@
                         :modelValue="block.nbOfRepeats"
                         :images="block.images"
                         :textZones="block.textZones"
+                        :canvasData="block.canvasData"
                     />
                 </div>
             </div>
@@ -51,8 +52,9 @@ const noEmptyBlocks = computed(() => {
         const hasImages = block.images && block.images.length > 0
         const hasTextZones = block.textZones && block.textZones.length > 0 && 
                             block.textZones.some(zone => zone.trim() !== '')
+        const hasCanvas = block.canvasData && block.canvasData.trim() !== ''
         
-        return hasText || hasImages || hasTextZones
+        return hasText || hasImages || hasTextZones || hasCanvas
     })
 })
 

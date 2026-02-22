@@ -23,6 +23,7 @@
 <script setup lang="ts">
 
 import { ref } from 'vue'
+import { useShapeStore } from '../../stores/shapeStore'
 import squareIcon from "../../assets/imageOptionBar/square.svg"
 import squareIconActive from "../../assets/imageOptionBar/squareActive.svg"
 import circleIcon from "../../assets/imageOptionBar/circle.svg"
@@ -30,18 +31,40 @@ import circleIconActive from "../../assets/imageOptionBar/circleActive.svg"
 import triangleIcon from "../../assets/imageOptionBar/triangle.svg"
 import triangleIconActive from "../../assets/imageOptionBar/triangleActive.svg"
 
+const shapeStore = useShapeStore()
 const activeShape = ref<'square' | 'circle' | 'triangle' | null>(null)
 
 function onSquareClick() {
-  activeShape.value = activeShape.value === 'square' ? null : 'square'
+  activeShape.value = 'square'
+  shapeStore.setActiveShape('square')
+  shapeStore.requestAddShape()
+
+  setTimeout(() => {
+    activeShape.value = null
+    shapeStore.clearActiveShape()
+  }, 150)
 }
 
 function onCircleClick() {
-  activeShape.value = activeShape.value === 'circle' ? null : 'circle'
+  activeShape.value = 'circle'
+  shapeStore.setActiveShape('circle')
+  shapeStore.requestAddShape()
+
+  setTimeout(() => {
+    activeShape.value = null
+    shapeStore.clearActiveShape()
+  }, 150)
 }
 
 function onTriangleClick() {
-  activeShape.value = activeShape.value === 'triangle' ? null : 'triangle'
+  activeShape.value = 'triangle'
+  shapeStore.setActiveShape('triangle')
+  shapeStore.requestAddShape()
+  
+  setTimeout(() => {
+    activeShape.value = null
+    shapeStore.clearActiveShape()
+  }, 150)
 }
 
 </script>

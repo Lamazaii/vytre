@@ -294,6 +294,20 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
+   * Update canvas data in a block
+   * @param blockIndex - Index of the block
+   * @param data - JSON string of canvas data
+   */
+  function updateBlockCanvas(blockIndex: number, data: string) {
+    if (blockIndex < 0 || blockIndex >= blocks.value.length) return
+    const block = blocks.value[blockIndex]
+    if (!block) return
+    
+    block.canvasData = data
+    block.modified = true
+  }
+
+  /**
    * Delete a specific text zone from a block
    * @param blockIndex - Index of the block
    * @param zoneIndex - Index of the text zone to delete
@@ -356,6 +370,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     confirmDelete,
     updateBlockDescription,
     updateTextZone,
+    updateBlockCanvas,
     removeTextZone,
     isContentEmpty,
     loadFromClipboard,
