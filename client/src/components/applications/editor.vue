@@ -113,6 +113,8 @@ function handleHome() {
 }
 
 function handleCropComplete(croppedImageData: string) {
+  imageCropStore.setCroppedImage(croppedImageData)
+  
   if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
     const blockIndex = imageCropStore.blockIndex
     const block = blocks.value[blockIndex]

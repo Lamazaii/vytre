@@ -58,6 +58,7 @@ import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 import { useShapeStore } from '../../../stores/shapeStore'
+import { useImageCropStore } from '../../../stores/imageCropStore'
 
 import TextZoneItem from './textZoneItem.vue'
 import ImageUploader from './imageUploader.vue'
@@ -88,6 +89,7 @@ const hasShapes = ref(false)
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const shapeStore = useShapeStore()
+const imageCropStore = useImageCropStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
 const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
@@ -204,6 +206,23 @@ watch(() => shapeStore.addImageRequest, () => {
   const uploaderEl = imageUploaderRef.value as any
   if (uploaderEl && uploaderEl.triggerFileInput) {
     uploaderEl.triggerFileInput()
+  }
+})
+watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
+    const selectedImage = shapeCanvasRef.value.getSelectedImage()
+    if (selectedImage) {
+      const imageSrc = (selectedImage as any).originalSrc || selectedImage.getSrc()
+      imageCropStore.openCropper(imageSrc)
+    }
+  }
+})
+
+watch(() => imageCropStore.croppedImageData, (croppedData) => {
+  if (croppedData && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
+    shapeCanvasRef.value.replaceSelectedImage(croppedData)
+    emit('modified', true)
+    imageCropStore.clearCroppedImage()
   }
 })
 

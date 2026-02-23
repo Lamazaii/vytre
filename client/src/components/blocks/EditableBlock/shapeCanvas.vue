@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fabric } from 'fabric'
+import { useImageCropStore } from '../../../stores/imageCropStore'
 
 interface Props {
   width?: number
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 const fabricCanvas = ref<fabric.Canvas | null>(null)
 const canvasId = `shape-canvas-${props.blockIndex || Math.random()}`
+const imageCropStore = useImageCropStore()
 
 function createDeleteControl() {
   return new fabric.Control({
@@ -124,6 +126,10 @@ onMounted(() => {
   fabricCanvas.value.on('object:modified', saveCanvasState)
   fabricCanvas.value.on('object:added', saveCanvasState)
   fabricCanvas.value.on('object:removed', saveCanvasState)
+
+  fabricCanvas.value.on('selection:created', handleSelection)
+  fabricCanvas.value.on('selection:updated', handleSelection)
+  fabricCanvas.value.on('selection:cleared', handleSelectionCleared)
 
   fabricCanvas.value.on('object:moving', (e) => {
     const obj = e.target
@@ -230,11 +236,28 @@ watch(() => props.active, (isActive) => {
     
     if (!isActive) {
       fabricCanvas.value.discardActiveObject()
+      imageCropStore.clearSelection()
     }
     
     fabricCanvas.value.renderAll()
   }
 })
+
+function handleSelection(e: any) {
+  const selected = e.selected?.[0]
+  if (selected && selected.type === 'image') {
+    const imageId = (selected as any).imageId || selected.cacheKey
+    if (imageId && props.blockIndex !== undefined) {
+      imageCropStore.selectImage(imageId, props.blockIndex)
+    }
+  } else {
+    imageCropStore.clearSelection()
+  }
+}
+
+function handleSelectionCleared() {
+  imageCropStore.clearSelection()
+}
 
 function saveCanvasState() {
   if (!fabricCanvas.value) return
@@ -323,14 +346,15 @@ function addImage(imageSrc: string) {
     const canvasWidth = fabricCanvas.value.width || props.width
     const canvasHeight = fabricCanvas.value.height || props.height
 
-    // Calculer l'échelle pour que l'image ne dépasse pas 300px de largeur ou hauteur
     const maxSize = 300
     const scale = Math.min(
       maxSize / (img.width || 1),
       maxSize / (img.height || 1),
-      1 // Ne pas agrandir si l'image est plus petite
+      1 
     )
 
+    const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
     img.set({
       left: (canvasWidth - (img.width || 0) * scale) / 2,
       top: (canvasHeight - (img.height || 0) * scale) / 2,
@@ -341,8 +365,53 @@ function addImage(imageSrc: string) {
       crossOrigin: 'anonymous'
     })
 
+    ;(img as any).imageId = imageId
+    ;(img as any).originalSrc = imageSrc
+
     fabricCanvas.value.add(img)
     fabricCanvas.value.setActiveObject(img)
+    fabricCanvas.value.requestRenderAll()
+  })
+}
+
+function getSelectedImage() {
+  if (!fabricCanvas.value) return null
+  const activeObject = fabricCanvas.value.getActiveObject()
+  if (activeObject && activeObject.type === 'image') {
+    return activeObject as fabric.Image
+  }
+  return null
+}
+
+function replaceSelectedImage(newImageSrc: string) {
+  const selectedImage = getSelectedImage()
+  if (!selectedImage || !fabricCanvas.value) return
+
+  const imageId = (selectedImage as any).imageId
+  const currentProps = {
+    left: selectedImage.left,
+    top: selectedImage.top,
+    scaleX: selectedImage.scaleX,
+    scaleY: selectedImage.scaleY,
+    angle: selectedImage.angle
+  }
+
+  fabric.Image.fromURL(newImageSrc, (newImg) => {
+    if (!fabricCanvas.value) return
+
+    newImg.set({
+      ...currentProps,
+      selectable: true,
+      evented: true,
+      crossOrigin: 'anonymous'
+    })
+
+    ;(newImg as any).imageId = imageId
+    ;(newImg as any).originalSrc = newImageSrc
+
+    fabricCanvas.value.remove(selectedImage)
+    fabricCanvas.value.add(newImg)
+    fabricCanvas.value.setActiveObject(newImg)
     fabricCanvas.value.requestRenderAll()
   })
 }
@@ -352,7 +421,9 @@ defineExpose({
   addCircle,
   addTriangle,
   addImage,
-  getCanvas: () => fabricCanvas.value
+  getCanvas: () => fabricCanvas.value,
+  getSelectedImage,
+  replaceSelectedImage
 })
 </script>
 
