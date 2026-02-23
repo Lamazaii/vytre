@@ -46,8 +46,8 @@
       />
     </div>
 
-    <div class="imageUploaderSection">
-      <ImageUploader @upload="handleNewImage" />
+    <div class="imageUploaderSection" v-show="!hasShapes">
+      <ImageUploader ref="imageUploaderRef" @upload="handleNewImage" />
     </div>
   </div>
 </template>
@@ -91,6 +91,7 @@ const shapeStore = useShapeStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
 const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
+const imageUploaderRef = ref<InstanceType<typeof ImageUploader> | null>(null)
 
 function getInitialCanvasData(): string {
   if (props.blockIndex === undefined) return ''
@@ -197,6 +198,15 @@ watch(welcomeText, (newValue) => {
   }
   emit('update:description', newValue)
 })
+watch(() => shapeStore.addImageRequest, () => {
+  if (!props.active || !imageUploaderRef.value) return
+  
+  const uploaderEl = imageUploaderRef.value as any
+  if (uploaderEl && uploaderEl.triggerFileInput) {
+    uploaderEl.triggerFileInput()
+  }
+})
+
 
 onMounted(() => {
   setTimeout(() => {
