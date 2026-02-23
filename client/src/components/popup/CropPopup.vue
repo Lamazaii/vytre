@@ -1,6 +1,10 @@
 <template>
+  <!-- Crop modal overlay - only displays if isOpen and imageSrc are defined -->
   <div v-if="isOpen && imageSrc" class="cropper-modal-overlay">
+    <!-- Main cropper card - @click.stop prevents closing on click -->
     <div class="cropper-card" @click.stop>
+      
+      <!-- Header with title and close button -->
       <div class="cropper-header">
         <div class="cropper-title-group">
           <img :src="cropIconActive" alt="Rogner" class="cropper-title-icon" />
@@ -8,8 +12,17 @@
         </div>
         <button class="cropper-close-button" @click="handleClose" aria-label="Fermer">✕</button>
       </div>
+
+      <!-- Modal body containing the cropping component -->
       <div class="cropper-body">
         <div class="cropper-engine-wrapper">
+          <!-- 
+            vue-advanced-cropper component 
+            - ref: reference to access cropping result
+            - src: source image to crop
+            - stencil-props: selection area configuration (aspectRatio: null = free ratio)
+            - min/max width/height: size constraints for the selection area
+          -->
           <cropper
             ref="cropperRef"
             class="cropper-engine"
@@ -22,7 +35,11 @@
           />
         </div>
       </div>
+
+      <!-- Visual separator between body and footer -->
       <div class="cropper-separator"></div>
+
+      <!-- Footer with action buttons -->
       <footer class="cropper-footer">
         <button class="cropper-ghost-button" @click="handleClose">Annuler</button>
         <button class="cropper-primary-button" @click="handleConfirm">CONFIRMER</button>
@@ -38,27 +55,54 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import cropIconActive from '../../assets/imageOptionBar/cropActive.svg'
 
+// Pinia store to manage crop popup state
 const imageCropStore = useImageCropStore()
-const cropperRef = ref<any>(null)
 
+// Computed property tracking modal open state from the store
 const isOpen = computed(() => imageCropStore.isCropperOpen)
+
+// Computed property retrieving the image URL/base64 to crop from the store
 const imageSrc = computed(() => {
   return imageCropStore.imageToCropSrc || null
 })
 
+// Event emissions to parent component
 const emit = defineEmits(['crop', 'close'])
 
+// Reference to the Cropper component to access its methods (getResult())
+const cropperRef = ref<any>(null)
+  
+/**
+ * Closes the crop popup
+ * - Updates state in the store
+ * - Emits 'close' event to parent
+ */
 function handleClose() {
   imageCropStore.isCropperOpen = false
   emit('close')
 }
 
+/**
+ * Confirms the crop and generates the cropped image
+ * 1. Retrieves the cropper result via getResult()
+ * 2. Extracts the canvas containing the cropped image
+ * 3. Converts the canvas to base64 via toDataURL()
+ * 4. Emits the cropped image to the parent component
+ * 5. Closes the popup
+ */
 function handleConfirm() {
   if (cropperRef.value) {
+    // getResult() returns an object with canvas and crop coordinates
     const { canvas } = cropperRef.value.getResult()
+    
     if (canvas) {
+      // Converts canvas to base64 format (data:image/png;base64,...)
       const croppedImage = canvas.toDataURL()
+      
+      // Sends cropped image to parent component (typically EditableBlock)
       emit('crop', croppedImage)
+      
+      // Closes popup after confirmation
       handleClose()
     }
   }
