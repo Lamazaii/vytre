@@ -34,18 +34,17 @@
 
     <div class="dottedSeparator"></div>
 
-    <div class="shapeCanvasSection">
+    <div class="shapeCanvasSection" v-show="hasShapes">
       <ShapeCanvas 
         ref="shapeCanvasRef"
         :block-index="props.blockIndex"
         :canvas-data="canvasData"
         :active="props.active"
         @update:canvasData="handleCanvasUpdate"
+        @update:hasObjects="handleHasObjectsUpdate"
         @modified="(v) => emit('modified', v)"
       />
     </div>
-
-    <div class="dottedSeparator"></div>
 
     <div class="imageSection">
       <div class="imagesContainer" v-if="images.length > 0">
@@ -66,7 +65,7 @@
 
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 import { useImageCropStore } from '../../../stores/imageCropStore'
@@ -99,6 +98,7 @@ const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const images = ref<Image[]>(props.images || [])
 const welcomeText = ref(props.description || '')
+const hasShapes = ref(false)
 
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
@@ -193,14 +193,23 @@ function handleCanvasUpdate(data: string) {
   canvasData.value = data
 }
 
+function handleHasObjectsUpdate(value: boolean) {
+  hasShapes.value = value
+}
+
 function onDelete() { emit('delete') }
 
 watch(() => props.description, (newDesc) => {
   if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
 })
 
-watch(() => shapeStore.addShapeRequest, () => {
+watch(() => shapeStore.addShapeRequest, async () => {
   if (!shapeCanvasRef.value || !props.active) return
+  
+  if (!hasShapes.value) {
+    hasShapes.value = true
+    await nextTick()
+  }
   
   const shape = shapeStore.activeShape
   if (shape === 'square') {
@@ -329,6 +338,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column; 
   align-items: center; 
+  padding-top: 10px;
   gap: 12px; 
 }
 

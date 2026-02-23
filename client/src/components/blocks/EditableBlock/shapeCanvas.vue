@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:canvasData': [data: string]
   'modified': [value: boolean]
+  'update:hasObjects': [value: boolean]
 }>()
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
@@ -110,10 +111,14 @@ onMounted(() => {
     try {
       fabricCanvas.value.loadFromJSON(props.canvasData, () => {
         fabricCanvas.value?.renderAll()
+        const hasObjects = (fabricCanvas.value?.getObjects()?.length || 0) > 0
+        emit('update:hasObjects', hasObjects)
       })
     } catch (error) {
       console.error('Canvas loading error:', error)
     }
+  } else {
+    emit('update:hasObjects', false)
   }
 
   fabricCanvas.value.on('object:modified', saveCanvasState)
@@ -218,6 +223,11 @@ watch(() => props.active, (isActive) => {
       obj.selectable = isActive
       obj.evented = isActive
     })
+    
+    if (!isActive) {
+      fabricCanvas.value.discardActiveObject()
+    }
+    
     fabricCanvas.value.renderAll()
   }
 })
@@ -228,17 +238,24 @@ function saveCanvasState() {
   const json = JSON.stringify(fabricCanvas.value.toJSON())
   emit('update:canvasData', json)
   emit('modified', true)
+  
+  const hasObjects = (fabricCanvas.value.getObjects()?.length || 0) > 0
+  emit('update:hasObjects', hasObjects)
 }
 
 function addSquare() {
   if (!fabricCanvas.value) return
 
+  const size = 80
+  const canvasWidth = fabricCanvas.value.width || props.width
+  const canvasHeight = fabricCanvas.value.height || props.height
+
   const rect = new fabric.Rect({
-    left: 100,
-    top: 100,
+    left: (canvasWidth - size) / 2,
+    top: (canvasHeight - size) / 2,
     fill: '#DC2626',
-    width: 80,
-    height: 80,
+    width: size,
+    height: size,
     selectable: true,
     evented: true
   })
@@ -251,11 +268,17 @@ function addSquare() {
 function addCircle() {
   if (!fabricCanvas.value) return
 
+  const radius = 40
+  const canvasWidth = fabricCanvas.value.width || props.width
+  const canvasHeight = fabricCanvas.value.height || props.height
+
   const circle = new fabric.Circle({
-    left: 150,
-    top: 150,
+    left: canvasWidth / 2,
+    top: canvasHeight / 2,
     fill: '#DC2626',
-    radius: 40,
+    radius: radius,
+    originX: 'center',
+    originY: 'center',
     selectable: true,
     evented: true
   })
@@ -268,12 +291,16 @@ function addCircle() {
 function addTriangle() {
   if (!fabricCanvas.value) return
 
+  const size = 80
+  const canvasWidth = fabricCanvas.value.width || props.width
+  const canvasHeight = fabricCanvas.value.height || props.height
+
   const triangle = new fabric.Triangle({
-    left: 200,
-    top: 200,
+    left: (canvasWidth - size) / 2,
+    top: (canvasHeight - size) / 2,
     fill: '#DC2626',
-    width: 80,
-    height: 80,
+    width: size,
+    height: size,
     selectable: true,
     evented: true
   })
