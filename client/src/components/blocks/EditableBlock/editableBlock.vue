@@ -46,18 +46,7 @@
       />
     </div>
 
-    <div class="imageSection">
-      <div class="imagesContainer" v-if="images.length > 0">
-        <ImageItem 
-          v-for="(image, index) in images" 
-          :key="image.id || index"
-          :image-path="image.imagePath"
-          :is-selected="imageCropStore.selectedImageId === image.id"
-          @select="toggleSelectImage(image.id)"
-          @remove="removeImage(index)"
-        />
-      </div>
-  
+    <div class="imageUploaderSection">
       <ImageUploader @upload="handleNewImage" />
     </div>
   </div>
@@ -68,12 +57,9 @@
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
-import { useImageCropStore } from '../../../stores/imageCropStore'
-import { useDeletePopupStore } from '../../../stores/deletePopupStore'
 import { useShapeStore } from '../../../stores/shapeStore'
 
 import TextZoneItem from './textZoneItem.vue'
-import ImageItem from './imageItem.vue'
 import ImageUploader from './imageUploader.vue'
 import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
 import ShapeCanvas from './shapeCanvas.vue'
@@ -96,14 +82,11 @@ const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 
 
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
-const images = ref<Image[]>(props.images || [])
 const welcomeText = ref(props.description || '')
 const hasShapes = ref(false)
 
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
-const imageCropStore = useImageCropStore()
-const deletePopupStore = useDeletePopupStore()
 const shapeStore = useShapeStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
@@ -122,29 +105,17 @@ const textZones = computed(() => {
   return block?.textZones || []
 })
 
-const toggleSelectImage = (id: string) => {
-  if (imageCropStore.selectedImageId === id) {
-    imageCropStore.clearSelection()
-  } else {
-    imageCropStore.selectImage(id, props.blockIndex ?? 0)
+const handleNewImage = async (imageData: string) => {
+  if (!shapeCanvasRef.value) return
+  
+  // Afficher le canvas s'il n'est pas déjà visible
+  if (!hasShapes.value) {
+    hasShapes.value = true
+    await nextTick()
   }
-}
-
-const removeImage = (index: number) => {
-  deletePopupStore.show('image', () => {
-    images.value.splice(index, 1)
-    emit('update:images', [...images.value])
-  })
-}
-
-const handleNewImage = (imageData: string) => {
-  const newImage: Image = {
-    id: Date.now().toString(),
-    imagePath: imageData,
-    blockId: props.blockIndex ?? 0,
-  }
-  images.value = [...images.value, newImage]
-  emit('update:images', images.value)
+  
+  // Ajouter l'image directement au canvas
+  shapeCanvasRef.value.addImage(imageData)
   emit('modified', true)
 }
 
@@ -221,10 +192,6 @@ watch(() => shapeStore.addShapeRequest, async () => {
   }
 })
 
-watch(() => props.images, (newVal) => {
-  if (newVal) images.value = newVal
-}, { deep: true })
-
 watch(welcomeText, (newValue) => {
   if (props.blockIndex !== undefined) {
     blocksStore.updateBlockDescription(props.blockIndex, newValue)
@@ -232,22 +199,35 @@ watch(welcomeText, (newValue) => {
   emit('update:description', newValue)
 })
 
-watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex) {
-    const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
-    if (imageToEdit) {
-      imageCropStore.openCropper(imageToEdit.imagePath)
-    }
-  }
-})
-
 onMounted(() => {
+  // Configurer l'éditeur de texte
   setTimeout(() => {
     if (welcomeEditorRef.value) {
       const editor = welcomeEditorRef.value.getEditor()
       if (editor) textFormatStore.setTiptapEditor(editor as any)
     }
   }, 100)
+
+  // Migrer les images existantes vers le canvas
+  if (props.images && props.images.length > 0 && shapeCanvasRef.value) {
+    // Attendre que le canvas soit initialisé
+    setTimeout(async () => {
+      const imagesToMigrate = props.images
+      if (!shapeCanvasRef.value || !imagesToMigrate) return
+      
+      // Afficher le canvas s'il y a des images à migrer
+      hasShapes.value = true
+      await nextTick()
+      
+      // Ajouter chaque image au canvas
+      for (const image of imagesToMigrate) {
+        shapeCanvasRef.value.addImage(image.imagePath)
+      }
+      
+      // Nettoyer les images de l'ancien format
+      emit('update:images', [])
+    }, 200)
+  }
 })
 </script>
 
@@ -332,22 +312,14 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   width: 700px;
+  margin-bottom: 10px;
 }
 
-.imageSection { 
+.imageUploaderSection {
   display: flex;
   flex-direction: column; 
   align-items: center; 
-  padding-top: 10px;
-  gap: 12px; 
-}
-
-.imagesContainer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  width : 900px;
+  padding-top: 5px;
+  width: 900px;
 }
 </style>

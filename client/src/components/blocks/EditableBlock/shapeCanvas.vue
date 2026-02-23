@@ -140,16 +140,20 @@ onMounted(() => {
     
     if (obj.left !== undefined) {
       if (radius > 0) {
+        // Pour les cercles
         obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
       } else {
+        // Pour les rectangles, triangles et images
         obj.left = Math.max(0, Math.min(obj.left, canvasWidth - objWidth))
       }
     }
     
     if (obj.top !== undefined) {
       if (radius > 0) {
+        // Pour les cercles
         obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
       } else {
+        // Pour les rectangles, triangles et images
         obj.top = Math.max(0, Math.min(obj.top, canvasHeight - objHeight))
       }
     }
@@ -310,10 +314,44 @@ function addTriangle() {
   fabricCanvas.value.requestRenderAll()
 }
 
+function addImage(imageSrc: string) {
+  if (!fabricCanvas.value) return
+
+  fabric.Image.fromURL(imageSrc, (img) => {
+    if (!fabricCanvas.value) return
+
+    const canvasWidth = fabricCanvas.value.width || props.width
+    const canvasHeight = fabricCanvas.value.height || props.height
+
+    // Calculer l'échelle pour que l'image ne dépasse pas 300px de largeur ou hauteur
+    const maxSize = 300
+    const scale = Math.min(
+      maxSize / (img.width || 1),
+      maxSize / (img.height || 1),
+      1 // Ne pas agrandir si l'image est plus petite
+    )
+
+    img.set({
+      left: (canvasWidth - (img.width || 0) * scale) / 2,
+      top: (canvasHeight - (img.height || 0) * scale) / 2,
+      scaleX: scale,
+      scaleY: scale,
+      selectable: true,
+      evented: true,
+      crossOrigin: 'anonymous'
+    })
+
+    fabricCanvas.value.add(img)
+    fabricCanvas.value.setActiveObject(img)
+    fabricCanvas.value.requestRenderAll()
+  })
+}
+
 defineExpose({
   addSquare,
   addCircle,
   addTriangle,
+  addImage,
   getCanvas: () => fabricCanvas.value
 })
 </script>
