@@ -31,10 +31,71 @@ const canvasElement = ref<HTMLCanvasElement | null>(null)
 const fabricCanvas = ref<fabric.Canvas | null>(null)
 const canvasId = `shape-canvas-${props.blockIndex || Math.random()}`
 
+function createDeleteControl() {
+  return new fabric.Control({
+    x: 0.5,
+    y: -0.5,
+    offsetY: -16,
+    offsetX: 16,
+    cursorStyle: 'pointer',
+    mouseUpHandler: deleteObject,
+    render: renderDeleteIcon
+  })
+}
+
+function deleteObject(_eventData: MouseEvent, _transform: any) {
+  const target = _transform.target
+  const canvas = target.canvas
+
+  if (target.type === 'activeSelection') {
+    const activeSelection = target as fabric.ActiveSelection
+    
+    activeSelection.forEachObject((obj: fabric.Object) => {
+      canvas.remove(obj)
+    })
+    
+    canvas.discardActiveObject()
+  } else {
+    canvas.remove(target)
+  }
+  
+  canvas.requestRenderAll()
+  return true
+}
+
+function renderDeleteIcon(
+  ctx: CanvasRenderingContext2D,
+  left: number,
+  top: number,
+  _styleOverride: any,
+  fabricObject: fabric.Object
+) {
+  const size = 20
+  ctx.save()
+  ctx.translate(left, top)
+  ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle || 0))
+  
+  ctx.beginPath()
+  ctx.arc(0, 0, size / 2, 0, 2 * Math.PI)
+  ctx.fillStyle = '#DC2626'
+  ctx.fill()
+
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 2
+  const crossSize = size * 0.4
+  ctx.beginPath()
+  ctx.moveTo(-crossSize / 2, -crossSize / 2)
+  ctx.lineTo(crossSize / 2, crossSize / 2)
+  ctx.moveTo(crossSize / 2, -crossSize / 2)
+  ctx.lineTo(-crossSize / 2, crossSize / 2)
+  ctx.stroke()
+  
+  ctx.restore()
+}
+
 onMounted(() => {
   if (!canvasElement.value) return
 
-  // Initialiser le canvas Fabric.js
   fabricCanvas.value = new fabric.Canvas(canvasElement.value, {
     width: props.width,
     height: props.height,
@@ -42,45 +103,40 @@ onMounted(() => {
     selection: props.active
   })
 
-  // Charger les données sauvegardées si elles existent
+  fabric.Object.prototype.controls.deleteControl = createDeleteControl()
+  fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
+
   if (props.canvasData) {
     try {
       fabricCanvas.value.loadFromJSON(props.canvasData, () => {
         fabricCanvas.value?.renderAll()
       })
     } catch (error) {
-      console.error('Erreur lors du chargement du canvas:', error)
+      console.error('Canvas loading error:', error)
     }
   }
 
-  // Écouter les modifications du canvas
   fabricCanvas.value.on('object:modified', saveCanvasState)
   fabricCanvas.value.on('object:added', saveCanvasState)
   fabricCanvas.value.on('object:removed', saveCanvasState)
-  
-  // Contraindre le mouvement des objets dans les limites du canvas
+
   fabricCanvas.value.on('object:moving', (e) => {
     const obj = e.target
     if (!obj || !fabricCanvas.value) return
     
     const canvasWidth = fabricCanvas.value.width || props.width
     const canvasHeight = fabricCanvas.value.height || props.height
-    
-    // Calculer les limites en tenant compte de la taille de l'objet
+
     const objWidth = (obj.width || 0) * (obj.scaleX || 1)
     const objHeight = (obj.height || 0) * (obj.scaleY || 1)
     
-    // Pour les cercles, utiliser le rayon
     const radius = (obj as fabric.Circle).radius || 0
     const scaledRadius = radius * (obj.scaleX || 1)
     
-    // Limiter les coordonnées
     if (obj.left !== undefined) {
-      // Pour les cercles
       if (radius > 0) {
         obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
       } else {
-        // Pour les rectangles et triangles
         obj.left = Math.max(0, Math.min(obj.left, canvasWidth - objWidth))
       }
     }
@@ -94,7 +150,6 @@ onMounted(() => {
     }
   })
   
-  // Contraindre la taille des objets pour ne pas dépasser le canvas
   fabricCanvas.value.on('object:scaling', (e) => {
     const obj = e.target
     if (!obj || !fabricCanvas.value) return
@@ -102,7 +157,6 @@ onMounted(() => {
     const canvasWidth = fabricCanvas.value.width || props.width
     const canvasHeight = fabricCanvas.value.height || props.height
     
-    // Pour les cercles
     const radius = (obj as fabric.Circle).radius || 0
     if (radius > 0) {
       const maxScale = Math.min(canvasWidth, canvasHeight) / (2 * radius)
@@ -114,7 +168,6 @@ onMounted(() => {
         obj.scaleY = maxScale
       }
     } else {
-      // Pour les rectangles et triangles
       const objWidth = (obj.width || 0) * (obj.scaleX || 1)
       const objHeight = (obj.height || 0) * (obj.scaleY || 1)
       
@@ -126,7 +179,6 @@ onMounted(() => {
       }
     }
     
-    // Repositionner si l'objet dépasse après le scaling
     constrainObjectPosition(obj, canvasWidth, canvasHeight, radius)
   })
 })
@@ -178,7 +230,6 @@ function saveCanvasState() {
   emit('modified', true)
 }
 
-// Fonction exposée pour ajouter un carré
 function addSquare() {
   if (!fabricCanvas.value) return
 
@@ -188,16 +239,15 @@ function addSquare() {
     fill: '#DC2626',
     width: 80,
     height: 80,
-    selectable: props.active,
-    evented: props.active
+    selectable: true,
+    evented: true
   })
 
   fabricCanvas.value.add(rect)
   fabricCanvas.value.setActiveObject(rect)
-  fabricCanvas.value.renderAll()
+  fabricCanvas.value.requestRenderAll()
 }
 
-// Fonction exposée pour ajouter un cercle
 function addCircle() {
   if (!fabricCanvas.value) return
 
@@ -206,16 +256,15 @@ function addCircle() {
     top: 150,
     fill: '#DC2626',
     radius: 40,
-    selectable: props.active,
-    evented: props.active
+    selectable: true,
+    evented: true
   })
 
   fabricCanvas.value.add(circle)
   fabricCanvas.value.setActiveObject(circle)
-  fabricCanvas.value.renderAll()
+  fabricCanvas.value.requestRenderAll()
 }
 
-// Fonction exposée pour ajouter un triangle
 function addTriangle() {
   if (!fabricCanvas.value) return
 
@@ -225,16 +274,15 @@ function addTriangle() {
     fill: '#DC2626',
     width: 80,
     height: 80,
-    selectable: props.active,
-    evented: props.active
+    selectable: true,
+    evented: true
   })
 
   fabricCanvas.value.add(triangle)
   fabricCanvas.value.setActiveObject(triangle)
-  fabricCanvas.value.renderAll()
+  fabricCanvas.value.requestRenderAll()
 }
 
-// Exposer les fonctions au parent via defineExpose
 defineExpose({
   addSquare,
   addCircle,
