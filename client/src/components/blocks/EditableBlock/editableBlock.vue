@@ -108,13 +108,11 @@ const textZones = computed(() => {
 const handleNewImage = async (imageData: string) => {
   if (!shapeCanvasRef.value) return
   
-  // Afficher le canvas s'il n'est pas déjà visible
   if (!hasShapes.value) {
     hasShapes.value = true
     await nextTick()
   }
   
-  // Ajouter l'image directement au canvas
   shapeCanvasRef.value.addImage(imageData)
   emit('modified', true)
 }
@@ -177,12 +175,13 @@ watch(() => props.description, (newDesc) => {
 watch(() => shapeStore.addShapeRequest, async () => {
   if (!shapeCanvasRef.value || !props.active) return
   
+  const shape = shapeStore.activeShape
+  
   if (!hasShapes.value) {
     hasShapes.value = true
     await nextTick()
   }
   
-  const shape = shapeStore.activeShape
   if (shape === 'square') {
     shapeCanvasRef.value.addSquare()
   } else if (shape === 'circle') {
@@ -200,7 +199,6 @@ watch(welcomeText, (newValue) => {
 })
 
 onMounted(() => {
-  // Configurer l'éditeur de texte
   setTimeout(() => {
     if (welcomeEditorRef.value) {
       const editor = welcomeEditorRef.value.getEditor()
@@ -208,23 +206,18 @@ onMounted(() => {
     }
   }, 100)
 
-  // Migrer les images existantes vers le canvas
   if (props.images && props.images.length > 0 && shapeCanvasRef.value) {
-    // Attendre que le canvas soit initialisé
     setTimeout(async () => {
       const imagesToMigrate = props.images
       if (!shapeCanvasRef.value || !imagesToMigrate) return
       
-      // Afficher le canvas s'il y a des images à migrer
       hasShapes.value = true
       await nextTick()
       
-      // Ajouter chaque image au canvas
       for (const image of imagesToMigrate) {
         shapeCanvasRef.value.addImage(image.imagePath)
       }
       
-      // Nettoyer les images de l'ancien format
       emit('update:images', [])
     }, 200)
   }
