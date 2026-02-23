@@ -34,6 +34,19 @@
 
     <div class="dottedSeparator"></div>
 
+    <div class="shapeCanvasSection">
+      <ShapeCanvas 
+        ref="shapeCanvasRef"
+        :block-index="props.blockIndex"
+        :canvas-data="canvasData"
+        :active="props.active"
+        @update:canvasData="handleCanvasUpdate"
+        @modified="(v) => emit('modified', v)"
+      />
+    </div>
+
+    <div class="dottedSeparator"></div>
+
     <div class="imageSection">
       <div class="imagesContainer" v-if="images.length > 0">
         <ImageItem 
@@ -58,11 +71,13 @@ import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 import { useImageCropStore } from '../../../stores/imageCropStore'
 import { useDeletePopupStore } from '../../../stores/deletePopupStore'
+import { useShapeStore } from '../../../stores/shapeStore'
 
 import TextZoneItem from './textZoneItem.vue'
 import ImageItem from './imageItem.vue'
 import ImageUploader from './imageUploader.vue'
 import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
+import ShapeCanvas from './shapeCanvas.vue'
 
 import trash from '../../../assets/blockImage/trash.svg'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
@@ -89,8 +104,17 @@ const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const imageCropStore = useImageCropStore()
 const deletePopupStore = useDeletePopupStore()
+const shapeStore = useShapeStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
+const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
+
+function getInitialCanvasData(): string {
+  if (props.blockIndex === undefined) return ''
+  return blocksStore.blocks[props.blockIndex]?.canvasData || ''
+}
+
+const canvasData = ref(getInitialCanvasData())
 
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
@@ -162,10 +186,30 @@ function onRemoveTextZone(index: number) {
   blocksStore.removeTextZone(props.blockIndex, index)
 }
 
+function handleCanvasUpdate(data: string) {
+  if (props.blockIndex !== undefined) {
+    blocksStore.updateBlockCanvas(props.blockIndex, data)
+  }
+  canvasData.value = data
+}
+
 function onDelete() { emit('delete') }
 
 watch(() => props.description, (newDesc) => {
   if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
+})
+
+watch(() => shapeStore.addShapeRequest, () => {
+  if (!shapeCanvasRef.value || !props.active) return
+  
+  const shape = shapeStore.activeShape
+  if (shape === 'square') {
+    shapeCanvasRef.value.addSquare()
+  } else if (shape === 'circle') {
+    shapeCanvasRef.value.addCircle()
+  } else if (shape === 'triangle') {
+    shapeCanvasRef.value.addTriangle()
+  }
 })
 
 watch(() => props.images, (newVal) => {
@@ -272,6 +316,13 @@ onMounted(() => {
     flex-direction: 
     column; 
     width: 900px; 
+}
+
+.shapeCanvasSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 700px;
 }
 
 .imageSection { 

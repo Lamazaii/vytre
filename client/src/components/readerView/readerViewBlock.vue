@@ -10,6 +10,7 @@
                 <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
                 </div>
               </div>
+              <ReaderViewCanvas v-if="canvasData" :canvas-data="canvasData" />
               <div v-if="images && images.length > 0" class="imagesContainer">
                 <img 
                   v-for="(image, index) in images" 
@@ -42,6 +43,7 @@
 import { ref } from 'vue';
 import type { Image } from '../../types/Image';
 import ImageZoom from '../popup/ImageZoomPopUp.vue';
+import ReaderViewCanvas from './readerViewCanvas.vue';
 
 interface Props {
   numero: number;
@@ -49,6 +51,7 @@ interface Props {
   modelValue: number;
   images?: Image[];
   textZones?: string[];
+  canvasData?: string;
 }
 
 const props = defineProps<Props>();

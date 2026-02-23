@@ -2,17 +2,14 @@
   <div class="textOptionBar">
     <!-- Formatting buttons: bold, italic, underline -->
     <div class="formatGroup">
-      <!-- Bold (Ctrl+B) -->
       <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
       </button>
 
-      <!-- Italic (Ctrl+I) -->
       <button class="formatButton" :class="{ active: italic }" @mousedown.prevent @click="applyItalic" title="Italic">
         <img :src="italic ? italicIconActive : italicIcon" alt="Italic" />
       </button>
 
-      <!-- Underline (Ctrl+U) -->
       <button class="formatButton" :class="{ active: underline }" @mousedown.prevent @click="applyUnderline" title="Underline">
         <img :src="underline ? underlineIconActive : underlineIcon" alt="Underline" />
       </button>
