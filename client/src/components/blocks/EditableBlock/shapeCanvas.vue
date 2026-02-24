@@ -1,6 +1,6 @@
 <template>
   <div class="shapeCanvasWrapper">
-    <canvas ref="canvasElement" :id="`canvas-${canvasId}`"></canvas>
+    <canvas ref="canvasElement"></canvas>
   </div>
 </template>
 
@@ -26,13 +26,32 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:canvasData': [data: string]
   'modified': [value: boolean]
-  'update:hasObjects': [value: boolean]
 }>()
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
-const fabricCanvas = ref<fabric.Canvas | null>(null)
-const canvasId = `shape-canvas-${props.blockIndex || Math.random()}`
+let canvas: fabric.Canvas | null = null
 const imageCropStore = useImageCropStore()
+
+const objectDefaults = {
+  selectable: true,
+  evented: true,
+  hasControls: true,
+  hasBorders: true,
+  lockRotation: false,
+  lockScalingX: false,
+  lockScalingY: false,
+  lockMovementX: false,
+  lockMovementY: false,
+  lockSkewingX: false,
+  lockSkewingY: false,
+  transparentCorners: false,
+  cornerSize: 10,
+  cornerColor: 'rgba(178, 204, 255, 1)',
+  cornerStrokeColor: 'rgba(102, 153, 255, 1)',
+  borderColor: 'rgba(102, 153, 255, 1)',
+  borderScaleFactor: 1,
+  rotatingPointOffset: 30,
+}
 
 function createDeleteControl() {
   return new fabric.Control({
@@ -96,152 +115,181 @@ function renderDeleteIcon(
   ctx.restore()
 }
 
-onMounted(() => {
-  if (!canvasElement.value) return
+function deleteSelectedObjects() {
+  if (!canvas) return
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject) return
 
-  fabricCanvas.value = new fabric.Canvas(canvasElement.value, {
-    width: props.width,
-    height: props.height,
-    backgroundColor: '#ffffff',
-    selection: props.active
-  })
+  if (activeObject.type === 'activeSelection') {
+    const activeSelection = activeObject as fabric.ActiveSelection
 
-  fabric.Object.prototype.controls.deleteControl = createDeleteControl()
-  fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
+    activeSelection.forEachObject((obj: fabric.Object) => {
+      canvas?.remove(obj)
+    })
 
-  if (props.canvasData) {
-    try {
-      fabricCanvas.value.loadFromJSON(props.canvasData, () => {
-        fabricCanvas.value?.renderAll()
-        const hasObjects = (fabricCanvas.value?.getObjects()?.length || 0) > 0
-        emit('update:hasObjects', hasObjects)
-      })
-    } catch (error) {
-      console.error('Canvas loading error:', error)
-    }
+    canvas.discardActiveObject()
   } else {
-    emit('update:hasObjects', false)
+    canvas.remove(activeObject)
   }
 
-  fabricCanvas.value.on('object:modified', saveCanvasState)
-  fabricCanvas.value.on('object:added', saveCanvasState)
-  fabricCanvas.value.on('object:removed', saveCanvasState)
-
-  fabricCanvas.value.on('selection:created', handleSelection)
-  fabricCanvas.value.on('selection:updated', handleSelection)
-  fabricCanvas.value.on('selection:cleared', handleSelectionCleared)
-
-  fabricCanvas.value.on('object:moving', (e) => {
-    const obj = e.target
-    if (!obj || !fabricCanvas.value) return
-    
-    const canvasWidth = fabricCanvas.value.width || props.width
-    const canvasHeight = fabricCanvas.value.height || props.height
-
-    const objWidth = (obj.width || 0) * (obj.scaleX || 1)
-    const objHeight = (obj.height || 0) * (obj.scaleY || 1)
-    
-    const radius = (obj as fabric.Circle).radius || 0
-    const scaledRadius = radius * (obj.scaleX || 1)
-    
-    if (obj.left !== undefined) {
-      if (radius > 0) {
-        // Pour les cercles
-        obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
-      } else {
-        // Pour les rectangles, triangles et images
-        obj.left = Math.max(0, Math.min(obj.left, canvasWidth - objWidth))
-      }
-    }
-    
-    if (obj.top !== undefined) {
-      if (radius > 0) {
-        // Pour les cercles
-        obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
-      } else {
-        // Pour les rectangles, triangles et images
-        obj.top = Math.max(0, Math.min(obj.top, canvasHeight - objHeight))
-      }
-    }
-  })
-  
-  fabricCanvas.value.on('object:scaling', (e) => {
-    const obj = e.target
-    if (!obj || !fabricCanvas.value) return
-    
-    const canvasWidth = fabricCanvas.value.width || props.width
-    const canvasHeight = fabricCanvas.value.height || props.height
-    
-    const radius = (obj as fabric.Circle).radius || 0
-    if (radius > 0) {
-      const maxScale = Math.min(canvasWidth, canvasHeight) / (2 * radius)
-      
-      if (obj.scaleX && obj.scaleX > maxScale) {
-        obj.scaleX = maxScale
-      }
-      if (obj.scaleY && obj.scaleY > maxScale) {
-        obj.scaleY = maxScale
-      }
-    } else {
-      const objWidth = (obj.width || 0) * (obj.scaleX || 1)
-      const objHeight = (obj.height || 0) * (obj.scaleY || 1)
-      
-      if (obj.scaleX && objWidth > canvasWidth) {
-        obj.scaleX = canvasWidth / (obj.width || 1)
-      }
-      if (obj.scaleY && objHeight > canvasHeight) {
-        obj.scaleY = canvasHeight / (obj.height || 1)
-      }
-    }
-    
-    constrainObjectPosition(obj, canvasWidth, canvasHeight, radius)
-  })
-})
-
-function constrainObjectPosition(obj: fabric.Object, canvasWidth: number, canvasHeight: number, radius: number) {
-  const scaledWidth = (obj.width || 0) * (obj.scaleX || 1)
-  const scaledHeight = (obj.height || 0) * (obj.scaleY || 1)
-  const scaledRadius = radius * (obj.scaleX || 1)
-  
-  if (obj.left !== undefined) {
-    if (radius > 0) {
-      obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
-    } else {
-      obj.left = Math.max(0, Math.min(obj.left, canvasWidth - scaledWidth))
-    }
-  }
-  
-  if (obj.top !== undefined) {
-    if (radius > 0) {
-      obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
-    } else {
-      obj.top = Math.max(0, Math.min(obj.top, canvasHeight - scaledHeight))
-    }
-  }
+  canvas.requestRenderAll()
 }
 
-onBeforeUnmount(() => {
-  if (fabricCanvas.value) {
-    fabricCanvas.value.dispose()
-  }
-})
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return
+  if (!props.active) return
 
-watch(() => props.active, (isActive) => {
-  if (fabricCanvas.value) {
-    fabricCanvas.value.selection = isActive
-    fabricCanvas.value.forEachObject((obj: fabric.Object) => {
-      obj.selectable = isActive
-      obj.evented = isActive
-    })
-    
-    if (!isActive) {
-      fabricCanvas.value.discardActiveObject()
-      imageCropStore.clearSelection()
+  const target = event.target as HTMLElement | null
+  if (target) {
+    const tagName = target.tagName
+    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
+      return
     }
-    
-    fabricCanvas.value.renderAll()
   }
-})
+
+  deleteSelectedObjects()
+}
+
+function saveCanvas() {
+  if (!canvas) return
+  const json = JSON.stringify(canvas.toJSON())
+  emit('update:canvasData', json)
+  emit('modified', true)
+}
+
+function createShape(type: 'rect' | 'circle' | 'triangle') {
+  if (!canvas) return
+
+  const canvasWidth = canvas.width || props.width
+  const canvasHeight = canvas.height || props.height
+  let shape: fabric.Object
+
+  if (type === 'rect') {
+    const size = 100
+    shape = new fabric.Rect({
+      left: (canvasWidth - size) / 2,
+      top: (canvasHeight - size) / 2,
+      width: size,
+      height: size,
+      fill: '#DC2626',
+      ...objectDefaults
+    })
+  } else if (type === 'circle') {
+    const radius = 50
+    shape = new fabric.Circle({
+      left: canvasWidth / 2,
+      top: canvasHeight / 2,
+      radius: radius,
+      fill: '#DC2626',
+      originX: 'center',
+      originY: 'center',
+      ...objectDefaults
+    })
+  } else {
+    const size = 100
+    shape = new fabric.Triangle({
+      left: (canvasWidth - size) / 2,
+      top: (canvasHeight - size) / 2,
+      width: size,
+      height: size,
+      fill: '#DC2626',
+      ...objectDefaults
+    })
+  }
+
+  canvas.add(shape)
+  canvas.setActiveObject(shape)
+  canvas.renderAll()
+}
+
+function addSquare() {
+  createShape('rect')
+}
+
+function addCircle() {
+  createShape('circle')
+}
+
+function addTriangle() {
+  createShape('triangle')
+}
+
+function addImage(imageSrc: string) {
+  if (!canvas) return
+
+  fabric.Image.fromURL(imageSrc, (img) => {
+    if (!canvas) return
+
+    const canvasWidth = canvas.width || props.width
+    const canvasHeight = canvas.height || props.height
+
+    const maxSize = 300
+    const scale = Math.min(
+      maxSize / (img.width || 1),
+      maxSize / (img.height || 1),
+      1 
+    )
+
+    const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
+    img.set({
+      left: (canvasWidth - (img.width || 0) * scale) / 2,
+      top: (canvasHeight - (img.height || 0) * scale) / 2,
+      scaleX: scale,
+      scaleY: scale,
+      crossOrigin: 'anonymous',
+      ...objectDefaults
+    })
+
+    ;(img as any).imageId = imageId
+    ;(img as any).originalSrc = imageSrc
+
+    canvas.add(img)
+    canvas.setActiveObject(img)
+    canvas.renderAll()
+  })
+}
+
+function getSelectedImage() {
+  if (!canvas) return null
+  const activeObject = canvas.getActiveObject()
+  if (activeObject && activeObject.type === 'image') {
+    return activeObject as fabric.Image
+  }
+  return null
+}
+
+function replaceSelectedImage(newImageSrc: string) {
+  const selectedImage = getSelectedImage()
+  if (!selectedImage || !canvas) return
+
+  const imageId = (selectedImage as any).imageId
+  const currentProps = {
+    left: selectedImage.left,
+    top: selectedImage.top,
+    scaleX: selectedImage.scaleX,
+    scaleY: selectedImage.scaleY,
+    angle: selectedImage.angle
+  }
+
+  fabric.Image.fromURL(newImageSrc, (newImg) => {
+    if (!canvas) return
+
+    newImg.set({
+      ...currentProps,
+      crossOrigin: 'anonymous',
+      ...objectDefaults
+    })
+
+    ;(newImg as any).imageId = imageId
+    ;(newImg as any).originalSrc = newImageSrc
+
+    canvas.remove(selectedImage)
+    canvas.add(newImg)
+    canvas.setActiveObject(newImg)
+    canvas.renderAll()
+  })
+}
 
 function handleSelection(e: any) {
   const selected = e.selected?.[0]
@@ -259,171 +307,73 @@ function handleSelectionCleared() {
   imageCropStore.clearSelection()
 }
 
-function saveCanvasState() {
-  if (!fabricCanvas.value) return
-  
-  const json = JSON.stringify(fabricCanvas.value.toJSON())
-  emit('update:canvasData', json)
-  emit('modified', true)
-  
-  const hasObjects = (fabricCanvas.value.getObjects()?.length || 0) > 0
-  emit('update:hasObjects', hasObjects)
-}
+onMounted(() => {
+  if (!canvasElement.value) return
 
-function addSquare() {
-  if (!fabricCanvas.value) return
-
-  const size = 80
-  const canvasWidth = fabricCanvas.value.width || props.width
-  const canvasHeight = fabricCanvas.value.height || props.height
-
-  const rect = new fabric.Rect({
-    left: (canvasWidth - size) / 2,
-    top: (canvasHeight - size) / 2,
-    fill: '#DC2626',
-    width: size,
-    height: size,
-    selectable: true,
-    evented: true
+  canvas = new fabric.Canvas(canvasElement.value, {
+    width: props.width,
+    height: props.height,
+    backgroundColor: '#ffffff',
+    selection: props.active,
+    renderOnAddRemove: true,
   })
 
-  fabricCanvas.value.add(rect)
-  fabricCanvas.value.setActiveObject(rect)
-  fabricCanvas.value.requestRenderAll()
-}
+  fabric.Object.prototype.controls.deleteControl = createDeleteControl()
+  fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
 
-function addCircle() {
-  if (!fabricCanvas.value) return
+  canvas.on('object:added', saveCanvas)
+  canvas.on('object:modified', saveCanvas)
+  canvas.on('object:removed', saveCanvas)
 
-  const radius = 40
-  const canvasWidth = fabricCanvas.value.width || props.width
-  const canvasHeight = fabricCanvas.value.height || props.height
+  canvas.on('selection:created', handleSelection)
+  canvas.on('selection:updated', handleSelection)
+  canvas.on('selection:cleared', handleSelectionCleared)
 
-  const circle = new fabric.Circle({
-    left: canvasWidth / 2,
-    top: canvasHeight / 2,
-    fill: '#DC2626',
-    radius: radius,
-    originX: 'center',
-    originY: 'center',
-    selectable: true,
-    evented: true
-  })
+  window.addEventListener('keydown', handleKeyDown)
 
-  fabricCanvas.value.add(circle)
-  fabricCanvas.value.setActiveObject(circle)
-  fabricCanvas.value.requestRenderAll()
-}
+  if (props.canvasData) {
+    canvas.loadFromJSON(props.canvasData, () => {
+      canvas?.getObjects().forEach((obj) => {
+        Object.assign(obj, objectDefaults)
+        obj.setCoords()
+      })
+      canvas?.renderAll()
+    })
+  }
+})
 
-function addTriangle() {
-  if (!fabricCanvas.value) return
+onBeforeUnmount(() => {
+  if (canvas) {
+    canvas.dispose()
+    canvas = null
+  }
+  window.removeEventListener('keydown', handleKeyDown)
+})
 
-  const size = 80
-  const canvasWidth = fabricCanvas.value.width || props.width
-  const canvasHeight = fabricCanvas.value.height || props.height
-
-  const triangle = new fabric.Triangle({
-    left: (canvasWidth - size) / 2,
-    top: (canvasHeight - size) / 2,
-    fill: '#DC2626',
-    width: size,
-    height: size,
-    selectable: true,
-    evented: true
-  })
-
-  fabricCanvas.value.add(triangle)
-  fabricCanvas.value.setActiveObject(triangle)
-  fabricCanvas.value.requestRenderAll()
-}
-
-function addImage(imageSrc: string) {
-  if (!fabricCanvas.value) return
-
-  fabric.Image.fromURL(imageSrc, (img) => {
-    if (!fabricCanvas.value) return
-
-    const canvasWidth = fabricCanvas.value.width || props.width
-    const canvasHeight = fabricCanvas.value.height || props.height
-
-    const maxSize = 300
-    const scale = Math.min(
-      maxSize / (img.width || 1),
-      maxSize / (img.height || 1),
-      1 
-    )
-
-    const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+watch(() => props.active, (isActive) => {
+  if (canvas) {
+    canvas.selection = isActive
+    canvas.forEachObject((obj: fabric.Object) => {
+      obj.selectable = isActive
+      obj.evented = isActive
+    })
     
-    img.set({
-      left: (canvasWidth - (img.width || 0) * scale) / 2,
-      top: (canvasHeight - (img.height || 0) * scale) / 2,
-      scaleX: scale,
-      scaleY: scale,
-      selectable: true,
-      evented: true,
-      crossOrigin: 'anonymous'
-    })
-
-    ;(img as any).imageId = imageId
-    ;(img as any).originalSrc = imageSrc
-
-    fabricCanvas.value.add(img)
-    fabricCanvas.value.setActiveObject(img)
-    fabricCanvas.value.requestRenderAll()
-  })
-}
-
-function getSelectedImage() {
-  if (!fabricCanvas.value) return null
-  const activeObject = fabricCanvas.value.getActiveObject()
-  if (activeObject && activeObject.type === 'image') {
-    return activeObject as fabric.Image
+    if (!isActive) {
+      canvas.discardActiveObject()
+      imageCropStore.clearSelection()
+    }
+    
+    canvas.renderAll()
   }
-  return null
-}
-
-function replaceSelectedImage(newImageSrc: string) {
-  const selectedImage = getSelectedImage()
-  if (!selectedImage || !fabricCanvas.value) return
-
-  const imageId = (selectedImage as any).imageId
-  const currentProps = {
-    left: selectedImage.left,
-    top: selectedImage.top,
-    scaleX: selectedImage.scaleX,
-    scaleY: selectedImage.scaleY,
-    angle: selectedImage.angle
-  }
-
-  fabric.Image.fromURL(newImageSrc, (newImg) => {
-    if (!fabricCanvas.value) return
-
-    newImg.set({
-      ...currentProps,
-      selectable: true,
-      evented: true,
-      crossOrigin: 'anonymous'
-    })
-
-    ;(newImg as any).imageId = imageId
-    ;(newImg as any).originalSrc = newImageSrc
-
-    fabricCanvas.value.remove(selectedImage)
-    fabricCanvas.value.add(newImg)
-    fabricCanvas.value.setActiveObject(newImg)
-    fabricCanvas.value.requestRenderAll()
-  })
-}
+})
 
 defineExpose({
   addSquare,
   addCircle,
   addTriangle,
   addImage,
-  getCanvas: () => fabricCanvas.value,
   getSelectedImage,
-  replaceSelectedImage
+  replaceSelectedImage,
 })
 </script>
 

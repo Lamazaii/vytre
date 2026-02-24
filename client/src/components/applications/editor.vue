@@ -156,6 +156,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         item-key="id"
         ghost-class="ghost"
         handle=".drag-handle"
+        filter=".shapeCanvasWrapper, .shapeCanvasWrapper *, canvas, .upper-canvas, .lower-canvas"
+        :preventOnFilter="false"
         @end="onDragEnd"
       >
         <template #item="{element: block, index: i}">
