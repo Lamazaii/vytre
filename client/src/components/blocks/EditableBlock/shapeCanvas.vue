@@ -150,6 +150,33 @@ function handleKeyDown(event: KeyboardEvent) {
   deleteSelectedObjects()
 }
 
+function constrainObjectPosition(
+  obj: fabric.Object,
+  canvasWidth: number,
+  canvasHeight: number,
+  radius: number
+) {
+  const scaledWidth = (obj.width || 0) * (obj.scaleX || 1)
+  const scaledHeight = (obj.height || 0) * (obj.scaleY || 1)
+  const scaledRadius = radius * (obj.scaleX || 1)
+
+  if (obj.left !== undefined) {
+    if (radius > 0) {
+      obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
+    } else {
+      obj.left = Math.max(0, Math.min(obj.left, canvasWidth - scaledWidth))
+    }
+  }
+
+  if (obj.top !== undefined) {
+    if (radius > 0) {
+      obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
+    } else {
+      obj.top = Math.max(0, Math.min(obj.top, canvasHeight - scaledHeight))
+    }
+  }
+}
+
 function saveCanvas() {
   if (!canvas) return
   const json = JSON.stringify(canvas.toJSON())
@@ -325,11 +352,73 @@ onMounted(() => {
   canvas.on('object:modified', saveCanvas)
   canvas.on('object:removed', saveCanvas)
 
+  canvas.on('object:moving', (e) => {
+    const obj = e.target
+    if (!obj || !canvas) return
+
+    const canvasWidth = canvas.width || props.width
+    const canvasHeight = canvas.height || props.height
+
+    const objWidth = (obj.width || 0) * (obj.scaleX || 1)
+    const objHeight = (obj.height || 0) * (obj.scaleY || 1)
+
+    const radius = (obj as fabric.Circle).radius || 0
+    const scaledRadius = radius * (obj.scaleX || 1)
+
+    if (obj.left !== undefined) {
+      if (radius > 0) {
+        obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
+      } else {
+        obj.left = Math.max(0, Math.min(obj.left, canvasWidth - objWidth))
+      }
+    }
+
+    if (obj.top !== undefined) {
+      if (radius > 0) {
+        obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
+      } else {
+        obj.top = Math.max(0, Math.min(obj.top, canvasHeight - objHeight))
+      }
+    }
+  })
+
+  canvas.on('object:scaling', (e) => {
+    const obj = e.target
+    if (!obj || !canvas) return
+
+    const canvasWidth = canvas.width || props.width
+    const canvasHeight = canvas.height || props.height
+
+    const radius = (obj as fabric.Circle).radius || 0
+    if (radius > 0) {
+      const maxScale = Math.min(canvasWidth, canvasHeight) / (2 * radius)
+
+      if (obj.scaleX && obj.scaleX > maxScale) {
+        obj.scaleX = maxScale
+      }
+      if (obj.scaleY && obj.scaleY > maxScale) {
+        obj.scaleY = maxScale
+      }
+    } else {
+      const objWidth = (obj.width || 0) * (obj.scaleX || 1)
+      const objHeight = (obj.height || 0) * (obj.scaleY || 1)
+
+      if (obj.scaleX && objWidth > canvasWidth) {
+        obj.scaleX = canvasWidth / (obj.width || 1)
+      }
+      if (obj.scaleY && objHeight > canvasHeight) {
+        obj.scaleY = canvasHeight / (obj.height || 1)
+      }
+    }
+
+    constrainObjectPosition(obj, canvasWidth, canvasHeight, radius)
+  })
+
   canvas.on('selection:created', handleSelection)
   canvas.on('selection:updated', handleSelection)
   canvas.on('selection:cleared', handleSelectionCleared)
 
-  window.addEventListener('keydown', handleKeyDown)
+  globalThis.addEventListener('keydown', handleKeyDown)
 
   if (props.canvasData) {
     canvas.loadFromJSON(props.canvasData, () => {
@@ -347,7 +436,7 @@ onBeforeUnmount(() => {
     canvas.dispose()
     canvas = null
   }
-  window.removeEventListener('keydown', handleKeyDown)
+  globalThis.removeEventListener('keydown', handleKeyDown)
 })
 
 watch(() => props.active, (isActive) => {
