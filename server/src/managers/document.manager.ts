@@ -10,6 +10,7 @@ interface BlockInput {
     nbOfRepeats?: number;
     images?: ImageInput[];
     textZones?: string[];
+    canvasData?: string;
 }
 
 interface DocumentInput {
@@ -43,6 +44,7 @@ export const create = async (data: DocumentInput) => {
                     step: block.step,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
                     textZones: JSON.stringify(block.textZones ?? []),
+                    canvasData: block.canvasData ?? null,
                     images: {
                         create: block.images?.map((img) => ({
                             imagePath: img.imagePath,
@@ -127,6 +129,7 @@ export const update = async (id: number, data: DocumentInput) => {
                     step: block.step,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
                     textZones: JSON.stringify(block.textZones ?? []), // Store as JSON for flexibility
+                    canvasData: block.canvasData ?? null,
                     images: {
                         create: block.images?.map((img) => ({
                             imagePath: img.imagePath,

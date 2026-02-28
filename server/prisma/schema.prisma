@@ -29,6 +29,7 @@ model Block {
   step         Int
   nbOfRepeats  Float
   textZones    String?  @db.NVarChar(Max)
+  canvasData   String?  @db.NVarChar(Max)
 
   documentId   Int
   document     Document @relation(fields: [documentId], references: [id])

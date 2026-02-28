@@ -21,6 +21,7 @@ const blockSchema = z.object({
         .default(1),
     images: z.array(imageSchema).optional().default([]),
     textZones: z.array(z.string()).optional().default([]),
+    canvasData: z.string().optional(),
 });
 
 export const createDocumentSchema = z.object({

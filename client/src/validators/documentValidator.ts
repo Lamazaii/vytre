@@ -10,6 +10,7 @@ const blockSchema = z.object({
   step: z.number().optional(),
   nbOfRepeats: z.number().optional().default(1),
   images: z.array(imageSchema).optional().default([]),
+  canvasData: z.string().optional(),
 });
 
 export const documentSchema = z.object({

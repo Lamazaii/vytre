@@ -147,6 +147,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
+        canvasData: block.canvasData ?? '',
         modified: true, // mark as cleanly loaded
         textZones: typeof block.textZones === 'string' 
           ? JSON.parse(block.textZones || '[]') // server may store as JSON string
