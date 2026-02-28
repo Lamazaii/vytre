@@ -242,5 +242,10 @@ onBeforeUnmount(() => {
   border-radius: 3px;
   border: 1px solid #ddd;
   cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.swatch:hover {
+  transform: scale(1.15);
 }
 </style>

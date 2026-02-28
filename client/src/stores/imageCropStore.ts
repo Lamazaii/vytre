@@ -7,6 +7,7 @@ export const useImageCropStore = defineStore('imageCrop', () => {
   const cropRequestTimestamp = ref(0)
   const isCropperOpen = ref(false)
   const imageToCropSrc = ref<string | null>(null)
+  const croppedImageData = ref<string | null>(null)
 
   function selectImage(imageId: string, blockIdx: number) {
     selectedImageId.value = imageId
@@ -32,16 +33,27 @@ export const useImageCropStore = defineStore('imageCrop', () => {
     imageToCropSrc.value = null
   }
 
+  function setCroppedImage(imageData: string) {
+    croppedImageData.value = imageData
+  }
+
+  function clearCroppedImage() {
+    croppedImageData.value = null
+  }
+
   return {
     selectedImageId,
     blockIndex,
     cropRequestTimestamp,
     isCropperOpen,
     imageToCropSrc,
+    croppedImageData,
     selectImage,
     clearSelection,
     requestCrop,
     openCropper,
-    closeCropper
+    closeCropper,
+    setCroppedImage,
+    clearCroppedImage
   }
 })

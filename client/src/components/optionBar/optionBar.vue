@@ -98,6 +98,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
     popupStore.closeReader()
   }
 }
+
 </script>
 
 <style scoped>
@@ -147,6 +148,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   align-items: center;
   gap: 25px;
 }
+
 
 .tab-item {
   display: inline-flex;

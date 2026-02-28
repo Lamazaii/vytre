@@ -37,6 +37,10 @@ const handleImageSelect = (event: Event) => {
   };
   reader.readAsDataURL(file);
 };
+
+defineExpose({
+  triggerFileInput
+})
 </script>
 
 <style scoped>
