@@ -142,6 +142,7 @@ describe('blocksStore', () => {
       blocks: [],
       createdAt: new Date(),
       updatedAt: new Date(),
+      state: 'En édition',
     })
     docService.checkNameExists = vi.fn().mockResolvedValue(false)
     const confirmSpy = vi.spyOn(confirmSavePopupStore, 'show')
@@ -176,6 +177,7 @@ describe('blocksStore', () => {
       title: 'Doc',
       version: '1.0.0',
       createdAt: now,
+      state: 'En édition',
       updatedAt: now,
       blocks: [
         { id: 1, text: 'A', nbOfRepeats: 1, step: 1, modified: false, images: [], textZones: '[]' },
@@ -397,6 +399,7 @@ describe('blocksStore', () => {
     const store = useBlocksStore()
     expect(store.currentDocument.title).toBe('Titre du document')
     expect(store.currentDocument.version).toBe(1)
+    expect(store.currentDocument.state).toBe('En édition')
   })
 
   // Documents loading tests

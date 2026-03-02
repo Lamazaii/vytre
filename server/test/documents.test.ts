@@ -83,6 +83,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document test',
                 version: 1,
+                state: 'En édition',
                 blocks: [
                     {
                         text: 'ceci est un test',
@@ -102,6 +103,23 @@ describe('Documents routes', () => {
             const body = res.body as DocumentShape;
             expect(body).toHaveProperty('id');
             expect(body.title).toBe('Document test');
+        });
+
+        it('returns validation errors with details', async () => {
+            const payload = {
+                title: '',
+                version: 0,
+            };
+
+            const res = await request(app)
+                .post('/documents')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            const body = res.body as { errors?: unknown[] };
+            expect(body).toHaveProperty('errors');
+            expect(Array.isArray(body.errors)).toBe(true);
         });
     });
 
@@ -136,6 +154,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document mis à jour',
                 version: 2,
+                state: 'Actif',
                 blocks: [
                     { text: 'mis à jour', step: 1, nbOfRepeats: 2, images: [] },
                 ],
@@ -159,6 +178,23 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
+        });
+
+        it('returns validation errors with details on update', async () => {
+            const payload = {
+                title: '',
+                version: 0,
+            };
+
+            const res = await request(app)
+                .put('/documents/1')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            const body = res.body as { errors?: unknown[] };
+            expect(body).toHaveProperty('errors');
+            expect(Array.isArray(body.errors)).toBe(true);
         });
     });
 

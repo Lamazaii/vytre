@@ -102,6 +102,19 @@ function getInitialCanvasData(): string {
 
 const canvasData = ref(getInitialCanvasData())
 
+onMounted(() => {
+  if (canvasData.value) {
+    try {
+      const json = JSON.parse(canvasData.value)
+      if (json.objects && Array.isArray(json.objects) && json.objects.length > 0) {
+        hasShapes.value = true
+      }
+    } catch (e) {
+      console.error('Erreur lors de l\'analyse du canvasData JSON :', e)
+    }
+  }
+})
+
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
