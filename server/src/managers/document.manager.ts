@@ -31,7 +31,9 @@ export const create = async (data: DocumentInput) => {
         const hasImages = block.images && block.images.length > 0;
         const hasNonEmptyZone = block.textZones?.some((z) =>
             z && z.replace(/<[^>]*>/g, '').trim().length > 0);
-        return hasText || hasImages || hasNonEmptyZone;
+        const hasCanvasData =
+            block.canvasData != null && block.canvasData.length > 0;
+        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
     });
     return await prisma.document.create({
         data: {
@@ -111,7 +113,9 @@ export const update = async (id: number, data: DocumentInput) => {
         const hasImages = block.images && block.images.length > 0;
         const hasNonEmptyZone = block.textZones?.some((z) =>
             z && z.replace(/<[^>]*>/g, '').trim().length > 0);
-        return hasText || hasImages || hasNonEmptyZone;
+        const hasCanvasData =
+            block.canvasData != null && block.canvasData.length > 0;
+        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
     });
 
     return await prisma.document.update({

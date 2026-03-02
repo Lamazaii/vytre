@@ -326,6 +326,67 @@ describe('Document validator', () => {
                     expect(result.data.blocks![0].textZones!.length).toBe(3);
                 }
             });
+
+            it('should accept block with canvasData', () => {
+                const doc = {
+                    title: 'Test',
+                    version: 1,
+                    blocks: [
+                        {
+                            text: 'text',
+                            step: 1,
+                            canvasData: 'data:image/png;base64,abc123==',
+                        },
+                    ],
+                };
+
+                const result = createDocumentSchema.safeParse(doc);
+                expect(result.success).toBe(true);
+                if (result.success) {
+                    expect(result.data.blocks![0].canvasData)
+                        .toBe('data:image/png;base64,abc123==');
+                }
+            });
+
+            it('should allow canvasData to be omitted (optional)', () => {
+                const doc = {
+                    title: 'Test',
+                    version: 1,
+                    blocks: [{ text: 'text', step: 1 }],
+                };
+
+                const result = createDocumentSchema.safeParse(doc);
+                expect(result.success).toBe(true);
+                if (result.success) {
+                    expect(result.data.blocks![0].canvasData).toBeUndefined();
+                }
+            });
+
+            it('should accept a fully populated block including canvasData', () => {
+                const doc = {
+                    title: 'Full block',
+                    version: 1,
+                    blocks: [
+                        {
+                            text: 'some text',
+                            step: 2,
+                            nbOfRepeats: 3,
+                            images: [{ imagePath: '/img.png' }],
+                            textZones: ['zone A'],
+                            canvasData: 'canvas-json-string',
+                        },
+                    ],
+                };
+
+                const result = createDocumentSchema.safeParse(doc);
+                expect(result.success).toBe(true);
+                if (result.success) {
+                    const block = result.data.blocks![0];
+                    expect(block.canvasData).toBe('canvas-json-string');
+                    expect(block.images!.length).toBe(1);
+                    expect(block.textZones!.length).toBe(1);
+                }
+            });
         });
     });
 });
