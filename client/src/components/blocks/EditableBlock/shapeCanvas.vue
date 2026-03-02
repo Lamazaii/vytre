@@ -318,6 +318,28 @@ function replaceSelectedImage(newImageSrc: string) {
   })
 }
 
+function bringSelectedImageForward() {
+  if (!canvas) return false
+  const selectedImage = getSelectedImage()
+  if (!selectedImage) return false
+
+  canvas.bringForward(selectedImage)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+function sendSelectedImageToBack() {
+  if (!canvas) return false
+  const selectedImage = getSelectedImage()
+  if (!selectedImage) return false
+
+  canvas.sendBackwards(selectedImage)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
 function handleSelection(e: any) {
   const selected = e.selected?.[0]
   if (selected && selected.type === 'image') {
@@ -342,6 +364,7 @@ onMounted(() => {
     height: props.height,
     backgroundColor: '#ffffff',
     selection: props.active,
+    preserveObjectStacking: true,
     renderOnAddRemove: true,
   })
 
@@ -463,6 +486,8 @@ defineExpose({
   addImage,
   getSelectedImage,
   replaceSelectedImage,
+  bringSelectedImageForward,
+  sendSelectedImageToBack,
 })
 </script>
 
