@@ -334,7 +334,7 @@ function sendSelectedImageToBack() {
   const selectedImage = getSelectedImage()
   if (!selectedImage) return false
 
-  canvas.sendToBack(selectedImage)
+  canvas.sendBackwards(selectedImage)
   canvas.renderAll()
   saveCanvas()
   return true
@@ -364,6 +364,7 @@ onMounted(() => {
     height: props.height,
     backgroundColor: '#ffffff',
     selection: props.active,
+    preserveObjectStacking: true,
     renderOnAddRemove: true,
   })
 
