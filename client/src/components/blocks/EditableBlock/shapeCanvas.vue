@@ -26,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:canvasData': [data: string]
   'modified': [value: boolean]
+  'update:hasObjects': [value: boolean]
 }>()
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
@@ -182,6 +183,13 @@ function saveCanvas() {
   const json = JSON.stringify(canvas.toJSON())
   emit('update:canvasData', json)
   emit('modified', true)
+  checkHasObjects()
+}
+
+function checkHasObjects() {
+  if (!canvas) return
+  const objectCount = canvas.getObjects().length
+  emit('update:hasObjects', objectCount > 0)
 }
 
 function createShape(type: 'rect' | 'circle' | 'triangle') {
@@ -450,7 +458,10 @@ onMounted(() => {
         obj.setCoords()
       })
       canvas?.renderAll()
+      checkHasObjects()
     })
+  } else {
+    checkHasObjects()
   }
 })
 
