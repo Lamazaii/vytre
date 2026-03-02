@@ -318,6 +318,28 @@ function replaceSelectedImage(newImageSrc: string) {
   })
 }
 
+function bringSelectedImageForward() {
+  if (!canvas) return false
+  const selectedImage = getSelectedImage()
+  if (!selectedImage) return false
+
+  canvas.bringForward(selectedImage)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+function sendSelectedImageToBack() {
+  if (!canvas) return false
+  const selectedImage = getSelectedImage()
+  if (!selectedImage) return false
+
+  canvas.sendToBack(selectedImage)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
 function handleSelection(e: any) {
   const selected = e.selected?.[0]
   if (selected && selected.type === 'image') {
@@ -463,6 +485,8 @@ defineExpose({
   addImage,
   getSelectedImage,
   replaceSelectedImage,
+  bringSelectedImageForward,
+  sendSelectedImageToBack,
 })
 </script>
 

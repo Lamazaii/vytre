@@ -7,6 +7,8 @@ export const useShapeStore = defineStore('shape', () => {
   const activeShape = ref<ShapeType>(null)
   const addShapeRequest = ref(0)
   const addImageRequest = ref(0)
+  const bringImageForwardRequest = ref(0)
+  const sendImageToBackRequest = ref(0)
 
   function setActiveShape(shape: ShapeType) {
     activeShape.value = shape
@@ -24,13 +26,25 @@ export const useShapeStore = defineStore('shape', () => {
     addImageRequest.value++
   }
 
+  function requestBringImageForward() {
+    bringImageForwardRequest.value++
+  }
+
+  function requestSendImageToBack() {
+    sendImageToBackRequest.value++
+  }
+
   return {
     activeShape,
     addShapeRequest,
     addImageRequest,
+    bringImageForwardRequest,
+    sendImageToBackRequest,
     setActiveShape,
     clearActiveShape,
     requestAddShape,
-    requestAddImage
+    requestAddImage,
+    requestBringImageForward,
+    requestSendImageToBack
   }
 })
