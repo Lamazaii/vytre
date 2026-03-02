@@ -10,12 +10,14 @@ interface BlockInput {
     nbOfRepeats?: number;
     images?: ImageInput[];
     textZones?: string[];
+    canvasData?: string;
 }
 
 interface DocumentInput {
     title: string;
     version: number;
     blocks?: BlockInput[];
+    state?: 'En édition' | 'Actif' | 'Archivé';
 }
 
 /*
@@ -29,18 +31,22 @@ export const create = async (data: DocumentInput) => {
         const hasImages = block.images && block.images.length > 0;
         const hasNonEmptyZone = block.textZones?.some((z) =>
             z && z.replace(/<[^>]*>/g, '').trim().length > 0);
-        return hasText ?? hasImages ?? hasNonEmptyZone;
+        const hasCanvasData =
+            block.canvasData != null && block.canvasData.length > 0;
+        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
     });
     return await prisma.document.create({
         data: {
             title: data.title,
             version: data.version,
+            state: data.state ?? 'En édition',
             blocks: {
                 create: filteredBlocks.map((block) => ({
                     text: block.text ?? '',
                     step: block.step,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
                     textZones: JSON.stringify(block.textZones ?? []),
+                    canvasData: block.canvasData ?? null,
                     images: {
                         create: block.images?.map((img) => ({
                             imagePath: img.imagePath,
@@ -107,7 +113,9 @@ export const update = async (id: number, data: DocumentInput) => {
         const hasImages = block.images && block.images.length > 0;
         const hasNonEmptyZone = block.textZones?.some((z) =>
             z && z.replace(/<[^>]*>/g, '').trim().length > 0);
-        return hasText ?? hasImages ?? hasNonEmptyZone;
+        const hasCanvasData =
+            block.canvasData != null && block.canvasData.length > 0;
+        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
     });
 
     return await prisma.document.update({
@@ -115,6 +123,7 @@ export const update = async (id: number, data: DocumentInput) => {
         data: {
             title: data.title,
             version: data.version,
+            state: data.state ?? 'En édition',
             blocks: {
                 // 2. Sync Strategy: Wipe existing blocks to avoid duplicates
                 deleteMany: {},
@@ -124,6 +133,7 @@ export const update = async (id: number, data: DocumentInput) => {
                     step: block.step,
                     nbOfRepeats: block.nbOfRepeats ?? 1,
                     textZones: JSON.stringify(block.textZones ?? []), // Store as JSON for flexibility
+                    canvasData: block.canvasData ?? null,
                     images: {
                         create: block.images?.map((img) => ({
                             imagePath: img.imagePath,

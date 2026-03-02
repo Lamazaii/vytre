@@ -11,6 +11,7 @@ interface Block {
     step: number;
     nbOfRepeats?: number;
     images?: Image[];
+    canvasData?: string;
 }
 
 interface DocumentShape {
@@ -83,6 +84,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document test',
                 version: 1,
+                state: 'En édition',
                 blocks: [
                     {
                         text: 'ceci est un test',
@@ -102,6 +104,23 @@ describe('Documents routes', () => {
             const body = res.body as DocumentShape;
             expect(body).toHaveProperty('id');
             expect(body.title).toBe('Document test');
+        });
+
+        it('returns validation errors with details', async () => {
+            const payload = {
+                title: '',
+                version: 0,
+            };
+
+            const res = await request(app)
+                .post('/documents')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            const body = res.body as { errors?: unknown[] };
+            expect(body).toHaveProperty('errors');
+            expect(Array.isArray(body.errors)).toBe(true);
         });
     });
 
@@ -136,6 +155,7 @@ describe('Documents routes', () => {
             const payload = {
                 title: 'Document mis à jour',
                 version: 2,
+                state: 'Actif',
                 blocks: [
                     { text: 'mis à jour', step: 1, nbOfRepeats: 2, images: [] },
                 ],
@@ -159,6 +179,23 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
+        });
+
+        it('returns validation errors with details on update', async () => {
+            const payload = {
+                title: '',
+                version: 0,
+            };
+
+            const res = await request(app)
+                .put('/documents/1')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            const body = res.body as { errors?: unknown[] };
+            expect(body).toHaveProperty('errors');
+            expect(Array.isArray(body.errors)).toBe(true);
         });
     });
 
@@ -224,6 +261,92 @@ describe('Documents routes', () => {
             expect(res.status).toBe(500);
             expect(res.body)
                 .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 with String(error) when create throws a non-Error',
+            async () => {
+                (documentManager.create as jest.Mock)
+                    .mockImplementationOnce(() => {
+                        // eslint-disable-next-line @typescript-eslint/only-throw-error
+                        throw 'string error';
+                    });
+                const payload = { title: 'err', version: 1, blocks: [] };
+                const res = await request(app)
+                    .post('/documents')
+                    .send(payload)
+                    .set('Content-Type', 'application/json');
+                expect(res.status).toBe(500);
+                expect(res.body)
+                    .toHaveProperty('error', 'string error');
+            },
+        );
+
+        it('returns 500 with String(error) when getAll throws a non-Error',
+            async () => {
+                (documentManager.getAll as jest.Mock)
+                    .mockImplementationOnce(() => {
+                        // eslint-disable-next-line @typescript-eslint/only-throw-error
+                        throw 'getAll failure';
+                    });
+                const res = await request(app).get('/documents');
+                expect(res.status).toBe(500);
+                expect(res.body)
+                    .toHaveProperty('error', 'getAll failure');
+            },
+        );
+
+        it('returns 500 with String(error) when getById throws a non-Error',
+            async () => {
+                (documentManager.getById as jest.Mock)
+                    .mockImplementationOnce(() => {
+                        // eslint-disable-next-line @typescript-eslint/only-throw-error
+                        throw 'getById failure';
+                    });
+                const res = await request(app).get('/documents/1');
+                expect(res.status).toBe(500);
+                expect(res.body)
+                    .toHaveProperty('error', 'getById failure');
+            },
+        );
+
+        it('returns 500 with String(error) when update throws a non-Error',
+            async () => {
+                (documentManager.update as jest.Mock)
+                    .mockImplementationOnce(() => {
+                        // eslint-disable-next-line @typescript-eslint/only-throw-error
+                        throw 'update failure';
+                    });
+                const payload = { title: 'err', version: 1, blocks: [] };
+                const res = await request(app)
+                    .put('/documents/1')
+                    .send(payload)
+                    .set('Content-Type', 'application/json');
+                expect(res.status).toBe(500);
+                expect(res.body)
+                    .toHaveProperty('error', 'update failure');
+            },
+        );
+
+        it('creates document with canvasData block and returns 201', async () => {
+            const payload = {
+                title: 'Canvas document',
+                version: 1,
+                state: 'En édition',
+                blocks: [
+                    {
+                        text: '',
+                        step: 1,
+                        nbOfRepeats: 1,
+                        images: [],
+                        canvasData: 'data:image/png;base64,abc==',
+                    },
+                ],
+            };
+            const res = await request(app)
+                .post('/documents')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+            expect(res.status).toBe(201);
         });
     });
 });

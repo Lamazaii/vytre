@@ -10,6 +10,7 @@ const blockSchema = z.object({
   step: z.number().optional(),
   nbOfRepeats: z.number().optional().default(1),
   images: z.array(imageSchema).optional().default([]),
+  canvasData: z.string().optional(),
 });
 
 export const documentSchema = z.object({
@@ -19,6 +20,7 @@ export const documentSchema = z.object({
   blocks: z.array(blockSchema).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
+  state: z.enum(["En édition", "Actif", "Archivé"]).default("En édition"),
 });
 
 export type DocumentValidation = z.infer<typeof documentSchema>;

@@ -102,6 +102,19 @@ function getInitialCanvasData(): string {
 
 const canvasData = ref(getInitialCanvasData())
 
+onMounted(() => {
+  if (canvasData.value) {
+    try {
+      const json = JSON.parse(canvasData.value)
+      if (json.objects && Array.isArray(json.objects) && json.objects.length > 0) {
+        hasShapes.value = true
+      }
+    } catch (e) {
+      console.error('Erreur lors de l\'analyse du canvasData JSON :', e)
+    }
+  }
+})
+
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
@@ -208,6 +221,19 @@ watch(() => shapeStore.addImageRequest, () => {
     uploaderEl.triggerFileInput()
   }
 })
+
+watch(() => shapeStore.bringImageForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedImageForward()
+  emit('modified', true)
+})
+
+watch(() => shapeStore.sendImageToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedImageToBack()
+  emit('modified', true)
+})
+
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
     const selectedImage = shapeCanvasRef.value.getSelectedImage()
