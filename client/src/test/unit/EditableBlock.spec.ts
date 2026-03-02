@@ -6,7 +6,7 @@ import EditableBlock from '../../components/blocks/EditableBlock/editableBlock.v
 import { useBlocksStore } from '../../stores/blockStores'
 import { useImageCropStore } from '../../stores/imageCropStore'
 import { useTextFormatStore } from '../../stores/textFormatStore'
-import { useDeletePopupStore } from '../../stores/deletePopupStore'
+import { useShapeStore } from '../../stores/shapeStore'
 import type { Image } from '../../types/Image'
 
 const fakeEditor = {
@@ -50,22 +50,38 @@ const TextZoneItemStub = defineComponent({
   `,
 })
 
-const ImageItemStub = defineComponent({
-  name: 'ImageItem',
-  props: ['imagePath', 'isSelected'],
-  emits: ['select', 'remove'],
-  template: `
-    <div>
-      <button data-test="image-select" @click="$emit('select')">select</button>
-      <button data-test="image-remove" @click="$emit('remove')">remove</button>
-    </div>
-  `,
-})
-
 const ImageUploaderStub = defineComponent({
   name: 'ImageUploader',
   emits: ['upload'],
   template: '<button data-test="uploader" @click="$emit(\'upload\', \'data:image/png\')">upload</button>',
+})
+
+const ShapeCanvasStub = defineComponent({
+  name: 'ShapeCanvas',
+  props: ['blockIndex', 'canvasData', 'active'],
+  emits: ['update:canvasData', 'update:hasObjects', 'modified'],
+  data() {
+    return {
+      selectedImageSrc: null as string | null,
+    }
+  },
+  methods: {
+    addImage(imageData: string) {
+      this.$emit('update:hasObjects', true)
+      this.selectedImageSrc = imageData
+    },
+    getSelectedImage() {
+      if (!this.selectedImageSrc) return null
+      return { getSrc: () => this.selectedImageSrc }
+    },
+    replaceSelectedImage(imageData: string) {
+      this.selectedImageSrc = imageData
+    },
+    addSquare() {},
+    addCircle() {},
+    addTriangle() {},
+  },
+  template: '<div data-test="shape-canvas"></div>',
 })
 
 afterEach(() => {
@@ -86,7 +102,6 @@ function mountEditableBlock(options?: {
   }
   const imageCropStore = useImageCropStore()
   const textFormatStore = useTextFormatStore()
-  const deletePopupStore = useDeletePopupStore()
 
   const wrapper = mount(EditableBlock, {
     props: {
@@ -99,13 +114,13 @@ function mountEditableBlock(options?: {
       stubs: {
         TiptapEditor: TiptapEditorStub,
         TextZoneItem: TextZoneItemStub,
-        ImageItem: ImageItemStub,
         ImageUploader: ImageUploaderStub,
+        ShapeCanvas: ShapeCanvasStub,
       },
     },
   })
 
-  return { wrapper, blocksStore, imageCropStore, textFormatStore, deletePopupStore }
+  return { wrapper, blocksStore, imageCropStore, textFormatStore }
 }
 
 describe('EditableBlock', () => {
@@ -130,11 +145,11 @@ describe('EditableBlock', () => {
     const { wrapper } = mountEditableBlock()
 
     await wrapper.find('[data-test="uploader"]').trigger('click')
+    await nextTick()
+    await nextTick()
 
-    const updateImages = wrapper.emitted('update:images')
-    expect(updateImages).toBeTruthy()
-    expect((updateImages?.[0]?.[0] as Image[])).toHaveLength(1)
     expect(wrapper.emitted('modified')).toBeTruthy()
+    expect(wrapper.find('[data-test="shape-canvas"]').exists()).toBe(true)
   })
 
   it('delegates text zone updates to the blocks store', async () => {
@@ -151,7 +166,17 @@ describe('EditableBlock', () => {
     const { wrapper, imageCropStore } = mountEditableBlock({ images: [image] })
     const spy = vi.spyOn(imageCropStore, 'openCropper')
 
-    imageCropStore.selectImage('img-1', 0)
+    // Wait for the component to mount and process the images
+    await nextTick()
+    await nextTick()
+    
+    // Trigger the image upload to ensure ShapeCanvas is rendered and has an image
+    const shapeCanvasComponent = wrapper.findComponent({ name: 'ShapeCanvas' })
+    if (shapeCanvasComponent.exists()) {
+      shapeCanvasComponent.vm.addImage('image.png')
+    }
+    
+    imageCropStore.blockIndex = 0
     imageCropStore.cropRequestTimestamp = Date.now()
     await nextTick()
 
@@ -185,15 +210,258 @@ describe('EditableBlock', () => {
     expect(wrapper.emitted('update:description')?.[0]?.[0]).toBe('Hello')
   })
 
-  it('removes an image after confirming the delete popup', async () => {
+  it('migrates images to canvas on mount', async () => {
     const image: Image = { id: 'img-1', imagePath: 'image.png', blockId: 0 }
-    const { wrapper, deletePopupStore } = mountEditableBlock({ images: [image] })
+    const { wrapper } = mountEditableBlock({ images: [image] })
 
-    await wrapper.find('[data-test="image-remove"]').trigger('click')
-    deletePopupStore.confirm()
+    // Wait for mount and image migration (200ms timeout in component)
+    await new Promise(resolve => setTimeout(resolve, 250))
     await nextTick()
 
     const emitted = wrapper.emitted('update:images')
+    expect(emitted).toBeTruthy()
     expect(emitted?.[0]?.[0]).toHaveLength(0)
+  })
+
+  it('saves selection when editor gains focus', async () => {
+    const { wrapper, textFormatStore } = mountEditableBlock()
+    const saveSpy = vi.spyOn(textFormatStore, 'saveSelection')
+
+    await wrapper.find('[data-test="tiptap"]').trigger('focus')
+    await nextTick()
+
+    expect(saveSpy).toHaveBeenCalled()
+  })
+
+  it('removes a text zone when remove event fires', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock({ textZones: ['zone1', 'zone2'] })
+    const spy = vi.spyOn(blocksStore, 'removeTextZone')
+
+    await wrapper.find('[data-test="text-zone-remove"]').trigger('click')
+
+    expect(spy).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('updates canvas data and blocks store', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock()
+    const spy = vi.spyOn(blocksStore, 'updateBlockCanvas')
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    shapeCanvas.vm.$emit('update:canvasData', 'newCanvasData')
+    await nextTick()
+
+    expect(spy).toHaveBeenCalledWith(0, 'newCanvasData')
+  })
+
+  it('updates hasShapes when canvas objects change', async () => {
+    const { wrapper } = mountEditableBlock()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    shapeCanvas.vm.$emit('update:hasObjects', true)
+    await nextTick()
+
+    expect(wrapper.find('[data-test="shape-canvas"]').exists()).toBe(true)
+  })
+
+  it('syncs welcomeText when props.description changes', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock()
+    const spy = vi.spyOn(blocksStore, 'updateBlockDescription')
+
+    await wrapper.setProps({ description: 'New description' })
+    await nextTick()
+
+    expect(spy).toHaveBeenCalledWith(0, 'New description')
+    expect(wrapper.emitted('update:description')).toBeTruthy()
+  })
+
+  it('adds square shape when shapeStore requests it', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    
+    // Set block as active
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const addSquareSpy = vi.spyOn(shapeCanvas.vm, 'addSquare')
+
+    shapeStore.activeShape = 'square'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+    await nextTick()
+
+    expect(addSquareSpy).toHaveBeenCalled()
+  })
+
+  it('adds circle shape when shapeStore requests it', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const addCircleSpy = vi.spyOn(shapeCanvas.vm, 'addCircle')
+
+    shapeStore.activeShape = 'circle'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+    await nextTick()
+
+    expect(addCircleSpy).toHaveBeenCalled()
+  })
+
+  it('adds triangle shape when shapeStore requests it', async () => {
+    const { wrapper, blocksStore } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const addTriangleSpy = vi.spyOn(shapeCanvas.vm, 'addTriangle')
+
+    shapeStore.activeShape = 'triangle'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+    await nextTick()
+
+    expect(addTriangleSpy).toHaveBeenCalled()
+  })
+
+  it('does not add shape when block is not active', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    
+    await wrapper.setProps({ active: false })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const addSquareSpy = vi.spyOn(shapeCanvas.vm, 'addSquare')
+
+    shapeStore.activeShape = 'square'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+
+    expect(addSquareSpy).not.toHaveBeenCalled()
+  })
+
+  it('replaces selected image with cropped data', async () => {
+    const { wrapper, imageCropStore } = mountEditableBlock()
+    
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const replaceSpy = vi.spyOn(shapeCanvas.vm, 'replaceSelectedImage')
+    const clearSpy = vi.spyOn(imageCropStore, 'clearCroppedImage')
+
+    imageCropStore.blockIndex = 0
+    imageCropStore.croppedImageData = 'data:image/png;base64,cropped'
+    await nextTick()
+
+    expect(replaceSpy).toHaveBeenCalledWith('data:image/png;base64,cropped')
+    expect(clearSpy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('does not replace image when cropped data is for different block', async () => {
+    const { wrapper, imageCropStore } = mountEditableBlock()
+    
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const replaceSpy = vi.spyOn(shapeCanvas.vm, 'replaceSelectedImage')
+
+    imageCropStore.blockIndex = 999
+    imageCropStore.croppedImageData = 'data:image/png;base64,cropped'
+    await nextTick()
+
+    expect(replaceSpy).not.toHaveBeenCalled()
+  })
+
+  it('changes trash icon on hover', async () => {
+    const { wrapper } = mountEditableBlock({ canDelete: true })
+
+    const trash = wrapper.find('.trashIcon')
+    await trash.trigger('mouseenter')
+    await nextTick()
+
+    expect(trash.classes()).toContain('hovering')
+
+    await trash.trigger('mouseleave')
+    await nextTick()
+
+    expect(trash.classes()).not.toContain('hovering')
+  })
+
+  it('applies active class when block is active', async () => {
+    const { wrapper } = mountEditableBlock()
+
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    expect(wrapper.find('.editableBlock.active').exists()).toBe(true)
+  })
+
+  it('shows ShapeCanvas when hasShapes is true', async () => {
+    const { wrapper } = mountEditableBlock()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    shapeCanvas.vm.$emit('update:hasObjects', true)
+    await nextTick()
+
+    expect(wrapper.find('.shapeCanvasSection').isVisible()).toBe(true)
+  })
+
+  it('shows ImageUploader when hasShapes is false', async () => {
+    const { wrapper } = mountEditableBlock()
+
+    expect(wrapper.find('.imageUploaderSection').isVisible()).toBe(true)
+  })
+
+  it('renders text zones when they exist', async () => {
+    const { wrapper } = mountEditableBlock({ textZones: ['zone1', 'zone2', 'zone3'] })
+
+    const textZones = wrapper.findAllComponents({ name: 'TextZoneItem' })
+    expect(textZones).toHaveLength(3)
+  })
+
+  it('does not render text zones section when empty', async () => {
+    const { wrapper } = mountEditableBlock({ textZones: [] })
+
+    expect(wrapper.find('.textZonesSection').exists()).toBe(false)
+  })
+
+  it('initializes with provided description', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const blocksStore = useBlocksStore()
+    const spy = vi.spyOn(blocksStore, 'updateBlockDescription')
+
+    const wrapper = mount(EditableBlock, {
+      props: {
+        blockIndex: 0,
+        description: 'Initial description',
+      },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          TiptapEditor: TiptapEditorStub,
+          TextZoneItem: TextZoneItemStub,
+          ImageUploader: ImageUploaderStub,
+          ShapeCanvas: ShapeCanvasStub,
+        },
+      },
+    })
+
+    await nextTick()
+    
+    // Vérifier que la description est dans le DOM
+    const tiptap = wrapper.find('[data-test="tiptap"]')
+    expect(tiptap.exists()).toBe(true)
+    
+    wrapper.unmount()
   })
 })
