@@ -8,6 +8,9 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fabric } from 'fabric'
 import { useImageCropStore } from '../../../stores/imageCropStore'
+import { objectDefaults, canvasConfig } from './canvasConfig'
+import { createDeleteControl, deleteSelectedObjects } from './canvasControls'
+import { handleObjectMoving, handleObjectScaling } from './canvasConstraints'
 
 interface Props {
   width?: number
@@ -33,109 +36,6 @@ const canvasElement = ref<HTMLCanvasElement | null>(null)
 let canvas: fabric.Canvas | null = null
 const imageCropStore = useImageCropStore()
 
-const objectDefaults = {
-  selectable: true,
-  evented: true,
-  hasControls: true,
-  hasBorders: true,
-  lockRotation: false,
-  lockScalingX: false,
-  lockScalingY: false,
-  lockMovementX: false,
-  lockMovementY: false,
-  lockSkewingX: false,
-  lockSkewingY: false,
-  transparentCorners: false,
-  cornerSize: 10,
-  cornerColor: 'rgba(178, 204, 255, 1)',
-  cornerStrokeColor: 'rgba(102, 153, 255, 1)',
-  borderColor: 'rgba(102, 153, 255, 1)',
-  borderScaleFactor: 1,
-  rotatingPointOffset: 30,
-}
-
-function createDeleteControl() {
-  return new fabric.Control({
-    x: 0.5,
-    y: -0.5,
-    offsetY: -16,
-    offsetX: 16,
-    cursorStyle: 'pointer',
-    mouseUpHandler: deleteObject,
-    render: renderDeleteIcon
-  })
-}
-
-function deleteObject(_eventData: MouseEvent, _transform: any) {
-  const target = _transform.target
-  const canvas = target.canvas
-
-  if (target.type === 'activeSelection') {
-    const activeSelection = target as fabric.ActiveSelection
-    
-    activeSelection.forEachObject((obj: fabric.Object) => {
-      canvas.remove(obj)
-    })
-    
-    canvas.discardActiveObject()
-  } else {
-    canvas.remove(target)
-  }
-  
-  canvas.requestRenderAll()
-  return true
-}
-
-function renderDeleteIcon(
-  ctx: CanvasRenderingContext2D,
-  left: number,
-  top: number,
-  _styleOverride: any,
-  fabricObject: fabric.Object
-) {
-  const size = 20
-  ctx.save()
-  ctx.translate(left, top)
-  ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle || 0))
-  
-  ctx.beginPath()
-  ctx.arc(0, 0, size / 2, 0, 2 * Math.PI)
-  ctx.fillStyle = '#DC2626'
-  ctx.fill()
-
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2
-  const crossSize = size * 0.4
-  ctx.beginPath()
-  ctx.moveTo(-crossSize / 2, -crossSize / 2)
-  ctx.lineTo(crossSize / 2, crossSize / 2)
-  ctx.moveTo(crossSize / 2, -crossSize / 2)
-  ctx.lineTo(-crossSize / 2, crossSize / 2)
-  ctx.stroke()
-  
-  ctx.restore()
-}
-
-function deleteSelectedObjects() {
-  if (!canvas) return
-  const activeObject = canvas.getActiveObject()
-  if (!activeObject) return
-
-  if (activeObject.type === 'activeSelection') {
-    const activeSelection = activeObject as fabric.ActiveSelection
-
-    activeSelection.forEachObject((obj: fabric.Object) => {
-      canvas?.remove(obj)
-    })
-
-    canvas.discardActiveObject()
-  } else {
-    canvas.remove(activeObject)
-  }
-
-  canvas.requestRenderAll()
-}
-
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
   if (!props.active) return
@@ -148,34 +48,7 @@ function handleKeyDown(event: KeyboardEvent) {
     }
   }
 
-  deleteSelectedObjects()
-}
-
-function constrainObjectPosition(
-  obj: fabric.Object,
-  canvasWidth: number,
-  canvasHeight: number,
-  radius: number
-) {
-  const scaledWidth = (obj.width || 0) * (obj.scaleX || 1)
-  const scaledHeight = (obj.height || 0) * (obj.scaleY || 1)
-  const scaledRadius = radius * (obj.scaleX || 1)
-
-  if (obj.left !== undefined) {
-    if (radius > 0) {
-      obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
-    } else {
-      obj.left = Math.max(0, Math.min(obj.left, canvasWidth - scaledWidth))
-    }
-  }
-
-  if (obj.top !== undefined) {
-    if (radius > 0) {
-      obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
-    } else {
-      obj.top = Math.max(0, Math.min(obj.top, canvasHeight - scaledHeight))
-    }
-  }
+  deleteSelectedObjects(canvas)
 }
 
 function saveCanvas() {
@@ -370,7 +243,6 @@ onMounted(() => {
   canvas = new fabric.Canvas(canvasElement.value, {
     width: props.width,
     height: props.height,
-    backgroundColor: '#ffffff',
     selection: props.active,
     preserveObjectStacking: true,
     renderOnAddRemove: true,
@@ -390,27 +262,7 @@ onMounted(() => {
     const canvasWidth = canvas.width || props.width
     const canvasHeight = canvas.height || props.height
 
-    const objWidth = (obj.width || 0) * (obj.scaleX || 1)
-    const objHeight = (obj.height || 0) * (obj.scaleY || 1)
-
-    const radius = (obj as fabric.Circle).radius || 0
-    const scaledRadius = radius * (obj.scaleX || 1)
-
-    if (obj.left !== undefined) {
-      if (radius > 0) {
-        obj.left = Math.max(scaledRadius, Math.min(obj.left, canvasWidth - scaledRadius))
-      } else {
-        obj.left = Math.max(0, Math.min(obj.left, canvasWidth - objWidth))
-      }
-    }
-
-    if (obj.top !== undefined) {
-      if (radius > 0) {
-        obj.top = Math.max(scaledRadius, Math.min(obj.top, canvasHeight - scaledRadius))
-      } else {
-        obj.top = Math.max(0, Math.min(obj.top, canvasHeight - objHeight))
-      }
-    }
+    handleObjectMoving(obj, canvasWidth, canvasHeight)
   })
 
   canvas.on('object:scaling', (e) => {
@@ -420,29 +272,7 @@ onMounted(() => {
     const canvasWidth = canvas.width || props.width
     const canvasHeight = canvas.height || props.height
 
-    const radius = (obj as fabric.Circle).radius || 0
-    if (radius > 0) {
-      const maxScale = Math.min(canvasWidth, canvasHeight) / (2 * radius)
-
-      if (obj.scaleX && obj.scaleX > maxScale) {
-        obj.scaleX = maxScale
-      }
-      if (obj.scaleY && obj.scaleY > maxScale) {
-        obj.scaleY = maxScale
-      }
-    } else {
-      const objWidth = (obj.width || 0) * (obj.scaleX || 1)
-      const objHeight = (obj.height || 0) * (obj.scaleY || 1)
-
-      if (obj.scaleX && objWidth > canvasWidth) {
-        obj.scaleX = canvasWidth / (obj.width || 1)
-      }
-      if (obj.scaleY && objHeight > canvasHeight) {
-        obj.scaleY = canvasHeight / (obj.height || 1)
-      }
-    }
-
-    constrainObjectPosition(obj, canvasWidth, canvasHeight, radius)
+    handleObjectScaling(obj, canvasWidth, canvasHeight)
   })
 
   canvas.on('selection:created', handleSelection)
