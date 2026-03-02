@@ -20,30 +20,41 @@
     </div>
 
     <div class="formatGroup layerGroup">
-      <button
-        class="burgerButton"
-        :class="{ isEnabled: hasSelectedImage }"
-        @click="toggleLayerMenu"
-        :aria-expanded="isLayerMenuOpen"
-        aria-haspopup="menu"
-        title="Organiser"
-        type="button"
-        :disabled="!hasSelectedImage"
-      >
-        <img class="burgerLogo" :src="organisationIcon" alt="Organiser" />
-        <span class="labelButton">Organiser</span>
-      </button>
-
-      <div v-if="isLayerMenuOpen && hasSelectedImage" class="layerDropdown" role="menu" aria-label="Ordre des images">
-        <button class="layerMenuItem" @click="onBringForwardMenuClick" title="Avancer" type="button">
-          <span class="layerIcon layerIcon--forward" aria-hidden="true"></span>
-          <span class="layerMenuLabel">Avancer</span>
+      <div class="organize-button-group" :class="{ disabled: !hasSelectedImage }">
+        <button
+          class="organize-select-button"
+          type="button"
+          title="Organiser"
+          :disabled="!hasSelectedImage"
+          @click="toggleLayerMenu"
+        >
+          <img class="organize-select-icon" :src="squareIcon" alt="Organiser" />
+          <span class="organize-select-label">Organiser</span>
         </button>
 
-        <button class="layerMenuItem" @click="onSendToBackMenuClick" title="Reculer" type="button">
-          <span class="layerIcon layerIcon--backward" aria-hidden="true"></span>
-          <span class="layerMenuLabel">Reculer</span>
+        <button
+          class="organize-caret-button"
+          type="button"
+          aria-haspopup="menu"
+          :aria-expanded="isLayerMenuOpen"
+          title="Afficher le menu organiser"
+          :disabled="!hasSelectedImage"
+          @click="toggleLayerMenu"
+        >
+          <span class="organize-caret" aria-hidden="true"></span>
         </button>
+
+        <div v-if="isLayerMenuOpen && hasSelectedImage" class="layerDropdown" role="menu" aria-label="Ordre des images">
+          <button class="layerMenuItem" @click="onBringForwardMenuClick" title="Avancer" type="button">
+            <img class="layerMenuIcon" :src="flipToFrontIcon" alt="Avancer" />
+            <span class="layerMenuLabel">Avancer</span>
+          </button>
+
+          <button class="layerMenuItem" @click="onSendToBackMenuClick" title="Reculer" type="button">
+            <img class="layerMenuIcon" :src="flipToBackIcon" alt="Reculer" />
+            <span class="layerMenuLabel">Reculer</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -59,7 +70,9 @@ import { useShapeStore } from '../../stores/shapeStore'
 import cropIcon from "../../assets/imageOptionBar/crop.svg"
 import cropIconActive from "../../assets/imageOptionBar/cropActive.svg"
 import imageIcon from "../../assets/blockImage/imageIcon.svg"
-import organisationIcon from "../../assets/optionBarImage/organisation.svg"
+import flipToFrontIcon from "../../assets/optionBarImage/flip_to_front.svg"
+import flipToBackIcon from "../../assets/optionBarImage/flip_to_back.svg"
+import squareIcon from "../../assets/formOptionBar/square.svg"
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()
@@ -142,62 +155,91 @@ function onSendToBackMenuClick() {
 }
 
 .layerGroup {
+  position: relative;
   display: flex;
   align-items: center;
   height: 100%;
   gap: 6px;
 }
 
-.burgerButton {
-  min-width: 92px;
-  height: 26px;
+.organize-button-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.organize-select-button {
+  height: 30px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid transparent;
-  background: transparent;
+  padding: 0 6px;
   border-radius: 4px;
-  padding: 0 8px;
+  border: 1px solid transparent;
+  background: #ffffff;
   cursor: pointer;
-  color: #6B7280;
-  transition: background-color 160ms ease;
+  transition: background-color 160ms ease, opacity 160ms ease;
 }
 
-.burgerButton:hover,
-.burgerButton[aria-expanded='true'] {
+.organize-select-button:hover {
+  background: #f8f8f8;
+}
+
+.organize-select-button:disabled {
+  cursor: not-allowed;
   background: #ffffff;
 }
 
-.burgerButton:disabled {
-  cursor: not-allowed;
+.organize-select-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0);
 }
 
-.burgerButton:disabled:hover {
+.organize-select-label {
+  font-family: 'Segoe UI';
+  font-size: 12px;
+  color: #4B5563;
+}
+
+.organize-caret-button {
+  width: 22px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
   background: transparent;
+  cursor: pointer;
+  padding: 0;
 }
 
-.burgerButton .labelButton {
+.organize-caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #4B5563;
+}
+
+.organize-button-group.disabled .organize-select-icon {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+
+.organize-button-group.disabled .organize-select-label {
   color: #9CA3AF;
 }
 
-.burgerButton.isEnabled {
-  color: #4B5563;
+.organize-button-group.disabled .organize-caret {
+  border-top-color: #9CA3AF;
 }
 
-.burgerButton.isEnabled .labelButton {
-  color: #4B5563;
-}
-
-.burgerLogo {
-  width: 16px;
-  height: 16px;
-  display: block;
-  object-fit: contain;
-  filter: grayscale(1) brightness(0.65);
-}
-
-.burgerButton.isEnabled .burgerLogo {
-  filter: grayscale(1) brightness(0);
+.organize-caret-button:disabled {
+  cursor: not-allowed;
 }
 
 .formatButton {
@@ -273,30 +315,37 @@ function onSendToBackMenuClick() {
 }
 
 .layerDropdown {
-  position: static;
-  width: auto;
+  position: absolute;
+  top: 36px;
+  left: 0;
+  min-width: 160px;
   display: flex;
-  flex-direction: row;
-  gap: 6px;
-  background: transparent;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: #ffffff;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
 }
 
 .layerMenuItem {
-  min-width: 26px;
-  height: 26px;
+  width: 100%;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 4px;
-  background: transparent;
+  background: #ffffff;
   cursor: pointer;
   transition: background-color 160ms ease;
 }
 
 .layerMenuItem:hover {
-  background: #ffffff;
+  background: #f8f8f8;
 }
 
 .layerMenuLabel {
@@ -309,47 +358,12 @@ function onSendToBackMenuClick() {
   text-overflow: ellipsis;
 }
 
-.layerIcon {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  display: inline-block;
-}
-
-.layerIcon::before,
-.layerIcon::after {
-  content: '';
-  position: absolute;
-  border: 1px solid #000000;
-  background: transparent;
-}
-
-.layerIcon--forward::before {
-  width: 5px;
-  height: 3px;
-  left: 0px;
-  top: 4px;
-}
-
-.layerIcon--forward::after {
-  width: 5px;
-  height: 3px;
-  left: 2px;
-  top: 1px;
-}
-
-.layerIcon--backward::before {
-  width: 5px;
-  height: 3px;
-  left: 2px;
-  top: 4px;
-}
-
-.layerIcon--backward::after {
-  width: 5px;
-  height: 3px;
-  left: 0px;
-  top: 1px;
+.layerMenuIcon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0);
 }
 
 
