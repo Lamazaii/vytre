@@ -1,6 +1,12 @@
 <template>
   <div class="imageOptionBar">
     <div class="formatGroup">
+      <button class="formatButton" @click="onAddImageClick" title="Ajouter une image">
+        <img :src="imageIcon" alt="Ajouter" />
+        <span class="labelButton">Ajouter</span>
+      </button>
+    </div>
+    <div class="formatGroup">
       <button class="formatButton" :class="{ active: imageCropStore.isCropperOpen }" @click="onCropClick" title="Crop an image">
         <img :src="imageCropStore.isCropperOpen ? cropIconActive : cropIcon" alt="Crop" />
         <span class="labelButton">Rogner</span>
@@ -12,14 +18,20 @@
 
 <script setup lang="ts">
 
-import { ref } from 'vue'
 import { useImageCropStore } from '../../stores/imageCropStore'
 import { useErrorPopupStore } from '../../stores/errorPopupStore'
+import { useShapeStore } from '../../stores/shapeStore'
 import cropIcon from "../../assets/imageOptionBar/crop.svg"
 import cropIconActive from "../../assets/imageOptionBar/cropActive.svg"
+import imageIcon from "../../assets/blockImage/imageIcon.svg"
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()
+const shapeStore = useShapeStore()
+
+function onAddImageClick() {
+  shapeStore.requestAddImage()
+}
 
 function onCropClick() {
   if (!imageCropStore.selectedImageId) {

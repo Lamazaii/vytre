@@ -6,6 +6,7 @@ describe('Document validator', () => {
             const validDoc = {
                 title: 'Test Document',
                 version: 1,
+                state: 'En édition',
                 blocks: [
                     {
                         text: 'Sample text',

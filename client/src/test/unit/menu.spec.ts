@@ -165,8 +165,8 @@ describe('Menu.vue', () => {
               loadingDocuments: false,
               documentsError: null,
               allDocuments: [
-                { id: 1, title: 'Doc A', version: '1', blocks: [] },
-                { id: 2, title: 'Doc B', version: '1', blocks: [] },
+                { id: 1, title: 'Doc A', version: '1', blocks: [], state: 'En édition' },
+                { id: 2, title: 'Doc B', version: '1', blocks: [], state: 'En édition' },
               ],
             },
           },

@@ -9,7 +9,7 @@ export const documentService = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(document),
+      body: JSON.stringify({ ...document, state: document.state ?? 'En édition' }),
     });
 
     if (!response.ok) {
@@ -41,7 +41,7 @@ export const documentService = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(document),
+      body: JSON.stringify({ ...document, state: document.state ?? 'En édition' }),
     });
 
     if (!response.ok) {

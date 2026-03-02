@@ -15,6 +15,7 @@ describe('documentService', () => {
         title: 'New Doc',
         version: '1.0',
         blocks: [],
+        state: 'En édition',
       }
 
       const createdDocument = { ...newDocument, id: 1, createdAt: new Date(), updatedAt: new Date() }

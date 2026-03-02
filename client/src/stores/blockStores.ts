@@ -49,9 +49,11 @@ export const useBlocksStore = defineStore('blocks', () => {
     version: number;
     createdAt?: Date;
     updatedAt?: Date;
+    state?: string;
   }>({
     title: 'Titre du document',
-    version: 1
+    version: 1,
+    state: 'En édition'
   })
 
   const allDocuments = ref<Document[]>([])
@@ -137,13 +139,15 @@ export const useBlocksStore = defineStore('blocks', () => {
         title: document.title,
         version: document.version,
         createdAt: document.createdAt,
-        updatedAt: document.updatedAt
+        updatedAt: document.updatedAt,
+        state: document.state ?? 'En édition'
       };
 
       documentTitle.value = document.title;
 
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
+        canvasData: block.canvasData ?? '',
         modified: true, // mark as cleanly loaded
         textZones: typeof block.textZones === 'string' 
           ? JSON.parse(block.textZones || '[]') // server may store as JSON string
@@ -163,7 +167,8 @@ export const useBlocksStore = defineStore('blocks', () => {
   function createNewDocument() {
     currentDocument.value = {
       title: 'Titre du document',
-      version: 1
+      version: 1,
+      state: 'En édition'
     }
     documentTitle.value = 'Titre du document'
     blocks.value = [
@@ -315,6 +320,20 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
+   * Update canvas data in a block
+   * @param blockIndex - Index of the block
+   * @param data - JSON string of canvas data
+   */
+  function updateBlockCanvas(blockIndex: number, data: string) {
+    if (blockIndex < 0 || blockIndex >= blocks.value.length) return
+    const block = blocks.value[blockIndex]
+    if (!block) return
+    
+    block.canvasData = data
+    block.modified = true
+  }
+
+  /**
    * Delete a specific text zone from a block
    * @param blockIndex - Index of the block
    * @param zoneIndex - Index of the text zone to delete
@@ -378,6 +397,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     confirmDelete,
     updateBlockDescription,
     updateTextZone,
+    updateBlockCanvas,
     removeTextZone,
     isContentEmpty,
     loadFromClipboard,

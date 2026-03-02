@@ -7,7 +7,7 @@ export interface Block {
   nbOfRepeats: number;
   images: Image[];
   textZones?: string[];
-
+  canvasData?: string;
 
   modified?: boolean;
 }

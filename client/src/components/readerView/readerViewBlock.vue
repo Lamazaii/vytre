@@ -10,6 +10,7 @@
                 <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
                 </div>
               </div>
+              <ReaderViewCanvas v-if="hasCanvasObjects" :canvas-data="canvasData" />
               <div v-if="images && images.length > 0" class="imagesContainer">
                 <img 
                   v-for="(image, index) in images" 
@@ -39,9 +40,10 @@
 
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { Image } from '../../types/Image';
 import ImageZoom from '../popup/ImageZoomPopUp.vue';
+import ReaderViewCanvas from './readerViewCanvas.vue';
 
 interface Props {
   numero: number;
@@ -49,6 +51,7 @@ interface Props {
   modelValue: number;
   images?: Image[];
   textZones?: string[];
+  canvasData?: string;
 }
 
 const props = defineProps<Props>();
@@ -56,6 +59,16 @@ const props = defineProps<Props>();
 const isModalOpen = ref(false);
 const selectedImageSrc = ref('');
 const selectedImageAlt = ref('');
+
+const hasCanvasObjects = computed(() => {
+  if (!props.canvasData) return false
+  try {
+    const data = JSON.parse(props.canvasData)
+    return data.objects && data.objects.length > 0
+  } catch {
+    return false
+  }
+})
 
 const openImageZoom = (src: string, alt: string) => {
   selectedImageSrc.value = src;

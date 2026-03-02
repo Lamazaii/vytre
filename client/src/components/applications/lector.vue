@@ -32,6 +32,7 @@ function handleHome() {
         :modelValue="block.nbOfRepeats"
         :images="block.images"
         :textZones="block.textZones"
+        :canvasData="block.canvasData"
       />
     </div>
   </div>

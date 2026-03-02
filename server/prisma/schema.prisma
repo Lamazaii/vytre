@@ -20,6 +20,7 @@ model Document {
   blocks    Block[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  state     String @default("En édition")
 }
 
 model Block {
@@ -28,6 +29,7 @@ model Block {
   step         Int
   nbOfRepeats  Float
   textZones    String?  @db.NVarChar(Max)
+  canvasData   String?  @db.NVarChar(Max)
 
   documentId   Int
   document     Document @relation(fields: [documentId], references: [id])
