@@ -9,9 +9,9 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fabric } from 'fabric'
 import { useImageCropStore } from '../../../stores/imageCropStore'
 import { useShapeStore } from '../../../stores/shapeStore'
-import { objectDefaults } from './canvasConfig'
-import { createDeleteControl, deleteSelectedObjects } from './canvasControls'
-import { handleObjectMoving, handleObjectScaling } from './canvasConstraints'
+import { objectDefaults } from './utils/canvasConfig'
+import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
+import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
 
 interface Props {
   width?: number
