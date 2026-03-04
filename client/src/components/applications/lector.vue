@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
 import ReaderViewBlock from '../readerView/readerViewBlock.vue'
-import TitleBar from '../optionBar/titleBar.vue'
+import TitleBar from '../optionBar/shared/titleBar.vue'
 
 const blocksStore = useBlocksStore()
 

@@ -68,7 +68,7 @@ import type { Document } from '../../types/Document'
 import timeImage from '../../assets/menu/timer.svg'
 import readIcon from '../../assets/optionBarImage/visibility.svg'
 import editIcon from '../../assets/menu/edit.svg'
-import TitleBar from '../optionBar/titleBar.vue'
+import TitleBar from '../optionBar/shared/titleBar.vue'
 
 
 const emit = defineEmits<{

@@ -64,15 +64,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { useImageCropStore } from '../../stores/imageCropStore'
-import { useErrorPopupStore } from '../../stores/errorPopupStore'
-import { useShapeStore } from '../../stores/shapeStore'
-import cropIcon from "../../assets/imageOptionBar/crop.svg"
-import cropIconActive from "../../assets/imageOptionBar/cropActive.svg"
-import imageIcon from "../../assets/blockImage/imageIcon.svg"
-import flipToFrontIcon from "../../assets/optionBarImage/flip_to_front.svg"
-import flipToBackIcon from "../../assets/optionBarImage/flip_to_back.svg"
-import squareIcon from "../../assets/formOptionBar/square.svg"
+import { useImageCropStore } from '../../../stores/imageCropStore'
+import { useErrorPopupStore } from '../../../stores/errorPopupStore'
+import { useShapeStore } from '../../../stores/shapeStore'
+import cropIcon from "../../../assets/imageOptionBar/crop.svg"
+import cropIconActive from "../../../assets/imageOptionBar/cropActive.svg"
+import imageIcon from "../../../assets/blockImage/imageIcon.svg"
+import flipToFrontIcon from "../../../assets/optionBarImage/flip_to_front.svg"
+import flipToBackIcon from "../../../assets/optionBarImage/flip_to_back.svg"
+import squareIcon from "../../../assets/formOptionBar/square.svg"
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()

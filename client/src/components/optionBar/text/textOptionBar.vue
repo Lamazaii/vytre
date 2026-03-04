@@ -49,18 +49,18 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 // SVG icons for formatting buttons
-import boldIcon from "../../assets/textOptionBar/bold.svg"
-import boldIconActive from "../../assets/textOptionBar/boldActive.svg"
-import italicIcon from "../../assets/textOptionBar/italic.svg"
-import italicIconActive from "../../assets/textOptionBar/italicActive.svg"
-import underlineIcon from "../../assets/textOptionBar/underline.svg"
-import underlineIconActive from "../../assets/textOptionBar/underlineActive.svg"
-import addTextIcon from "../../assets/textOptionBar/addText.svg"
-import addTextIconActive from "../../assets/textOptionBar/addTextActive.svg"
+import boldIcon from "../../../assets/textOptionBar/bold.svg"
+import boldIconActive from "../../../assets/textOptionBar/boldActive.svg"
+import italicIcon from "../../../assets/textOptionBar/italic.svg"
+import italicIconActive from "../../../assets/textOptionBar/italicActive.svg"
+import underlineIcon from "../../../assets/textOptionBar/underline.svg"
+import underlineIconActive from "../../../assets/textOptionBar/underlineActive.svg"
+import addTextIcon from "../../../assets/textOptionBar/addText.svg"
+import addTextIconActive from "../../../assets/textOptionBar/addTextActive.svg"
 
 import { storeToRefs } from 'pinia'
-import { useTextFormatStore } from '../../stores/textFormatStore'
-import { useBlocksStore } from '../../stores/blockStores'
+import { useTextFormatStore } from '../../../stores/textFormatStore'
+import { useBlocksStore } from '../../../stores/blockStores'
 
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
