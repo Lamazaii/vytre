@@ -140,6 +140,8 @@ function onFocusEditable() {
     if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
+  imageCropStore.clearSelection()
+  shapeStore.clearShapeSelection()
 }
 
 function setTextZoneEditorRef(el: any, index: number) {
@@ -154,6 +156,8 @@ function onTextZoneFocus(index: number) {
     if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
+  imageCropStore.clearSelection()
+  shapeStore.clearShapeSelection()
 }
 
 function onSelectionActivity() {

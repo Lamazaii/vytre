@@ -82,11 +82,17 @@ import IconToggleGroup from "./shared/iconToggleGroup.vue";
 import TextOptionBar from "./text/textOptionBar.vue";
 import ShapeOptionBar from "./shape/shapeOptionBar.vue";
 import ImageOptionBar from "./image/imageOptionBar.vue";
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
+import { useImageCropStore } from '../../stores/imageCropStore'
+import { useShapeStore } from '../../stores/shapeStore'
+import { useTextFormatStore } from '../../stores/textFormatStore'
 
 const activeTab = ref<'text' | 'image' | 'form'>('text')
 const popupStore = usePopupStore()
+const imageCropStore = useImageCropStore()
+const shapeStore = useShapeStore()
+const textFormatStore = useTextFormatStore()
 const emit = defineEmits<{
   save: []
 }>()
@@ -98,6 +104,27 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
     popupStore.closeReader()
   }
 }
+
+// Watch for text focus and switch to text tab
+watch(() => textFormatStore.hasTextFocus, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'text'
+  }
+})
+
+// Watch for image selection and switch to image tab
+watch(() => imageCropStore.selectedImageId, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'image'
+  }
+})
+
+// Watch for shape selection and switch to form tab
+watch(() => shapeStore.hasSelectedShape, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'form'
+  }
+})
 
 </script>
 

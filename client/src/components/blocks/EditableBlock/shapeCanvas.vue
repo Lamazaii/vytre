@@ -9,6 +9,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fabric } from 'fabric'
 import { useImageCropStore } from '../../../stores/imageCropStore'
 import { useShapeStore } from '../../../stores/shapeStore'
+import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { objectDefaults } from './utils/canvasConfig'
 import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
 import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
@@ -37,6 +38,7 @@ const canvasElement = ref<HTMLCanvasElement | null>(null)
 let canvas: fabric.Canvas | null = null
 const imageCropStore = useImageCropStore()
 const shapeStore = useShapeStore()
+const textFormatStore = useTextFormatStore()
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
@@ -236,6 +238,7 @@ function handleSelection(e: any) {
     if (imageId && props.blockIndex !== undefined) {
       imageCropStore.selectImage(imageId, props.blockIndex)
     }
+    textFormatStore.clearTextFocus()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
     // Update store with selected shape's style
     const fill = selected.fill || '#000000'
@@ -243,6 +246,7 @@ function handleSelection(e: any) {
     const strokeWidth = selected.strokeWidth || 2
     shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number)
     imageCropStore.clearSelection()
+    textFormatStore.clearTextFocus()
   } else {
     imageCropStore.clearSelection()
   }
@@ -250,6 +254,7 @@ function handleSelection(e: any) {
 
 function handleSelectionCleared() {
   imageCropStore.clearSelection()
+  shapeStore.clearShapeSelection()
 }
 
 onMounted(() => {

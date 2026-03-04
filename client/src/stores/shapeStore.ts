@@ -9,6 +9,7 @@ export const useShapeStore = defineStore('shape', () => {
   const addImageRequest = ref(0)
   const bringImageForwardRequest = ref(0)
   const sendImageToBackRequest = ref(0)
+  const hasSelectedShape = ref(false)
 
   const fillColor = ref('#000000')
   const strokeColor = ref('#1F2937')
@@ -42,6 +43,11 @@ export const useShapeStore = defineStore('shape', () => {
     fillColor.value = fill
     strokeColor.value = stroke
     strokeWidth.value = width
+    hasSelectedShape.value = true
+  }
+
+  function clearShapeSelection() {
+    hasSelectedShape.value = false
   }
 
   return {
@@ -50,6 +56,7 @@ export const useShapeStore = defineStore('shape', () => {
     addImageRequest,
     bringImageForwardRequest,
     sendImageToBackRequest,
+    hasSelectedShape,
     fillColor,
     strokeColor,
     strokeWidth,
@@ -59,6 +66,7 @@ export const useShapeStore = defineStore('shape', () => {
     requestAddImage,
     requestBringImageForward,
     requestSendImageToBack,
-    updateStylesFromSelection
+    updateStylesFromSelection,
+    clearShapeSelection
   }
 })
