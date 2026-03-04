@@ -19,6 +19,23 @@
     />
 
     <SelecteurEpaisseur v-model="strokeWidth" />
+
+    <div class="organize-button-group disabled">
+      <button class="organize-select-button" type="button" title="Organiser" disabled>
+        <img class="organize-select-icon" :src="organizationIcon" alt="Organiser" />
+        <span class="organize-select-label">Organiser</span>
+      </button>
+      <button
+        class="organize-caret-button"
+        type="button"
+        title="Afficher le menu organiser"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        disabled
+      >
+        <span class="organize-caret" aria-hidden="true"></span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -27,6 +44,7 @@ import { ref } from 'vue'
 import ShapeSelector from './ShapeSelector.vue'
 import ColorPicker from './ColorPicker.vue'
 import SelecteurEpaisseur from './SelecteurEpaisseur.vue'
+import organizationIcon from '../../assets/optionBarImage/organisation.svg'
 
 const fillColor = ref('#3B82F6')
 const strokeColor = ref('#1F2937')
@@ -56,5 +74,77 @@ const strokeIconPath = "M280-120v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h8
   height: 24px;
   background-color: #D1D5DB;
   margin: 0 4px;
+}
+
+.organize-button-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.organize-select-button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.organize-select-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0);
+}
+
+.organize-select-label {
+  font-family: 'Segoe UI';
+  font-size: 12px;
+  color: #4B5563;
+}
+
+.organize-caret-button {
+  width: 22px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.organize-caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #4B5563;
+}
+
+.organize-button-group.disabled .organize-select-icon {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+
+.organize-button-group.disabled .organize-select-label {
+  color: #9CA3AF;
+}
+
+.organize-button-group.disabled .organize-caret {
+  border-top-color: #9CA3AF;
+}
+
+.organize-caret-button:disabled,
+.organize-select-button:disabled {
+  cursor: not-allowed;
 }
 </style>
