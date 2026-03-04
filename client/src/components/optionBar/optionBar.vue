@@ -63,7 +63,7 @@
       <ImageOptionBar />
     </div>
     <div v-if="activeTab === 'form'" class="contextual-toolbar-wrapper">
-      <FormOptionBar />
+      <ShapeOptionBar />
     </div>
 
   </div>
@@ -78,10 +78,10 @@ import iconText from "../../assets/optionBarImage/textField.svg";
 import iconViewMode from "../../assets/optionBarImage/visibility.svg";
 import iconShape from "../../assets/optionBarImage/shapeIcon.svg";
 
-import IconToggleGroup from "./iconToggleGroup.vue";
-import TextOptionBar from "./textOptionBar.vue";
-import FormOptionBar from "./formOptionBar.vue";
-import ImageOptionBar from "./imageOptionBar.vue";
+import IconToggleGroup from "./shared/iconToggleGroup.vue";
+import TextOptionBar from "./text/textOptionBar.vue";
+import ShapeOptionBar from "./shape/shapeOptionBar.vue";
+import ImageOptionBar from "./image/imageOptionBar.vue";
 import { ref } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
 

@@ -28,9 +28,9 @@
 
 <script setup lang="ts">
 import ShapeSelector from './ShapeSelector.vue'
-import ColorPicker from './ColorPicker.vue'
-import SelecteurEpaisseur from './SelecteurEpaisseur.vue'
-import { useShapeStore } from '../../stores/shapeStore'
+import ColorPicker from '../shared/ColorPicker.vue'
+import SelecteurEpaisseur from '../shared/SelecteurEpaisseur.vue'
+import { useShapeStore } from '../../../stores/shapeStore'
 
 const shapeStore = useShapeStore()
 

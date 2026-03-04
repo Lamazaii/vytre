@@ -39,10 +39,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useShapeStore } from '../../stores/shapeStore'
-import squareIcon from "../../assets/formOptionBar/square.svg"
-import circleIcon from "../../assets/formOptionBar/circle.svg"
-import triangleIcon from "../../assets/formOptionBar/triangle.svg"
+import { useShapeStore } from '../../../stores/shapeStore'
+import squareIcon from "../../../assets/formOptionBar/square.svg"
+import circleIcon from "../../../assets/formOptionBar/circle.svg"
+import triangleIcon from "../../../assets/formOptionBar/triangle.svg"
 
 type ShapeType = 'square' | 'circle' | 'triangle'
 
