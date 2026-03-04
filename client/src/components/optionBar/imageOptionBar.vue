@@ -28,7 +28,7 @@
           :disabled="!hasSelectedImage"
           @click="toggleLayerMenu"
         >
-          <img class="organize-select-icon" :src="squareIcon" alt="Organiser" />
+          <img class="organize-select-icon" :src="organizationIcon" alt="Organiser" />
           <span class="organize-select-label">Organiser</span>
         </button>
 
@@ -72,7 +72,7 @@ import cropIconActive from "../../assets/imageOptionBar/cropActive.svg"
 import imageIcon from "../../assets/blockImage/imageIcon.svg"
 import flipToFrontIcon from "../../assets/optionBarImage/flip_to_front.svg"
 import flipToBackIcon from "../../assets/optionBarImage/flip_to_back.svg"
-import squareIcon from "../../assets/formOptionBar/square.svg"
+import organizationIcon from "../../assets/optionBarImage/organisation.svg"
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()
