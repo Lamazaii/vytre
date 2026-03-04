@@ -17,6 +17,7 @@ export const objectDefaults = {
   borderColor: 'rgba(102, 153, 255, 1)',
   borderScaleFactor: 1,
   rotatingPointOffset: 30,
+  strokeUniform: true,
 }
 
 export const canvasConfig = {

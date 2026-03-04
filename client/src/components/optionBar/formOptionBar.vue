@@ -5,19 +5,22 @@
     <div class="separator"></div>
 
     <ColorPicker 
-      v-model="fillColor" 
+      v-model="shapeStore.fillColor" 
       title="Couleur de remplissage"
       :icon-path="fillIconPath"
       :preset-colors="presetColors"
     />
 
     <ColorPicker 
-      v-model="strokeColor" 
+      v-model="shapeStore.strokeColor" 
       title="Couleur du contour"
       :icon-path="strokeIconPath"
       :preset-colors="presetColors"
     />
 
+    <SelecteurEpaisseur 
+      v-model="shapeStore.strokeWidth" 
+    />
     <SelecteurEpaisseur v-model="strokeWidth" />
 
     <div class="organize-button-group disabled">
@@ -40,15 +43,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import ShapeSelector from './ShapeSelector.vue'
 import ColorPicker from './ColorPicker.vue'
 import SelecteurEpaisseur from './SelecteurEpaisseur.vue'
+import { useShapeStore } from '../../stores/shapeStore'
 import organizationIcon from '../../assets/optionBarImage/organisation.svg'
 
-const fillColor = ref('#3B82F6')
-const strokeColor = ref('#1F2937')
-const strokeWidth = ref(2)
+const shapeStore = useShapeStore()
 
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 

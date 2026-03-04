@@ -8,9 +8,10 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { fabric } from 'fabric'
 import { useImageCropStore } from '../../../stores/imageCropStore'
-import { objectDefaults, canvasConfig } from './canvasConfig'
-import { createDeleteControl, deleteSelectedObjects } from './canvasControls'
-import { handleObjectMoving, handleObjectScaling } from './canvasConstraints'
+import { useShapeStore } from '../../../stores/shapeStore'
+import { objectDefaults } from './utils/canvasConfig'
+import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
+import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
 
 interface Props {
   width?: number
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 let canvas: fabric.Canvas | null = null
 const imageCropStore = useImageCropStore()
+const shapeStore = useShapeStore()
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
@@ -79,7 +81,9 @@ function createShape(type: 'rect' | 'circle' | 'triangle') {
       top: (canvasHeight - size) / 2,
       width: size,
       height: size,
-      fill: '#DC2626',
+      fill: shapeStore.fillColor,
+      stroke: shapeStore.strokeColor,
+      strokeWidth: shapeStore.strokeWidth,
       ...objectDefaults
     })
   } else if (type === 'circle') {
@@ -88,7 +92,9 @@ function createShape(type: 'rect' | 'circle' | 'triangle') {
       left: canvasWidth / 2,
       top: canvasHeight / 2,
       radius: radius,
-      fill: '#DC2626',
+      fill: shapeStore.fillColor,
+      stroke: shapeStore.strokeColor,
+      strokeWidth: shapeStore.strokeWidth,
       originX: 'center',
       originY: 'center',
       ...objectDefaults
@@ -100,7 +106,9 @@ function createShape(type: 'rect' | 'circle' | 'triangle') {
       top: (canvasHeight - size) / 2,
       width: size,
       height: size,
-      fill: '#DC2626',
+      fill: shapeStore.fillColor,
+      stroke: shapeStore.strokeColor,
+      strokeWidth: shapeStore.strokeWidth,
       ...objectDefaults
     })
   }
@@ -228,6 +236,13 @@ function handleSelection(e: any) {
     if (imageId && props.blockIndex !== undefined) {
       imageCropStore.selectImage(imageId, props.blockIndex)
     }
+  } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
+    // Update store with selected shape's style
+    const fill = selected.fill || '#000000'
+    const stroke = selected.stroke || '#1F2937'
+    const strokeWidth = selected.strokeWidth || 2
+    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number)
+    imageCropStore.clearSelection()
   } else {
     imageCropStore.clearSelection()
   }
@@ -317,6 +332,60 @@ watch(() => props.active, (isActive) => {
     }
     
     canvas.renderAll()
+  }
+})
+
+// Watch for fill color changes
+watch(() => shapeStore.fillColor, (newColor) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject) return
+  
+  // Only apply to shapes, not images
+  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
+    // Only update if the color is actually different
+    if (activeObject.fill !== newColor) {
+      activeObject.set({ fill: newColor })
+      canvas.renderAll()
+      saveCanvas()
+    }
+  }
+})
+
+// Watch for stroke color changes
+watch(() => shapeStore.strokeColor, (newColor) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject) return
+  
+  // Only apply to shapes, not images
+  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
+    // Only update if the color is actually different
+    if (activeObject.stroke !== newColor) {
+      activeObject.set({ stroke: newColor })
+      canvas.renderAll()
+      saveCanvas()
+    }
+  }
+})
+
+// Watch for stroke width changes
+watch(() => shapeStore.strokeWidth, (newWidth) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject) return
+  
+  // Only apply to shapes, not images
+  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
+    // Only update if the width is actually different
+    if (activeObject.strokeWidth !== newWidth) {
+      activeObject.set({ strokeWidth: newWidth })
+      canvas.renderAll()
+      saveCanvas()
+    }
   }
 })
 
