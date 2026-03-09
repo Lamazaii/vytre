@@ -22,6 +22,62 @@ const props = withDefaults(defineProps<Props>(), {
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 const fabricCanvas = ref<fabric.Canvas | null>(null)
 const canvasId = `reader-${Math.random()}`
+const minHeight = 100
+const padding = 5
+
+function calculateRequiredHeight(): number {
+  if (!fabricCanvas.value) return minHeight
+  
+  const objects = fabricCanvas.value.getObjects()
+  if (objects.length === 0) return minHeight
+  
+  let minTop = Infinity
+  let maxBottom = 0
+  
+  objects.forEach((obj) => {
+    const boundingRect = obj.getBoundingRect()
+    const top = boundingRect.top
+    const bottom = boundingRect.top + boundingRect.height
+    
+    if (top < minTop) {
+      minTop = top
+    }
+    if (bottom > maxBottom) {
+      maxBottom = bottom
+    }
+  })
+  
+  // Calculate required height: content height + padding
+  const contentHeight = maxBottom - minTop
+  const requiredHeight = contentHeight + (padding * 2)
+  
+  return Math.max(minHeight, requiredHeight)
+}
+
+function repositionObjects() {
+  if (!fabricCanvas.value) return
+  
+  const objects = fabricCanvas.value.getObjects()
+  if (objects.length === 0) return
+  
+  // Find the highest position
+  let minTop = Infinity
+  objects.forEach((obj) => {
+    const boundingRect = obj.getBoundingRect()
+    if (boundingRect.top < minTop) {
+      minTop = boundingRect.top
+    }
+  })
+  
+  // Move all objects up if necessary
+  const offset = minTop - padding
+  if (offset > 0) {
+    objects.forEach((obj) => {
+      obj.set({ top: (obj.top || 0) - offset })
+      obj.setCoords()
+    })
+  }
+}
 
 onMounted(() => {
   if (!canvasElement.value || !props.canvasData) return
@@ -43,6 +99,13 @@ onMounted(() => {
         obj.evented = false
       })
       
+      // Reposition objects to remove empty space at the top
+      repositionObjects()
+      
+      // Adapt height to content
+      const newHeight = calculateRequiredHeight()
+      fabricCanvas.value.setHeight(newHeight)
+      
       fabricCanvas.value.renderAll()
     })
   } catch (error) {
@@ -62,8 +125,7 @@ onBeforeUnmount(() => {
   width: 700px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-top: 8px;
+  align-items: flex-start;
 }
 
 canvas {
