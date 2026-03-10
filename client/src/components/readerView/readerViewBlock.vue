@@ -107,7 +107,7 @@ const closeImageModal = () => {
 .stepNumber {
   width: 40px;
   height: 40px;
-  background-color: #C6C6C6;
+  background-color: #DC2626;
   border-radius: 50%;
   display: flex;
   align-items: center;
