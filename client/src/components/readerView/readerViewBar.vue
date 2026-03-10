@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import visibilityIcon from "../../assets/optionBarImage/visibility.svg";
 import personEditIcon from "../../assets/optionBarImage/personEdit.svg";
-import IconToggleGroup from "../optionBar/iconToggleGroup.vue";
+import IconToggleGroup from "../optionBar/shared/iconToggleGroup.vue";
 import { usePopupStore } from '../../stores/popupStore'
 
 const popupStore = usePopupStore()

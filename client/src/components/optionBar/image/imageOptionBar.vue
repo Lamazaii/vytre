@@ -73,10 +73,21 @@ import imageIcon from "../../assets/blockImage/imageIcon.svg"
 import flipToFrontIcon from "../../assets/optionBarImage/flip_to_front.svg"
 import flipToBackIcon from "../../assets/optionBarImage/flip_to_back.svg"
 import organizationIcon from "../../assets/optionBarImage/organisation.svg"
+import { useImageCropStore } from '../../../stores/imageCropStore'
+import { useErrorPopupStore } from '../../../stores/errorPopupStore'
+import { useShapeStore } from '../../../stores/shapeStore'
+import { useBlocksStore } from '../../../stores/blockStores'
+import cropIcon from "../../../assets/imageOptionBar/crop.svg"
+import cropIconActive from "../../../assets/imageOptionBar/cropActive.svg"
+import imageIcon from "../../../assets/blockImage/imageIcon.svg"
+import flipToFrontIcon from "../../../assets/optionBarImage/flip_to_front.svg"
+import flipToBackIcon from "../../../assets/optionBarImage/flip_to_back.svg"
+import squareIcon from "../../../assets/formOptionBar/square.svg"
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()
 const shapeStore = useShapeStore()
+const blocksStore = useBlocksStore()
 const isLayerMenuOpen = ref(false)
 const hasSelectedImage = computed(() => Boolean(imageCropStore.selectedImageId))
 
@@ -99,6 +110,12 @@ watch(hasSelectedImage, (isSelected) => {
 })
 
 function onAddImageClick() {
+  // Vérifier si un bloc est sélectionné
+  if (blocksStore.selectedIndex === null) {
+    errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une image.')
+    return
+  }
+  
   shapeStore.requestAddImage()
 }
 

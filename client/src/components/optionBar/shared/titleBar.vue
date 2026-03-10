@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { useBlocksStore } from '../../stores/blockStores'
-import homeIcon from '../../assets/menu/home.svg'
+import { useBlocksStore } from '../../../stores/blockStores'
+import homeIcon from '../../../assets/menu/home.svg'
 
 defineProps<{
   isReadOnly?: boolean

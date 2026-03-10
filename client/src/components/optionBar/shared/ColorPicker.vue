@@ -1,9 +1,7 @@
 <template>
   <div ref="colorRoot" class="color-button-group">
     <button class="color-select-button" type="button" :title="title">
-      <svg v-if="modelValue === 'transparent'" class="color-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#666">
-        <path d="M792-56 686-162q-32 11-64.5 16.5T554-140q-103 0-174.5-71.5T308-386q0-35 5.5-67.5T330-518L56-792l56-56 736 736-56 56ZM418-468Zm84 228q23 0 44.5-3.5T589-254L450-393q-8 21-11.5 42.5T435-306q0 70 48.5 118T602-140Zm278-92-56-56q8-21 11.5-42.5T839-374q0-70-48.5-118.5T672-541q-23 0-44.5 3.5T584-526l-56-56q32-11 64.5-16.5T660-604q103 0 174.5 71.5T906-358q0 35-5.5 67.5T880-232ZM160-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 640v-80h80v80h-80Zm0-640v-80h80v80h-80Zm160 640v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm-160 0v-80h80v80h-80Zm-160 0v-80h80v80h-80Z"/>
-      </svg>
+      <img v-if="modelValue === 'transparent'" class="color-icon" :src="noTextureIcon" alt="Sans texture" />
       <svg v-else class="color-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" :fill="modelValue">
         <path :d="iconPath"/>
       </svg>
@@ -34,6 +32,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import noTextureIcon from '../../../assets/formOptionBar/noTexture.svg'
 
 interface Props {
   modelValue: string

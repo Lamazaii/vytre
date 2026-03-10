@@ -9,6 +9,7 @@
       title="Couleur de remplissage"
       :icon-path="fillIconPath"
       :preset-colors="presetColors"
+      :allow-transparent="true"
     />
 
     <ColorPicker 
@@ -16,6 +17,7 @@
       title="Couleur du contour"
       :icon-path="strokeIconPath"
       :preset-colors="presetColors"
+      :allow-transparent="true"
     />
 
     <SelecteurEpaisseur 

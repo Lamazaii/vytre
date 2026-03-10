@@ -7,7 +7,7 @@ import NameConflictPopup from '../popup/NameConflictPopup.vue';
 import BlockWrapper from '../blocks/BlockWrapper.vue';
 import AddBlockZone from '../blocks/addBlockZone.vue';
 import OptionBar from '../optionBar/optionBar.vue';
-import TitleBar from '../optionBar/titleBar.vue';
+import TitleBar from '../optionBar/shared/titleBar.vue';
 import ReaderViewWindow from '../readerView/readerViewWindow.vue';
 import DeletePopup from '../popup/DeletePopup.vue';
 import ErrorPopup from '../popup/ErrorPopup.vue';

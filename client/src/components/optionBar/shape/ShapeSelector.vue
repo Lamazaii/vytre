@@ -39,14 +39,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useShapeStore } from '../../stores/shapeStore'
-import squareIcon from "../../assets/formOptionBar/square.svg"
-import circleIcon from "../../assets/formOptionBar/circle.svg"
-import triangleIcon from "../../assets/formOptionBar/triangle.svg"
+import { useShapeStore } from '../../../stores/shapeStore'
+import { useBlocksStore } from '../../../stores/blockStores'
+import { useErrorPopupStore } from '../../../stores/errorPopupStore'
+import squareIcon from "../../../assets/formOptionBar/square.svg"
+import circleIcon from "../../../assets/formOptionBar/circle.svg"
+import triangleIcon from "../../../assets/formOptionBar/triangle.svg"
 
 type ShapeType = 'square' | 'circle' | 'triangle'
 
 const shapeStore = useShapeStore()
+const blocksStore = useBlocksStore()
+const errorPopupStore = useErrorPopupStore()
 const isShapeMenuOpen = ref(false)
 const shapeMenuRef = ref<HTMLElement | null>(null)
 const selectedShape = ref<ShapeType>('square')
@@ -64,6 +68,13 @@ const selectedShapeLabel = computed(() => {
 })
 
 function addShape(shape: ShapeType) {
+  // Vérifier si un bloc est sélectionné
+  if (blocksStore.selectedIndex === null) {
+    errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une forme.')
+    isShapeMenuOpen.value = false
+    return
+  }
+
   shapeStore.setActiveShape(shape)
   shapeStore.requestAddShape()
 
