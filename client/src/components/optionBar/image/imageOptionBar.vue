@@ -28,7 +28,7 @@
           :disabled="!hasSelectedImage"
           @click="toggleLayerMenu"
         >
-          <img class="organize-select-icon" :src="squareIcon" alt="Organiser" />
+          <img class="organize-select-icon" :src="organizationIcon" alt="Organiser" />
           <span class="organize-select-label">Organiser</span>
         </button>
 
@@ -64,16 +64,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+
+
 import { useImageCropStore } from '../../../stores/imageCropStore'
 import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 import { useShapeStore } from '../../../stores/shapeStore'
 import { useBlocksStore } from '../../../stores/blockStores'
+
 import cropIcon from "../../../assets/imageOptionBar/crop.svg"
 import cropIconActive from "../../../assets/imageOptionBar/cropActive.svg"
 import imageIcon from "../../../assets/blockImage/imageIcon.svg"
+import organizationIcon from "../../../assets/optionBarImage/organisation.svg"
 import flipToFrontIcon from "../../../assets/optionBarImage/flip_to_front.svg"
 import flipToBackIcon from "../../../assets/optionBarImage/flip_to_back.svg"
-import squareIcon from "../../../assets/formOptionBar/square.svg"
+
 
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()

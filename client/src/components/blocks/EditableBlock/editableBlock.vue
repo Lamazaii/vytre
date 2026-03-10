@@ -238,6 +238,18 @@ watch(() => shapeStore.sendImageToBackRequest, () => {
   emit('modified', true)
 })
 
+watch(() => shapeStore.bringShapeForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedShapeForward()
+  emit('modified', true)
+})
+
+watch(() => shapeStore.sendShapeToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedShapeToBack()
+  emit('modified', true)
+})
+
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
     const selectedImage = shapeCanvasRef.value.getSelectedImage()
