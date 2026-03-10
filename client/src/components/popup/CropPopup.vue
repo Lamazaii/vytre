@@ -86,7 +86,7 @@ function handleClose() {
  * Confirms the crop and generates the cropped image
  * 1. Retrieves the cropper result via getResult()
  * 2. Extracts the canvas containing the cropped image
- * 3. Converts the canvas to base64 via toDataURL()
+ * 3. Converts the canvas to base64 via toDataURL() with PNG format to preserve transparency
  * 4. Emits the cropped image to the parent component
  * 5. Closes the popup
  */
@@ -96,8 +96,8 @@ function handleConfirm() {
     const { canvas } = cropperRef.value.getResult()
     
     if (canvas) {
-      // Converts canvas to base64 format (data:image/png;base64,...)
-      const croppedImage = canvas.toDataURL()
+      // Converts canvas to base64 PNG format (preserves transparency)
+      const croppedImage = canvas.toDataURL('image/png')
       
       // Sends cropped image to parent component (typically EditableBlock)
       emit('crop', croppedImage)
@@ -189,7 +189,56 @@ function handleConfirm() {
 .cropper-engine {
   height: 400px;
   width: 100%;
-  background: #eee;
+  /* Damier de transparence pour visualiser les zones transparentes */
+  background-image: 
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-color: #ffffff;
+}
+
+/* Force le fond blanc pour le cropper (override les styles de vue-advanced-cropper) */
+.cropper-engine :deep(.vue-advanced-cropper__background),
+.cropper-engine :deep(.vue-advanced-cropper__foreground) {
+  background: #ffffff !important;
+}
+
+/* Applique le motif damier au background du cropper */
+.cropper-engine :deep(.vue-advanced-cropper__background) {
+  background-image: 
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+  background-color: #ffffff !important;
+}
+
+/* Personnalisation du sélecteur (zone de crop) */
+.cropper-engine :deep(.vue-rectangle-stencil__preview) {
+  border: 2px solid #dc2626 !important;
+}
+
+/* Coins du sélecteur (handlers) */
+.cropper-engine :deep(.vue-simple-handler) {
+  background: #dc2626 !important;
+  border: 2px solid #ffffff !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* Lignes de guides */
+.cropper-engine :deep(.vue-simple-line) {
+  border-color: #dc2626 !important;
+}
+
+/* Hover sur les handlers */
+.cropper-engine :deep(.vue-simple-handler:hover) {
+  background: #b91c1c !important;
 }
 
 .cropper-separator {
