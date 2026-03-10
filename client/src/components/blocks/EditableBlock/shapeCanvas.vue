@@ -177,6 +177,15 @@ function getSelectedImage() {
   return null
 }
 
+function getSelectedShape() {
+  if (!canvas) return null
+  const activeObject = canvas.getActiveObject()
+  if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
+    return activeObject as fabric.Object
+  }
+  return null
+}
+
 function replaceSelectedImage(newImageSrc: string) {
   const selectedImage = getSelectedImage()
   if (!selectedImage || !canvas) return
@@ -226,6 +235,28 @@ function sendSelectedImageToBack() {
   if (!selectedImage) return false
 
   canvas.sendBackwards(selectedImage)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+function bringSelectedShapeForward() {
+  if (!canvas) return false
+  const selectedShape = getSelectedShape()
+  if (!selectedShape) return false
+
+  canvas.bringForward(selectedShape)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+function sendSelectedShapeToBack() {
+  if (!canvas) return false
+  const selectedShape = getSelectedShape()
+  if (!selectedShape) return false
+
+  canvas.sendBackwards(selectedShape)
   canvas.renderAll()
   saveCanvas()
   return true
@@ -400,9 +431,12 @@ defineExpose({
   addTriangle,
   addImage,
   getSelectedImage,
+  getSelectedShape,
   replaceSelectedImage,
   bringSelectedImageForward,
   sendSelectedImageToBack,
+  bringSelectedShapeForward,
+  sendSelectedShapeToBack,
 })
 </script>
 

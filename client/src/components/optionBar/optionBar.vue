@@ -80,7 +80,7 @@ import iconShape from "../../assets/optionBarImage/shapeIcon.svg";
 
 import IconToggleGroup from "./shared/iconToggleGroup.vue";
 import TextOptionBar from "./text/textOptionBar.vue";
-import ShapeOptionBar from "./shape/shapeOptionBar.vue";
+import ShapeOptionBar from "./formOptionBar.vue";
 import ImageOptionBar from "./image/imageOptionBar.vue";
 import { ref, watch } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
