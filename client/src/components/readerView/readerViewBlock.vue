@@ -129,7 +129,7 @@ const closeImageModal = () => {
   width: 700px;
   font-size: 16px;
   position: relative;
-  padding-left: 15px;
+  padding: 0px 15px 0px 15px;
 }
 
 
@@ -143,7 +143,6 @@ const closeImageModal = () => {
 
 .description {
   font-size: 16px;
-  word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;

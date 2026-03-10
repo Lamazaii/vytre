@@ -22,7 +22,6 @@ function handleHome() {
       <div class="blockHeader">
         <div class="headerNumber">N°</div>
         <div class="headerDescription">DÉTAIL DE L'OPÉRATION</div>
-        <div class="headerRep">RÉP.</div>
       </div>
       <ReaderViewBlock
         v-for="block in blocksStore.blocks"
