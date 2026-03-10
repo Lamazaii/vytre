@@ -14,11 +14,13 @@
 <script setup lang="ts">
 import trashRed from '../../../assets/blockImage/trashRed.svg'
 
+// Input props for rendering and visual selection state.
 defineProps<{
   imagePath: string;
   isSelected: boolean;
 }>();
 
+// Selection/removal events sent to the parent canvas container.
 const emit = defineEmits(['select', 'remove']);
 </script>
 
