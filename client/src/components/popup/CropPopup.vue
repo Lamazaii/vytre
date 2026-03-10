@@ -55,21 +55,21 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import cropIconActive from '../../assets/imageOptionBar/cropActive.svg'
 
-// Pinia store to manage crop popup state
+// Pinia store to manage crop popup state.
 const imageCropStore = useImageCropStore()
 
-// Computed property tracking modal open state from the store
+// Reactive modal visibility from the store.
 const isOpen = computed(() => imageCropStore.isCropperOpen)
 
-// Computed property retrieving the image URL/base64 to crop from the store
+// Current image source to crop (URL or base64).
 const imageSrc = computed(() => {
   return imageCropStore.imageToCropSrc || null
 })
 
-// Event emissions to parent component
+// Events emitted to parent when crop is confirmed or popup closed.
 const emit = defineEmits(['crop', 'close'])
 
-// Reference to the Cropper component to access its methods (getResult())
+// Cropper instance ref used to read crop result.
 const cropperRef = ref<any>(null)
   
 /**

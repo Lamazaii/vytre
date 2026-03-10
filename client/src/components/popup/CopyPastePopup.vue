@@ -31,6 +31,7 @@ import clipboardIcon from "../../assets/optionBarImage/contentPasteRed.svg";
 
 import { usePopupStore } from '../../stores/popupStore'
 
+// Store controlling clipboard popup visibility.
 const popupStore = usePopupStore()
 
 
@@ -45,21 +46,25 @@ const emit = defineEmits<{
 	(e: "submit", value: string): void;
 }>();
 
+// Two-way local model proxy for textarea content.
 const localValue = computed({
 	get: () => props.modelValue ?? "",
 	set: (value: string) => emit("update:modelValue", value),
 });
 
+// Cancel closes popup and notifies parent.
 function handleCancel() {
 	popupStore.closePopup();
 	emit("cancel");
 }
 
+// Submit closes popup and returns trimmed content.
 function handleSubmit() {
 	popupStore.closePopup();
 	emit("submit", localValue.value.trim());
 }
 
+// Default placeholder when parent does not provide one.
 const placeholder = computed(
 	() => props.placeholder ?? "Insérer votre texte:"
 );

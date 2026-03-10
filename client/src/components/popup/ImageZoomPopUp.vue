@@ -26,9 +26,12 @@ interface Props {
   imageAlt?: string;
 }
 
+// Input data for modal visibility and displayed image.
 const props = defineProps<Props>();
+// Emits close event when overlay or close button is clicked.
 const emit = defineEmits<{ close: [] }>();
 
+// Standard close handler used by overlay and button.
 const close = () => {
   emit('close');
 };
