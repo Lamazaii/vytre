@@ -73,16 +73,23 @@ import organizationIcon from '../../../assets/optionBarImage/organisation.svg'
 import flipToFrontIcon from '../../../assets/optionBarImage/flip_to_front.svg'
 import flipToBackIcon from '../../../assets/optionBarImage/flip_to_back.svg'
 
+// Store driving shape style and layer commands.
 const shapeStore = useShapeStore()
+// Local layer dropdown state.
 const isLayerMenuOpen = ref(false)
+// True when a shape object is selected.
 const hasSelectedShape = computed(() => shapeStore.hasSelectedShape)
 
+// Shared swatches for fill and stroke controls.
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 
+// Icon path used by fill picker.
 const fillIconPath = "m247-904 57-56 343 343q23 23 23 57t-23 57L457-313q-23 23-57 23t-57-23L153-503q-23-23-23-57t23-57l190-191-96-96Zm153 153L209-560h382L400-751Zm303.5 447.5Q680-327 680-360q0-21 12.5-45t27.5-45q9-12 19-25t21-25q11 12 21 25t19 25q15 21 27.5 45t12.5 45q0 33-23.5 56.5T760-280q-33 0-56.5-23.5ZM80 0v-160h800V0H80Z"
 
+// Icon path used by stroke picker.
 const strokeIconPath = "M280-120v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80ZM120-120v-720h720v80H200v640h-80Z"
 
+// Toggle organize menu only when a shape is selected.
 function toggleLayerMenu() {
   if (!hasSelectedShape.value) {
     return
@@ -95,17 +102,20 @@ function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }
 
+// Auto-close dropdown when shape selection disappears.
 watch(hasSelectedShape, (isSelected) => {
   if (!isSelected) {
     closeLayerMenu()
   }
 })
 
+// Forward layer command for selected shape.
 function onBringForwardMenuClick() {
   shapeStore.requestBringShapeForward()
   closeLayerMenu()
 }
 
+// Backward layer command for selected shape.
 function onSendToBackMenuClick() {
   shapeStore.requestSendShapeToBack()
   closeLayerMenu()

@@ -47,22 +47,27 @@ const emit = defineEmits<{
   'update:modelValue': [width: number]
 }>()
 
+// Dropdown state and root ref for outside click detection.
 const isStrokeWidthMenuOpen = ref(false)
 const strokeWidthMenuRef = ref<HTMLElement | null>(null)
 
+// List selectable widths excluding currently active one.
 const availableStrokeWidths = computed(() => {
   return props.strokeWidthOptions.filter(w => w !== props.modelValue)
 })
 
+// Toggle width menu visibility.
 function toggleStrokeWidthMenu() {
   isStrokeWidthMenuOpen.value = !isStrokeWidthMenuOpen.value
 }
 
+// Emit selected width and close dropdown.
 function selectStrokeWidth(width: number) {
   emit('update:modelValue', width)
   isStrokeWidthMenuOpen.value = false
 }
 
+// Close menu when clicking outside the component.
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
   
@@ -71,6 +76,7 @@ function handleOutsideClick(event: MouseEvent) {
   }
 }
 
+// Register/unregister outside click listener.
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
 })

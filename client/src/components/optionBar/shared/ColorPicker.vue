@@ -51,18 +51,22 @@ const emit = defineEmits<{
   'update:modelValue': [color: string]
 }>()
 
+// Dropdown state and root ref for outside-click handling.
 const showColorPicker = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
+// Toggle picker visibility.
 function toggleColorPicker() {
   showColorPicker.value = !showColorPicker.value
 }
 
+// Emit color selection to parent via v-model.
 function selectColor(color: string) {
   emit('update:modelValue', color)
   showColorPicker.value = false
 }
 
+// Close picker when clicking outside the component.
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
   
@@ -71,12 +75,14 @@ function handleOutsideClick(event: MouseEvent) {
   }
 }
 
+// Expose imperative close method for parent controls.
 defineExpose({
   closeColorPicker: () => {
     showColorPicker.value = false
   }
 })
 
+// Register/unregister outside click listener.
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
 })
