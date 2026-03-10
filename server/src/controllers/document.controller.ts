@@ -5,6 +5,7 @@ import createDebug from 'debug';
 
 const debug = createDebug('app:document.controller');
 
+// Normalize Express path param and enforce positive integer IDs.
 const parseIdParam = (rawId: string | string[]): number | null => {
     const normalizedId = Array.isArray(rawId) ? rawId[0] : rawId;
     const id = Number(normalizedId);
@@ -56,6 +57,7 @@ export const getDocumentById = async (req: Request, res: Response) => {
     try {
         const id = parseIdParam(req.params.id);
 
+        // Fail fast on invalid IDs to avoid unnecessary manager/database calls.
         if (id === null) {
             res.status(400).json({ message: 'ID invalide' });
             return;
@@ -84,6 +86,8 @@ export const updateDocument = async (req: Request, res: Response) => {
     try {
         const id = parseIdParam(req.params.id);
 
+        // Keep route contract strict:
+        // update only supports numeric document IDs.
         if (id === null) {
             res.status(400).json({ message: 'ID invalide' });
             return;
@@ -92,6 +96,7 @@ export const updateDocument = async (req: Request, res: Response) => {
         debug('Mise à jour du document ID: %d', id);
         debug('Body reçu:', JSON.stringify(req.body, null, 2));
 
+        // Reuse creation schema so create/update stay aligned.
         const validation = createDocumentSchema.safeParse(req.body);
 
         if (!validation.success) {
