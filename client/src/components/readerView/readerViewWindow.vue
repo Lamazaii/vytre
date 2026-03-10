@@ -36,16 +36,19 @@ import ReaderViewBar from './readerViewBar.vue'
 import ReaderViewBlock from './readerViewBlock.vue'
 
 
+// Stores controlling reader modal visibility and block data.
 const popupStore = usePopupStore()
 const blocksStore = useBlocksStore()
 const emit = defineEmits<{
     save: []
 }>()
 
+// Close reader view modal.
 const closeReaderView = () => {
     popupStore.closeReader()
 }
 
+// Keep only blocks that contain visible content in reader mode.
 const noEmptyBlocks = computed(() => {
     return blocksStore.blocks.filter(block => {
         const hasText = block.text && block.text.trim() !== ''

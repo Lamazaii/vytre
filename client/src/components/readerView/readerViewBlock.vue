@@ -54,12 +54,15 @@ interface Props {
   canvasData?: string;
 }
 
+// Props describing one block rendered in reader mode.
 const props = defineProps<Props>();
 
+// Image zoom modal state.
 const isModalOpen = ref(false);
 const selectedImageSrc = ref('');
 const selectedImageAlt = ref('');
 
+// Detect whether canvas JSON contains at least one drawable object.
 const hasCanvasObjects = computed(() => {
   if (!props.canvasData) return false
   try {
@@ -70,12 +73,14 @@ const hasCanvasObjects = computed(() => {
   }
 })
 
+// Open fullscreen image preview.
 const openImageZoom = (src: string, alt: string) => {
   selectedImageSrc.value = src;
   selectedImageAlt.value = alt;
   isModalOpen.value = true;
 };
 
+// Close fullscreen image preview.
 const closeImageModal = () => {
   isModalOpen.value = false;
 };
