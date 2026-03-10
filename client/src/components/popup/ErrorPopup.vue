@@ -23,9 +23,12 @@ import { computed } from 'vue'
 import { useErrorPopupStore } from '../../stores/errorPopupStore'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 
+// Store controlling generic error popup state.
 const store = useErrorPopupStore()
+// Reactive bindings for visibility and displayed message.
 const isOpen = computed(() => store.isOpen)
 const message = computed(() => store.message)
+// Close helper forwarding action to store.
 const close = () => store.close()
 </script>
 

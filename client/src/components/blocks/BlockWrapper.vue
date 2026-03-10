@@ -47,6 +47,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// Events forwarded to parent list/container components.
 const emit = defineEmits<{
   'select': []
   'delete': []
@@ -55,14 +56,17 @@ const emit = defineEmits<{
 }>()
 
 const blocksStore = useBlocksStore()
+// Local repeat value synced with block data and child v-model.
 const nbOfRepeats = ref(props.block.nbOfRepeats)
 
+// Persist repeat updates into the current block object.
 watch(nbOfRepeats, (newVal) => {
   if (props.block) {
     props.block.nbOfRepeats = newVal
   }
 })
 
+// Keep local repeat input synced when block payload changes.
 watch(
   () => props.block,
   (newBlock) => {
@@ -73,6 +77,7 @@ watch(
   { deep: true }
 )
 
+// Sync description changes to both local block prop and Pinia store.
 function handleUpdateDescription(newDescription: string) {
   if (props.block) {
     props.block.text = newDescription
@@ -80,6 +85,7 @@ function handleUpdateDescription(newDescription: string) {
   }
 }
 
+// Receive migrated/updated images emitted by the editable block.
 function handleUpdateImages(newImages: any[]) {
   if (props.block) {
     props.block.images = newImages

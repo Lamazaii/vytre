@@ -48,19 +48,23 @@ import triangleIcon from "../../../assets/formOptionBar/triangle.svg"
 
 type ShapeType = 'square' | 'circle' | 'triangle'
 
+// Stores for shape commands, block selection, and validation feedback.
 const shapeStore = useShapeStore()
 const blocksStore = useBlocksStore()
 const errorPopupStore = useErrorPopupStore()
+// Dropdown state and currently selected shape preset.
 const isShapeMenuOpen = ref(false)
 const shapeMenuRef = ref<HTMLElement | null>(null)
 const selectedShape = ref<ShapeType>('square')
 
+// Resolve icon for currently selected shape.
 const selectedShapeIcon = computed(() => {
   if (selectedShape.value === 'circle') return circleIcon
   if (selectedShape.value === 'triangle') return triangleIcon
   return squareIcon
 })
 
+// Resolve display label for currently selected shape.
 const selectedShapeLabel = computed(() => {
   if (selectedShape.value === 'circle') return 'Rond'
   if (selectedShape.value === 'triangle') return 'Triangle'
@@ -68,7 +72,7 @@ const selectedShapeLabel = computed(() => {
 })
 
 function addShape(shape: ShapeType) {
-  // Vérifier si un bloc est sélectionné
+  // Shape insertion requires an active block.
   if (blocksStore.selectedIndex === null) {
     errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une forme.')
     isShapeMenuOpen.value = false
@@ -85,15 +89,18 @@ function addShape(shape: ShapeType) {
   isShapeMenuOpen.value = false
 }
 
+// Update dropdown selection without creating object yet.
 function selectShape(shape: ShapeType) {
   selectedShape.value = shape
   isShapeMenuOpen.value = false
 }
 
+// Toggle shape picker menu visibility.
 function toggleShapeMenu() {
   isShapeMenuOpen.value = !isShapeMenuOpen.value
 }
 
+// Close the menu when clicking outside selector container.
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
   
@@ -102,6 +109,7 @@ function handleOutsideClick(event: MouseEvent) {
   }
 }
 
+// Register/unregister document click listener.
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
 })

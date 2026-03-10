@@ -19,10 +19,13 @@ const props = withDefaults(defineProps<Props>(), {
   height: 400
 })
 
+// Canvas refs for DOM node and Fabric viewer instance.
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 const fabricCanvas = ref<fabric.Canvas | null>(null)
+// Unique id for potential multi-canvas rendering.
 const canvasId = `reader-${Math.random()}`
 
+// Initialize non-interactive Fabric canvas for read-only display.
 onMounted(() => {
   if (!canvasElement.value || !props.canvasData) return
 
@@ -50,6 +53,7 @@ onMounted(() => {
   }
 })
 
+// Dispose Fabric canvas when component unmounts.
 onBeforeUnmount(() => {
   if (fabricCanvas.value) {
     fabricCanvas.value.dispose()

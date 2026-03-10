@@ -65,11 +65,13 @@ const emit = defineEmits<{
     (e: 'confirm', value: string): void
 }>()
 
+// Local proxy to support v-model from parent.
 const localValue = computed({
     get: () => props.modelValue ?? '',
     set: (value: string) => emit('update:modelValue', value),
 })
 
+// Computed fallbacks for optional labels and texts.
 const resolvedTitle = computed(() => props.title ?? 'Enregistrer')
 const resolvedLabel = computed(() => props.label ?? 'Titre du document')
 const resolvedMessage = computed(
@@ -83,10 +85,12 @@ const resolvedPlaceholder = computed(
 const resolvedConfirm = computed(() => props.confirmText ?? 'CONFIRMER')
 const resolvedCancel = computed(() => props.cancelText ?? 'Annuler')
 
+// Cancel action.
 function handleCancel() {
     emit('cancel')
 }
 
+// Confirm action with trimmed title value.
 function handleConfirm() {
     emit('confirm', localValue.value.trim())
 }

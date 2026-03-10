@@ -17,11 +17,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+// Emits a data URL payload when a valid image is selected.
 const emit = defineEmits(['upload']);
+// Hidden native file input reference.
 const fileInput = ref<HTMLInputElement | null>(null);
 
+// Opens the file picker from the custom upload area.
 const triggerFileInput = () => fileInput.value?.click();
 
+// Reads the selected image and forwards it to the parent component.
 const handleImageSelect = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input?.files?.[0];
@@ -38,6 +42,7 @@ const handleImageSelect = (event: Event) => {
   reader.readAsDataURL(file);
 };
 
+// Expose picker trigger for toolbar-driven image insertion.
 defineExpose({
   triggerFileInput
 })

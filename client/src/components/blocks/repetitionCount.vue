@@ -37,9 +37,11 @@
     'update:modelValue': [value: number];
   }>();
 
+  // Local input model (supports temporary string state while typing).
   const inputValue = ref<number | string>(props.modelValue);
   const inputRef = ref<HTMLInputElement | null>(null);
 
+  // Dynamically resize input and wrappers based on current content length.
   const inputWidth = computed(() => {
     const valueStr = String(inputValue.value);
     const length = valueStr.length;
@@ -49,10 +51,12 @@
   const innerWidth = computed(() => inputWidth.value + 4);
   const boxWidth = computed(() => innerWidth.value + 20);
 
+  // Keep local value aligned when parent model changes externally.
   watch(() => props.modelValue, (newVal) => {
     inputValue.value = newVal;
   });
 
+  // Emit rounded values on input when current text is numeric.
   const handleInput = () => {
     const val = Number(inputValue.value);
     if (inputValue.value !== '' && !isNaN(val)) {
@@ -61,6 +65,7 @@
     }
   };
 
+  // Enforce bounds and precision when leaving the input.
   const handleBlur = () => {
     const numericValue = Number(inputValue.value);
 

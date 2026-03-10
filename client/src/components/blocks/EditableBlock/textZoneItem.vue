@@ -20,7 +20,9 @@
 import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
 
+// Text content passed from the parent block.
 defineProps<{ modelValue: string }>();
+// Forward editor and removal events to parent container.
 const emit = defineEmits(['update:modelValue', 'focus', 'selectionUpdate', 'remove', 'setRef']);
 </script>
 

@@ -62,35 +62,41 @@ import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 
+// Stores for text formatting commands and block-level text zone actions.
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 
-// Formatting state: bold, italic, underline, fontSize
+// Reactive formatting flags mirrored from the text format store.
 const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
 
+// Local UI state for add-text toggle and color picker.
 const addText = ref(false)
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
-// Preset colors
+// Preset color palette displayed in picker.
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 
+// Apply selected font size through text formatting store.
 function handleSizeChange() {
   applyFontSize(fontSize.value)
 }
 
+// Toggle color menu visibility.
 function toggleColorPicker() {
   showColor.value = !showColor.value
 }
 
+// Apply selected text color and close menu.
 function selectColor(c: string) {
   color.value = c
   applyColor(c)
   showColor.value = false
 }
 
+// Add a new text zone to the selected block.
 function onAddText() {
   addText.value = !addText.value
   if (addText.value) {
@@ -99,6 +105,7 @@ function onAddText() {
   }
 }
 
+// Close color menu when user clicks outside picker root.
 function onDocClick(e: MouseEvent) {
   const root = colorRoot.value
   if (!root) return
@@ -108,6 +115,7 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
+// Register/unregister document-level listeners.
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   document.addEventListener('selectionchange', updateStatesFromCommand)
