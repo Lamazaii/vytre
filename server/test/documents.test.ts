@@ -1,7 +1,8 @@
 import request from 'supertest';
 import app from '../app';
 import * as documentManager from '../src/managers/document.manager';
-import * as documentVersionManager from '../src/managers/documentVersion.manager';
+import * as documentVersionManager
+    from '../src/managers/documentVersion.manager';
 
 interface Image {
     imagePath?: string;
@@ -84,7 +85,8 @@ jest.mock('../src/managers/document.manager', () => {
 });
 
 jest.mock('../src/managers/documentVersion.manager', () => {
-    const getDocumentVersions = jest.fn<Promise<DocumentVersionShape[]>, [number]>(
+    const getDocumentVersions =
+    jest.fn<Promise<DocumentVersionShape[]>, [number]>(
         (documentId) => Promise.resolve([
             {
                 id: 1,
@@ -105,7 +107,8 @@ jest.mock('../src/managers/documentVersion.manager', () => {
         ]),
     );
 
-    const getDocumentVersion = jest.fn<Promise<DocumentVersionShape | null>, [number, number]>(
+    const getDocumentVersion =
+    jest.fn<Promise<DocumentVersionShape | null>, [number, number]>(
         (documentId, version) => Promise.resolve(
             version === 1
                 ? {
@@ -216,7 +219,8 @@ describe('Documents routes', () => {
 
             expect(res.status).toBe(200);
             expect(Array.isArray(res.body)).toBe(true);
-            expect((res.body as DocumentVersionShape[])[0]).toHaveProperty('version');
+            expect((res.body as DocumentVersionShape[])[0])
+                .toHaveProperty('version');
         });
     });
 
@@ -225,14 +229,16 @@ describe('Documents routes', () => {
             const res = await request(app).get('/documents/1/versions/1');
 
             expect(res.status).toBe(200);
-            expect((res.body as DocumentVersionShape)).toHaveProperty('version', 1);
+            expect((res.body as DocumentVersionShape))
+                .toHaveProperty('version', 1);
         });
 
         it('returns 404 when version is not found', async () => {
             const res = await request(app).get('/documents/1/versions/999');
 
             expect(res.status).toBe(404);
-            expect((res.body as { message?: string, }).message).toBe('Version non trouvée');
+            expect((res.body as { message?: string, })
+                .message).toBe('Version non trouvée');
         });
     });
 
@@ -243,7 +249,12 @@ describe('Documents routes', () => {
                 version: 2,
                 state: 'Actif',
                 blocks: [
-                    { text: 'mis à jour', step: 1, nbOfRepeats: 2, images: [] },
+                    {
+                        text: 'mis à jour',
+                        step: 1,
+                        nbOfRepeats: 2,
+                        images: [],
+                    },
                 ],
             };
 
@@ -349,7 +360,7 @@ describe('Documents routes', () => {
                 .toHaveProperty('message', 'Erreur interne du serveur');
         });
 
-        it('returns 500 if DocumentVersionManager.getDocumentVersions throws', async () => {
+        it('returns 500 if getDocumentVersions throws', async () => {
             (documentVersionManager.getDocumentVersions as jest.Mock)
                 .mockImplementationOnce(() => {
                     throw new Error('fail');
@@ -360,7 +371,7 @@ describe('Documents routes', () => {
                 .toHaveProperty('message', 'Erreur interne du serveur');
         });
 
-        it('returns 500 if DocumentVersionManager.getDocumentVersion throws', async () => {
+        it('returns 500 if getDocumentVersion throws', async () => {
             (documentVersionManager.getDocumentVersion as jest.Mock)
                 .mockImplementationOnce(() => {
                     throw new Error('fail');
@@ -371,13 +382,10 @@ describe('Documents routes', () => {
                 .toHaveProperty('message', 'Erreur interne du serveur');
         });
 
-        it('returns 500 with String(error) when create throws a non-Error',
+        it('returns 500 with String(error) when create throws string',
             async () => {
                 (documentManager.create as jest.Mock)
-                    .mockImplementationOnce(() => {
-                        // eslint-disable-next-line @typescript-eslint/only-throw-error
-                        throw 'string error';
-                    });
+                    .mockRejectedValueOnce('string error');
                 const payload = { title: 'err', version: 1, blocks: [] };
                 const res = await request(app)
                     .post('/documents')
@@ -389,13 +397,10 @@ describe('Documents routes', () => {
             },
         );
 
-        it('returns 500 with String(error) when getAll throws a non-Error',
+        it('returns 500 with String(error) when getAll throws string',
             async () => {
                 (documentManager.getAll as jest.Mock)
-                    .mockImplementationOnce(() => {
-                        // eslint-disable-next-line @typescript-eslint/only-throw-error
-                        throw 'getAll failure';
-                    });
+                    .mockRejectedValueOnce('getAll failure');
                 const res = await request(app).get('/documents');
                 expect(res.status).toBe(500);
                 expect(res.body)
@@ -403,13 +408,10 @@ describe('Documents routes', () => {
             },
         );
 
-        it('returns 500 with String(error) when getById throws a non-Error',
+        it('returns 500 with String(error) when getById throws string',
             async () => {
                 (documentManager.getById as jest.Mock)
-                    .mockImplementationOnce(() => {
-                        // eslint-disable-next-line @typescript-eslint/only-throw-error
-                        throw 'getById failure';
-                    });
+                    .mockRejectedValueOnce('getById failure');
                 const res = await request(app).get('/documents/1');
                 expect(res.status).toBe(500);
                 expect(res.body)
@@ -417,13 +419,10 @@ describe('Documents routes', () => {
             },
         );
 
-        it('returns 500 with String(error) when update throws a non-Error',
+        it('returns 500 with String(error) when update throws string',
             async () => {
                 (documentManager.update as jest.Mock)
-                    .mockImplementationOnce(() => {
-                        // eslint-disable-next-line @typescript-eslint/only-throw-error
-                        throw 'update failure';
-                    });
+                    .mockRejectedValueOnce('update failure');
                 const payload = { title: 'err', version: 1, blocks: [] };
                 const res = await request(app)
                     .put('/documents/1')
@@ -435,7 +434,7 @@ describe('Documents routes', () => {
             },
         );
 
-        it('creates document with canvasData block and returns 201', async () => {
+        it('creates document with canvasData and returns 201', async () => {
             const payload = {
                 title: 'Canvas document',
                 version: 1,
