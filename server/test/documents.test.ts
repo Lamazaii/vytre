@@ -205,6 +205,13 @@ describe('Documents routes', () => {
             expect(body).toHaveProperty('id', 1);
         });
 
+        it('returns 400 when id is invalid', async () => {
+            const res = await request(app).get('/documents/abc');
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('ID invalide');
+        });
+
         it('returns 404 when not found', async () => {
             const res = await request(app).get('/documents/9999');
             expect(res.status).toBe(404);
@@ -221,6 +228,13 @@ describe('Documents routes', () => {
             expect(Array.isArray(res.body)).toBe(true);
             expect((res.body as DocumentVersionShape[])[0])
                 .toHaveProperty('version');
+        });
+
+        it('returns 400 when id is invalid', async () => {
+            const res = await request(app).get('/documents/abc/versions');
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('ID invalide');
         });
     });
 
@@ -239,6 +253,13 @@ describe('Documents routes', () => {
             expect(res.status).toBe(404);
             expect((res.body as { message?: string, })
                 .message).toBe('Version non trouvée');
+        });
+
+        it('returns 400 when version param is invalid', async () => {
+            const res = await request(app).get('/documents/1/versions/abc');
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Paramètres invalides');
         });
     });
 
@@ -276,6 +297,45 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
+        });
+
+        it('returns 400 when id is invalid', async () => {
+            const payload = {
+                title: 'Document test',
+                version: 1,
+                state: 'En édition',
+                blocks: [{ text: 'ok', step: 1, nbOfRepeats: 1, images: [] }],
+            };
+
+            const res = await request(app)
+                .put('/documents/abc')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('ID invalide');
+        });
+
+        it('returns 404 when updating a missing document', async () => {
+            (documentManager.update as jest.Mock)
+                .mockResolvedValueOnce(null);
+
+            const payload = {
+                title: 'Document absent',
+                version: 1,
+                state: 'En édition',
+                blocks: [{ text: 'ok', step: 1, nbOfRepeats: 1, images: [] }],
+            };
+
+            const res = await request(app)
+                .put('/documents/9999')
+                .send(payload)
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(404);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Document non trouvé');
         });
 
         it('returns validation errors with details on update', async () => {
