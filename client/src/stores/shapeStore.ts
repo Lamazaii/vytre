@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type ShapeType = 'square' | 'circle' | 'triangle' | null
+export type ShapeType = 'square' | 'circle' | 'triangle' | 'arrow' | null
+export type ArrowHeadStyle = 'none' | 'open' | 'filled'
 
 export const useShapeStore = defineStore('shape', () => {
   // Currently selected shape type from toolbar.
@@ -15,15 +16,27 @@ export const useShapeStore = defineStore('shape', () => {
   const sendShapeToBackRequest = ref(0)
   // True when a shape is selected on active canvas.
   const hasSelectedShape = ref(false)
+  // Tracks currently selected shape kind on canvas.
+  const selectedShapeType = ref<ShapeType>(null)
+  // Tracks currently chosen shape in toolbar selector.
+  const toolbarShapeType = ref<ShapeType>('square')
 
   // Current style values for shape creation and edition.
   const fillColor = ref('#000000')
   const strokeColor = ref('#1F2937')
   const strokeWidth = ref(2)
+  // Arrow-specific start/end head rendering styles.
+  const arrowStartStyle = ref<ArrowHeadStyle>('filled')
+  const arrowEndStyle = ref<ArrowHeadStyle>('filled')
 
   // Set selected shape preset.
   function setActiveShape(shape: ShapeType) {
     activeShape.value = shape
+    toolbarShapeType.value = shape
+  }
+
+  function setToolbarShape(shape: ShapeType) {
+    toolbarShapeType.value = shape
   }
 
   // Clear selected shape preset.
@@ -62,16 +75,34 @@ export const useShapeStore = defineStore('shape', () => {
   }
 
   // Sync toolbar style values from selected shape object.
-  function updateStylesFromSelection(fill: string, stroke: string, width: number) {
+  function updateStylesFromSelection(
+    fill: string,
+    stroke: string,
+    width: number,
+    shapeType: ShapeType = null,
+    selectedArrowStartStyle?: ArrowHeadStyle,
+    selectedArrowEndStyle?: ArrowHeadStyle
+  ) {
     fillColor.value = fill
     strokeColor.value = stroke
     strokeWidth.value = width
     hasSelectedShape.value = true
+    selectedShapeType.value = shapeType
+    if (shapeType) {
+      toolbarShapeType.value = shapeType
+    }
+    if (selectedArrowStartStyle) {
+      arrowStartStyle.value = selectedArrowStartStyle
+    }
+    if (selectedArrowEndStyle) {
+      arrowEndStyle.value = selectedArrowEndStyle
+    }
   }
 
   // Clear selection flag when no shape is selected.
   function clearShapeSelection() {
     hasSelectedShape.value = false
+    selectedShapeType.value = null
   }
 
   return {
@@ -83,10 +114,15 @@ export const useShapeStore = defineStore('shape', () => {
     bringShapeForwardRequest,
     sendShapeToBackRequest,
     hasSelectedShape,
+    selectedShapeType,
+    toolbarShapeType,
     fillColor,
     strokeColor,
     strokeWidth,
+    arrowStartStyle,
+    arrowEndStyle,
     setActiveShape,
+    setToolbarShape,
     clearActiveShape,
     requestAddShape,
     requestAddImage,

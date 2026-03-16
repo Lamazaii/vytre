@@ -222,6 +222,8 @@ watch(() => shapeStore.addShapeRequest, async () => {
     shapeCanvasRef.value.addCircle()
   } else if (shape === 'triangle') {
     shapeCanvasRef.value.addTriangle()
+  } else if (shape === 'arrow') {
+    ;(shapeCanvasRef.value as any).addArrow()
   }
 })
 

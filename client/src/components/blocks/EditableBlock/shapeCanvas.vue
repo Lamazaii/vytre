@@ -42,6 +42,15 @@ const imageCropStore = useImageCropStore()
 const shapeStore = useShapeStore()
 const textFormatStore = useTextFormatStore()
 
+// Arrow two-click drawing state.
+let isDrawingArrow = false
+let arrowStartPoint: { x: number; y: number } | null = null
+let arrowPreviewPointer: { x: number; y: number } | null = null
+
+// Arrow endpoint modification state.
+let modifyingArrow: fabric.Path | null = null
+let modifyingEnd: 'start' | 'end' | null = null
+
 // Handle delete/backspace shortcuts when canvas is active.
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
@@ -72,6 +81,53 @@ function checkHasObjects() {
   if (!canvas) return
   const objectCount = canvas.getObjects().length
   emit('update:hasObjects', objectCount > 0)
+}
+
+function isArrowObject(obj: fabric.Object): obj is fabric.Path {
+  return obj.type === 'path' && (obj as any).isArrow === true
+}
+
+function applyArrowStyle(arrow: fabric.Path, color: string, width: number) {
+  arrow.set({
+    stroke: color,
+    strokeWidth: width,
+  })
+}
+
+// Create an arrow object between two canvas-space points.
+function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }) {
+  if (!canvas) return
+
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  if (distance < 5) return
+
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  // Create arrow as a single path object
+  const arrowHeadSize = 12
+  const arrowPath = `M 0,0 L ${distance},0 M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+
+  const arrow = new fabric.Path(arrowPath, {
+    stroke: shapeStore.fillColor,
+    strokeWidth: shapeStore.strokeWidth,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(arrow as any).isArrow = true
+  ;(arrow as any).arrowStart = start
+  ;(arrow as any).arrowEnd = end
+
+  canvas.add(arrow)
+  canvas.setActiveObject(arrow)
+  canvas.renderAll()
 }
 
 // Factory for shape creation using current toolbar style values.
@@ -139,6 +195,17 @@ function addTriangle() {
   createShape('triangle')
 }
 
+// Enter two-click drawing mode: first click = start point, second click = end point.
+function addArrow() {
+  if (!canvas) return
+  isDrawingArrow = true
+  arrowStartPoint = null
+  arrowPreviewPointer = null
+  canvas.defaultCursor = 'crosshair'
+  canvas.hoverCursor = 'crosshair'
+  canvas.selection = false
+}
+
 // Insert image object and fit it inside the canvas bounds.
 function addImage(imageSrc: string) {
   if (!canvas) return
@@ -190,7 +257,12 @@ function getSelectedImage() {
 function getSelectedShape() {
   if (!canvas) return null
   const activeObject = canvas.getActiveObject()
-  if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
+  if (activeObject && (
+    activeObject.type === 'rect' ||
+    activeObject.type === 'circle' ||
+    activeObject.type === 'triangle' ||
+    isArrowObject(activeObject)
+  )) {
     return activeObject as fabric.Object
   }
   return null
@@ -286,12 +358,23 @@ function handleSelection(e: any) {
       imageCropStore.selectImage(imageId, props.blockIndex)
     }
     textFormatStore.clearTextFocus()
+  } else if (selected && isArrowObject(selected)) {
+    // Hide selection box for arrows - they show green endpoints instead
+    selected.hasControls = false
+    selected.hasBorders = false
+    
+    const fill = selected.stroke || '#000000'
+    const width = selected.strokeWidth || 2
+    shapeStore.updateStylesFromSelection(fill as string, fill as string, width as number, 'arrow')
+    imageCropStore.clearSelection()
+    textFormatStore.clearTextFocus()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
     // Keep toolbar controls in sync with selected shape style.
     const fill = selected.fill || '#000000'
     const stroke = selected.stroke || '#1F2937'
     const strokeWidth = selected.strokeWidth || 2
-    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number)
+    const shapeType = selected.type === 'rect' ? 'square' : selected.type === 'circle' ? 'circle' : 'triangle'
+    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number, shapeType)
     imageCropStore.clearSelection()
     textFormatStore.clearTextFocus()
   } else {
@@ -321,10 +404,48 @@ onMounted(() => {
   fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
 
   canvas.on('object:added', saveCanvas)
-  canvas.on('object:modified', saveCanvas)
+  canvas.on('object:modified', (e) => {
+    // Reset tracking on drag end
+    if (e.target && isArrowObject(e.target)) {
+      const arrow = e.target as fabric.Path
+      ;(arrow as any).lastLeft = undefined
+      ;(arrow as any).lastTop = undefined
+    }
+    saveCanvas()
+  })
   canvas.on('object:removed', saveCanvas)
 
   canvas.on('object:moving', (e) => {
+    // Real-time endpoint updates during arrow drag
+    if (e.target && isArrowObject(e.target)) {
+      const arrow = e.target as fabric.Path
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+      
+      // Initialize tracking on first move
+      if ((arrow as any).lastLeft === undefined) {
+        ;(arrow as any).lastLeft = arrow.left || 0
+        ;(arrow as any).lastTop = arrow.top || 0
+      }
+      
+      // Get current position
+      const currentLeft = arrow.left || 0
+      const currentTop = arrow.top || 0
+      const lastLeft = (arrow as any).lastLeft || 0
+      const lastTop = (arrow as any).lastTop || 0
+      
+      // Calculate delta and update endpoints immediately
+      const deltaX = currentLeft - lastLeft
+      const deltaY = currentTop - lastTop
+      
+      ;(arrow as any).arrowStart = { x: start.x + deltaX, y: start.y + deltaY }
+      ;(arrow as any).arrowEnd = { x: end.x + deltaX, y: end.y + deltaY }
+      ;(arrow as any).lastLeft = currentLeft
+      ;(arrow as any).lastTop = currentTop
+      
+      return
+    }
+
     const obj = e.target
     if (!obj || !canvas) return
 
@@ -347,6 +468,184 @@ onMounted(() => {
   canvas.on('selection:created', handleSelection)
   canvas.on('selection:updated', handleSelection)
   canvas.on('selection:cleared', handleSelectionCleared)
+
+  // First click sets the start point; second click finalises the arrow.
+  canvas.on('mouse:down', (e: any) => {
+    const pointer = canvas!.getPointer(e.e)
+
+    // Check if clicking on an arrow endpoint to modify it
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+        const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
+        const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
+        const tolerance = 12
+
+        if (distToStart < tolerance) {
+          modifyingArrow = arrow
+          modifyingEnd = 'start'
+          canvas!.setActiveObject(arrow)
+          return
+        }
+        if (distToEnd < tolerance) {
+          modifyingArrow = arrow
+          modifyingEnd = 'end'
+          canvas!.setActiveObject(arrow)
+          return
+        }
+      }
+    }
+
+    if (!isDrawingArrow) return
+    if (e.e.button !== 0) return
+    if (!arrowStartPoint) {
+      arrowStartPoint = { x: pointer.x, y: pointer.y }
+      arrowPreviewPointer = { x: pointer.x, y: pointer.y }
+      canvas!.requestRenderAll()
+    } else {
+      const startPoint = { ...arrowStartPoint }
+      const endPoint = { x: pointer.x, y: pointer.y }
+      isDrawingArrow = false
+      arrowStartPoint = null
+      arrowPreviewPointer = null
+      canvas!.defaultCursor = 'default'
+      canvas!.hoverCursor = 'move'
+      canvas!.selection = props.active
+      createArrowBetweenPoints(startPoint, endPoint)
+    }
+  })
+
+  // Update preview endpoint as the mouse moves after the first click or when modifying arrow.
+  canvas.on('mouse:move', (e: any) => {
+    const pointer = canvas!.getPointer(e.e)
+
+    // Check if near an arrow endpoint for visual feedback
+    let nearEndpoint = false
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+        const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
+        const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
+
+        if (distToStart < 12 || distToEnd < 12) {
+          nearEndpoint = true
+          break
+        }
+      }
+    }
+
+    canvas!.defaultCursor = nearEndpoint ? 'crosshair' : 'default'
+
+    // Handle arrow endpoint modification live
+    if (modifyingArrow && modifyingEnd) {
+      const arrow = modifyingArrow
+
+      if (modifyingEnd === 'start') {
+        ;(arrow as any).arrowStart = { x: pointer.x, y: pointer.y }
+      } else {
+        ;(arrow as any).arrowEnd = { x: pointer.x, y: pointer.y }
+      }
+
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+      const dx = end.x - start.x
+      const dy = end.y - start.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+      if (distance > 5) {
+        const arrowHeadSize = 12
+        const arrowPathStr = `M 0,0 L ${distance},0 M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+
+        // Remove old and create new arrow with updated path
+        canvas!.remove(arrow)
+
+        const newArrow = new fabric.Path(arrowPathStr, {
+          stroke: arrow.stroke || shapeStore.fillColor,
+          strokeWidth: arrow.strokeWidth || 2,
+          fill: 'transparent',
+          left: start.x,
+          top: start.y,
+          angle: angle,
+          originX: 'left',
+          originY: 'center',
+          ...objectDefaults,
+        })
+
+        ;(newArrow as any).isArrow = true
+        ;(newArrow as any).arrowStart = start
+        ;(newArrow as any).arrowEnd = end
+
+        canvas!.add(newArrow)
+        modifyingArrow = newArrow
+        canvas!.setActiveObject(newArrow)
+        canvas!.renderAll()
+      }
+      return
+    }
+
+    if (!isDrawingArrow || !arrowStartPoint) return
+    arrowPreviewPointer = canvas!.getPointer(e.e)
+    canvas!.requestRenderAll()
+  })
+
+  // Draw a dashed preview line directly onto the canvas context.
+  canvas.on('after:render', () => {
+    const ctx = canvas!.getContext()
+    
+    // Draw circles at arrow endpoints only when selected
+    const activeObj = canvas!.getActiveObject()
+    if (activeObj && isArrowObject(activeObj)) {
+      const arrow = activeObj as fabric.Path
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+      ctx.fillStyle = 'rgba(102, 153, 255, 1)'
+      ctx.strokeStyle = 'rgba(102, 153, 255, 1)'
+      ctx.lineWidth = 2
+
+      // Draw circle at start endpoint
+      ctx.beginPath()
+      ctx.arc(start.x, start.y, 6, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+
+      // Draw circle at end endpoint
+      ctx.beginPath()
+      ctx.arc(end.x, end.y, 6, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+    }
+
+    if (!isDrawingArrow || !arrowStartPoint || !arrowPreviewPointer) return
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(arrowStartPoint.x, arrowStartPoint.y)
+    ctx.lineTo(arrowPreviewPointer.x, arrowPreviewPointer.y)
+    ctx.strokeStyle = shapeStore.fillColor
+    ctx.lineWidth = shapeStore.strokeWidth
+    ctx.lineCap = 'round'
+    ctx.setLineDash([6, 4])
+    ctx.stroke()
+    ctx.restore()
+  })
+
+  // End arrow endpoint modification.
+  canvas.on('mouse:up', () => {
+    if (modifyingArrow && modifyingEnd) {
+      saveCanvas()
+    }
+    modifyingArrow = null
+    modifyingEnd = null
+  })
 
   globalThis.addEventListener('keydown', handleKeyDown)
 
@@ -375,6 +674,19 @@ onBeforeUnmount(() => {
 
 // Toggle object interactivity when block active state changes.
 watch(() => props.active, (isActive) => {
+  if (!isActive) {
+    if (isDrawingArrow) {
+      isDrawingArrow = false
+      arrowStartPoint = null
+      arrowPreviewPointer = null
+      if (canvas) {
+        canvas.defaultCursor = 'default'
+        canvas.hoverCursor = 'move'
+      }
+    }
+    modifyingArrow = null
+    modifyingEnd = null
+  }
   if (canvas) {
     canvas.selection = isActive
     canvas.forEachObject((obj: fabric.Object) => {
@@ -397,6 +709,13 @@ watch(() => shapeStore.fillColor, (newColor) => {
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
+
+  if (isArrowObject(activeObject)) {
+    applyArrowStyle(activeObject, newColor, shapeStore.strokeWidth)
+    canvas.renderAll()
+    saveCanvas()
+    return
+  }
   
   // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
@@ -433,6 +752,13 @@ watch(() => shapeStore.strokeWidth, (newWidth) => {
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
+
+  if (isArrowObject(activeObject)) {
+    applyArrowStyle(activeObject, shapeStore.fillColor, newWidth)
+    canvas.renderAll()
+    saveCanvas()
+    return
+  }
   
   // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
@@ -449,6 +775,7 @@ defineExpose({
   addSquare,
   addCircle,
   addTriangle,
+  addArrow,
   addImage,
   getSelectedImage,
   getSelectedShape,
