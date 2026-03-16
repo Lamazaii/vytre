@@ -10,7 +10,6 @@
                     <div class="blockHeader">
                         <div class="headerNumber">N°</div>
                         <div class="headerDescription">Détail de l'opération</div>
-                        <div class="headerRep">REP.</div>
                     </div>
                     <ReaderViewBlock
                         v-for="block in noEmptyBlocks"
