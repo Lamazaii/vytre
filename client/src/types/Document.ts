@@ -1,4 +1,5 @@
 import type { Block } from './Blocks';
+import type { DocumentVersion } from './DocumentVersion';
 
 export interface Document {
     id? : number;
@@ -8,4 +9,5 @@ export interface Document {
     createdAt? : Date;
     updatedAt? : Date;
     state?: string; // "En édition" | "Actif" | "Archivé"
+    versions?: DocumentVersion[];
 }

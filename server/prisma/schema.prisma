@@ -18,6 +18,7 @@ model Document {
   title     String
   version   Int
   blocks    Block[]
+  versions  DocumentVersion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   state     String @default("En édition")
@@ -43,4 +44,19 @@ model Image {
 
   blockId   Int
   block     Block @relation(fields: [blockId], references: [id])
+}
+
+model DocumentVersion {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  version    Int
+  title      String
+  state      String
+  snapshot   String   @db.NVarChar(Max)
+  createdAt  DateTime @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, version])
+  @@unique([documentId, version])
 }

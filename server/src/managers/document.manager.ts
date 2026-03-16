@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { createDocumentVersion } from './documentVersion.manager';
 
 interface ImageInput {
     imagePath: string;
@@ -20,133 +21,133 @@ interface DocumentInput {
     state?: 'En édition' | 'Actif' | 'Archivé';
 }
 
-/*
-Create a new document with its blocks and images
-*/
-export const create = async (data: DocumentInput) => {
-    // Filters empty blocks on the server side
-    const filteredBlocks = (data.blocks ?? []).filter((block) => {
-        const hasText =
-        block.text && block.text.replace(/<[^>]*>/g, '').trim().length > 0;
-        const hasImages = block.images && block.images.length > 0;
-        const hasNonEmptyZone = block.textZones?.some((z) =>
-            z && z.replace(/<[^>]*>/g, '').trim().length > 0);
+const documentWithBlocksInclude = {
+    blocks: {
+        include: {
+            images: true,
+        },
+    },
+} as const;
+
+const stripHtml = (value: string): string =>
+    value.replace(/<[^>]*>/g, '').trim();
+
+const filterNonEmptyBlocks = (blocks: BlockInput[] = []): BlockInput[] =>
+    blocks.filter((block) => {
+        const hasText = block.text ? stripHtml(block.text).length > 0 : false;
+        const hasImages = (block.images?.length ?? 0) > 0;
+        const hasNonEmptyZone = block.textZones?.some((zone) =>
+            zone ? stripHtml(zone).length > 0 : false,
+        ) ?? false;
         const hasCanvasData =
             block.canvasData != null && block.canvasData.length > 0;
-        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
+
+        return hasText || hasImages || hasNonEmptyZone || hasCanvasData;
     });
-    return await prisma.document.create({
+
+const mapBlocksForPersistence = (blocks: BlockInput[]) =>
+    blocks.map((block) => ({
+        text: block.text ?? '',
+        step: block.step,
+        nbOfRepeats: block.nbOfRepeats ?? 1,
+        textZones: JSON.stringify(block.textZones ?? []),
+        canvasData: block.canvasData ?? null,
+        images: {
+            create: block.images?.map((img) => ({
+                imagePath: img.imagePath,
+            })) ?? [],
+        },
+    }));
+
+export const create = async (data: DocumentInput) => {
+    const filteredBlocks = filterNonEmptyBlocks(data.blocks);
+
+    const createdDocument = await prisma.document.create({
         data: {
             title: data.title,
             version: data.version,
             state: data.state ?? 'En édition',
             blocks: {
-                create: filteredBlocks.map((block) => ({
-                    text: block.text ?? '',
-                    step: block.step,
-                    nbOfRepeats: block.nbOfRepeats ?? 1,
-                    textZones: JSON.stringify(block.textZones ?? []),
-                    canvasData: block.canvasData ?? null,
-                    images: {
-                        create: block.images?.map((img) => ({
-                            imagePath: img.imagePath,
-                        })) ?? [],
-                    },
-                })),
+                create: mapBlocksForPersistence(filteredBlocks),
             },
         },
-        include: {
-            blocks: {
-                include: {
-                    images: true,
-                },
-            },
-        },
+        include: documentWithBlocksInclude,
     });
+
+    await createDocumentVersion(prisma, {
+        id: createdDocument.id,
+        version: createdDocument.version,
+        title: createdDocument.title,
+        state: createdDocument.state,
+        blocks: (createdDocument.blocks ?? []).map((b) => ({
+            text: b.text,
+            step: b.step,
+            nbOfRepeats: b.nbOfRepeats,
+            textZones: b.textZones ?? undefined,
+            canvasData: b.canvasData,
+            images: b.images.map((img) => ({ imagePath: img.imagePath })),
+        })),
+    });
+
+    return createdDocument;
 };
 
-/*
-Get all documents with their blocks and images, 
-ordered by updated date descending
-*/
 export const getAll = async () => {
     return await prisma.document.findMany({
-        include: {
-            blocks: {
-                include: {
-                    images: true,
-                },
-            },
-        },
+        include: documentWithBlocksInclude,
         orderBy: {
             updatedAt: 'desc',
         },
     });
 };
 
-/*
-Get a document by its ID, including its blocks and images
-*/
-
 export const getById = async (id: number) => {
     return await prisma.document.findUnique({
         where: { id },
-        include: {
-            blocks: {
-                include: {
-                    images: true,
-                },
-            },
-        },
+        include: documentWithBlocksInclude,
     });
 };
 
-
-/// Update a document by ID and synchronize its nested relations (blocks & images)
 export const update = async (id: number, data: DocumentInput) => {
+    const filteredBlocks = filterNonEmptyBlocks(data.blocks);
 
-    // 1. Data Cleaning: Keep only blocks containing actual content
-    // The Regex removes HTML tags (e.g., <p></p>) to ensure text isn't just empty markup
-    const filteredBlocks = (data.blocks ?? []).filter((block) => {
-        const hasText =
-            block.text && block.text.replace(/<[^>]*>/g, '').trim().length > 0;
-        const hasImages = block.images && block.images.length > 0;
-        const hasNonEmptyZone = block.textZones?.some((z) =>
-            z && z.replace(/<[^>]*>/g, '').trim().length > 0);
-        const hasCanvasData =
-            block.canvasData != null && block.canvasData.length > 0;
-        return hasText ?? hasImages ?? hasNonEmptyZone ?? hasCanvasData;
+    const existingDocument = await prisma.document.findUnique({
+        where: { id },
+        select: { version: true },
     });
 
-    return await prisma.document.update({
+    if (!existingDocument) {
+        return null;
+    }
+
+    const updatedDocument = await prisma.document.update({
         where: { id },
         data: {
             title: data.title,
-            version: data.version,
+            version: existingDocument.version + 1,
             state: data.state ?? 'En édition',
             blocks: {
-                // 2. Sync Strategy: Wipe existing blocks to avoid duplicates
                 deleteMany: {},
-                // 3. Re-creation: Map and insert the newly filtered blocks and their images
-                create: filteredBlocks.map((block) => ({
-                    text: block.text ?? '',
-                    step: block.step,
-                    nbOfRepeats: block.nbOfRepeats ?? 1,
-                    textZones: JSON.stringify(block.textZones ?? []), // Store as JSON for flexibility
-                    canvasData: block.canvasData ?? null,
-                    images: {
-                        create: block.images?.map((img) => ({
-                            imagePath: img.imagePath,
-                        })) ?? [],
-                    },
-                })),
+                create: mapBlocksForPersistence(filteredBlocks),
             },
         },
-        // 4. Eager Loading: Return the updated document including all nested relations
-        include: {
-            blocks: {
-                include: { images: true },
-            },
-        },
+        include: documentWithBlocksInclude,
     });
+
+    await createDocumentVersion(prisma, {
+        id: updatedDocument.id,
+        version: updatedDocument.version,
+        title: updatedDocument.title,
+        state: updatedDocument.state,
+        blocks: (updatedDocument.blocks ?? []).map((b) => ({
+            text: b.text,
+            step: b.step,
+            nbOfRepeats: b.nbOfRepeats,
+            textZones: b.textZones ?? undefined,
+            canvasData: b.canvasData,
+            images: b.images.map((img) => ({ imagePath: img.imagePath })),
+        })),
+    });
+
+    return updatedDocument;
 };

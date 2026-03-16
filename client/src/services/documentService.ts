@@ -1,9 +1,15 @@
 import type { Document } from '../types/Document';
+import type { DocumentVersion } from '../types/DocumentVersion';
 
 const API_BASE_URL = 'http://localhost:3000';
 
+type SaveDocumentPayload = Omit<
+  Document,
+  'id' | 'createdAt' | 'updatedAt' | 'versions'
+>;
+
 export const documentService = {
-  async create(document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>): Promise<Document> {
+  async create(document: SaveDocumentPayload): Promise<Document> {
     const response = await fetch(`${API_BASE_URL}/documents`, {
       method: 'POST',
       headers: {
@@ -35,7 +41,7 @@ export const documentService = {
     return response.json();
   },
 
-  async update(id: number, document: Partial<Document>): Promise<Document> {
+  async update(id: number, document: Partial<SaveDocumentPayload>): Promise<Document> {
     const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
       method: 'PUT',
       headers: {
@@ -74,6 +80,39 @@ export const documentService = {
 
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération des documents');
+    }
+
+    return response.json();
+  },
+
+  async getVersions(id: number): Promise<DocumentVersion[]> {
+    const response = await fetch(`${API_BASE_URL}/documents/${id}/versions`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des versions');
+    }
+
+    return response.json();
+  },
+
+  async getVersion(id: number, version: number): Promise<DocumentVersion> {
+    const response = await fetch(
+      `${API_BASE_URL}/documents/${id}/versions/${version}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération de la version');
     }
 
     return response.json();

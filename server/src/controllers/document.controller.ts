@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import * as DocumentManager from '../managers/document.manager';
+import * as DocumentVersionManager from '../managers/documentVersion.manager';
 import { createDocumentSchema } from '../validators/document.validator';
 import createDebug from 'debug';
 
 const debug = createDebug('app:document.controller');
 
 // Normalize Express path param and enforce positive integer IDs.
-const parseIdParam = (rawId: string | string[]): number | null => {
+const parsePositiveIntParam = (rawId: string | string[]): number | null => {
     const normalizedId = Array.isArray(rawId) ? rawId[0] : rawId;
     const id = Number(normalizedId);
     return Number.isInteger(id) && id > 0 ? id : null;
@@ -55,7 +56,7 @@ export const getAllDocuments = async (req: Request, res: Response) => {
 
 export const getDocumentById = async (req: Request, res: Response) => {
     try {
-        const id = parseIdParam(req.params.id);
+        const id = parsePositiveIntParam(req.params.id);
 
         // Fail fast on invalid IDs to avoid unnecessary manager/database calls.
         if (id === null) {
@@ -84,7 +85,7 @@ export const getDocumentById = async (req: Request, res: Response) => {
 
 export const updateDocument = async (req: Request, res: Response) => {
     try {
-        const id = parseIdParam(req.params.id);
+        const id = parsePositiveIntParam(req.params.id);
 
         // Keep route contract strict:
         // update only supports numeric document IDs.
@@ -110,11 +111,64 @@ export const updateDocument = async (req: Request, res: Response) => {
         const updatedDoc =
         await DocumentManager.update(id, validation.data);
 
+        if (!updatedDoc) {
+            res.status(404).json({ message: 'Document non trouvé' });
+            return;
+        }
+
         debug('Document mis à jour avec succès :', updatedDoc.id);
         res.status(200).json(updatedDoc);
 
     } catch (error) {
         debug('Erreur lors de la mise à jour :', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+export const getDocumentVersions = async (req: Request, res: Response) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+
+        if (id === null) {
+            res.status(400).json({ message: 'ID invalide' });
+            return;
+        }
+
+        const versions = await DocumentVersionManager.getDocumentVersions(id);
+        res.status(200).json(versions);
+    } catch (error) {
+        debug('Erreur lors de la récupération des versions :', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+export const getDocumentVersion = async (req: Request, res: Response) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+        const version = parsePositiveIntParam(req.params.version);
+
+        if (id === null || version === null) {
+            res.status(400).json({ message: 'Paramètres invalides' });
+            return;
+        }
+
+        const documentVersion =
+            await DocumentVersionManager.getDocumentVersion(id, version);
+
+        if (!documentVersion) {
+            res.status(404).json({ message: 'Version non trouvée' });
+            return;
+        }
+
+        res.status(200).json(documentVersion);
+    } catch (error) {
+        debug('Erreur lors de la récupération de la version :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
             error: error instanceof Error ? error.message : String(error),
