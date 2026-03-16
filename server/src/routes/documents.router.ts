@@ -44,7 +44,7 @@
  *                           imagePath:
  *                             type: string
  *                             description: "Base64 de l'image"
- *                             example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                             example: "data:image/png;base64,iVBORw0KGgoAA..."
  *           example:
  *             title: "Document test"
  *             version: 1
@@ -141,7 +141,7 @@
  *                           imagePath:
  *                             type: string
  *                             description: "Base64 de l'image"
- *                             example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+ *                             example: "data:image/png;base64,iVBORw0KGgANS..."
  *           example:
  *             title: "Document mis à jour"
  *             version: 2
@@ -168,6 +168,8 @@ const router = Router();
 
 router.post('/', DocumentController.createDocument);
 router.get('/', DocumentController.getAllDocuments);
+router.get('/:id/versions', DocumentController.getDocumentVersions);
+router.get('/:id/versions/:version', DocumentController.getDocumentVersion);
 router.get('/:id', DocumentController.getDocumentById);
 router.put('/:id', DocumentController.updateDocument);
 

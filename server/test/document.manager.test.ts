@@ -21,6 +21,9 @@ import { prisma } from '../src/lib/prisma';
 describe('DocumentManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        (prisma.document.findUnique as jest.Mock).mockResolvedValue({
+            version: 1,
+        });
     });
 
     describe('create', () => {

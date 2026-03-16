@@ -8,6 +8,7 @@ import { useNameConflictPopupStore } from './nameConflictPopupStore'
 
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
+import type { DocumentVersion } from '../types/DocumentVersion'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
 import { documentService } from '../services/documentService'
 import { documentSchema } from '../validators/documentValidator'
@@ -22,6 +23,8 @@ function isContentEmpty(html: string): boolean {
   const textContent = html.replace(/<[^>]*>/g, '').trim()
   return textContent.length === 0
 }
+
+
 
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
@@ -116,9 +119,10 @@ export const useBlocksStore = defineStore('blocks', () => {
       currentDocument.value = {
         id: savedDocument.id,
         title: savedDocument.title,
-        version: savedDocument.version + 1, // bump local version for next edit
+        version: savedDocument.version,
         createdAt: savedDocument.createdAt,
-        updatedAt: savedDocument.updatedAt
+        updatedAt: savedDocument.updatedAt,
+        state: savedDocument.state ?? 'En édition'
       };
 
       confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
@@ -141,26 +145,62 @@ export const useBlocksStore = defineStore('blocks', () => {
         createdAt: document.createdAt,
         updatedAt: document.updatedAt,
         state: document.state ?? 'En édition'
-      };
-
-      documentTitle.value = document.title;
-
+      }
+      
+      documentTitle.value = document.title
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
         canvasData: block.canvasData ?? '',
-        modified: true, // mark as cleanly loaded
-        textZones: typeof block.textZones === 'string' 
-          ? JSON.parse(block.textZones || '[]') // server may store as JSON string
-          : (block.textZones || []) // normalize to array
-      }));
-
-      selectedIndex.value = null; // clear selection on load
+        modified: true,
+        textZones: typeof block.textZones === 'string'
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
+      }))
+      selectedIndex.value = null
       
       confirmSavePopup.show("Document chargé avec succès !", "Ouverture");
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors du chargement du document.";
       errorPopup.show(errorMessage);
+    }
+  }
+
+  async function loadDocumentVersion(id: number, version: number) {
+    try {
+      const documentVersion: DocumentVersion = await documentService.getVersion(id, version)
+
+      if (!documentVersion.snapshot) {
+        errorPopup.show('Version de document invalide.')
+        return
+      }
+
+      currentDocument.value = {
+        id,
+        title: documentVersion.snapshot.title,
+        version: documentVersion.version,
+        createdAt: typeof documentVersion.createdAt === 'string'
+          ? new Date(documentVersion.createdAt)
+          : documentVersion.createdAt,
+        state: documentVersion.snapshot.state ?? documentVersion.state ?? 'En édition'
+      }
+
+      documentTitle.value = documentVersion.snapshot.title
+      blocks.value = documentVersion.snapshot.blocks.map((block: any) => ({
+        ...block,
+        canvasData: block.canvasData ?? '',
+        modified: true,
+        textZones: typeof block.textZones === 'string'
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
+      }))
+      selectedIndex.value = null
+
+      confirmSavePopup.show("Version chargée avec succès !", "Ouverture")
+    } catch (error) {
+      console.error(error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement de la version.'
+      errorPopup.show(errorMessage)
     }
   }
 
@@ -387,6 +427,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     toggleSelect,
     saveDocument,
     loadDocument,
+    loadDocumentVersion,
     createNewDocument,
     loadAllDocuments,
     setModified,

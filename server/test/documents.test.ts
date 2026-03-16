@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../app';
 import * as documentManager from '../src/managers/document.manager';
+import * as documentVersionManager from '../src/managers/documentVersion.manager';
 
 interface Image {
     imagePath?: string;
@@ -25,6 +26,20 @@ interface CreateInput {
     title: string;
     version: number;
     blocks?: Block[];
+}
+
+interface DocumentVersionShape {
+    id: number;
+    documentId: number;
+    version: number;
+    title: string;
+    state: string;
+    createdAt?: string;
+    snapshot?: {
+        title: string,
+        state: string,
+        blocks: Block[],
+    } | null;
 }
 
 // Mock the DocumentManager used by controllers to avoid DB access
@@ -66,6 +81,51 @@ jest.mock('../src/managers/document.manager', () => {
             ));
 
     return { create, getAll, getById, update };
+});
+
+jest.mock('../src/managers/documentVersion.manager', () => {
+    const getDocumentVersions = jest.fn<Promise<DocumentVersionShape[]>, [number]>(
+        (documentId) => Promise.resolve([
+            {
+                id: 1,
+                documentId,
+                version: 2,
+                title: 'Doc',
+                state: 'En édition',
+                createdAt: new Date().toISOString(),
+            },
+            {
+                id: 2,
+                documentId,
+                version: 1,
+                title: 'Doc',
+                state: 'En édition',
+                createdAt: new Date().toISOString(),
+            },
+        ]),
+    );
+
+    const getDocumentVersion = jest.fn<Promise<DocumentVersionShape | null>, [number, number]>(
+        (documentId, version) => Promise.resolve(
+            version === 1
+                ? {
+                    id: 2,
+                    documentId,
+                    version,
+                    title: 'Doc',
+                    state: 'En édition',
+                    createdAt: new Date().toISOString(),
+                    snapshot: {
+                        title: 'Doc',
+                        state: 'En édition',
+                        blocks: [],
+                    },
+                }
+                : null,
+        ),
+    );
+
+    return { getDocumentVersions, getDocumentVersion };
 });
 
 describe('Documents routes', () => {
@@ -118,7 +178,7 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
-            const body = res.body as { errors?: unknown[] };
+            const body = res.body as { errors?: unknown[], };
             expect(body).toHaveProperty('errors');
             expect(Array.isArray(body.errors)).toBe(true);
         });
@@ -147,6 +207,32 @@ describe('Documents routes', () => {
             expect(res.status).toBe(404);
             expect((res.body as { message?: string, })
                 .message).toBe('Document non trouvé');
+        });
+    });
+
+    describe('GET /documents/:id/versions', () => {
+        it('returns document versions', async () => {
+            const res = await request(app).get('/documents/1/versions');
+
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body)).toBe(true);
+            expect((res.body as DocumentVersionShape[])[0]).toHaveProperty('version');
+        });
+    });
+
+    describe('GET /documents/:id/versions/:version', () => {
+        it('returns one document version when found', async () => {
+            const res = await request(app).get('/documents/1/versions/1');
+
+            expect(res.status).toBe(200);
+            expect((res.body as DocumentVersionShape)).toHaveProperty('version', 1);
+        });
+
+        it('returns 404 when version is not found', async () => {
+            const res = await request(app).get('/documents/1/versions/999');
+
+            expect(res.status).toBe(404);
+            expect((res.body as { message?: string, }).message).toBe('Version non trouvée');
         });
     });
 
@@ -193,7 +279,7 @@ describe('Documents routes', () => {
                 .set('Content-Type', 'application/json');
 
             expect(res.status).toBe(400);
-            const body = res.body as { errors?: unknown[] };
+            const body = res.body as { errors?: unknown[], };
             expect(body).toHaveProperty('errors');
             expect(Array.isArray(body.errors)).toBe(true);
         });
@@ -258,6 +344,28 @@ describe('Documents routes', () => {
                 .put('/documents/1')
                 .send(payload)
                 .set('Content-Type', 'application/json');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 if DocumentVersionManager.getDocumentVersions throws', async () => {
+            (documentVersionManager.getDocumentVersions as jest.Mock)
+                .mockImplementationOnce(() => {
+                    throw new Error('fail');
+                });
+            const res = await request(app).get('/documents/1/versions');
+            expect(res.status).toBe(500);
+            expect(res.body)
+                .toHaveProperty('message', 'Erreur interne du serveur');
+        });
+
+        it('returns 500 if DocumentVersionManager.getDocumentVersion throws', async () => {
+            (documentVersionManager.getDocumentVersion as jest.Mock)
+                .mockImplementationOnce(() => {
+                    throw new Error('fail');
+                });
+            const res = await request(app).get('/documents/1/versions/1');
             expect(res.status).toBe(500);
             expect(res.body)
                 .toHaveProperty('message', 'Erreur interne du serveur');
