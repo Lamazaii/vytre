@@ -5,6 +5,7 @@
 </template>
 
 <script setup lang="ts">
+// Displays the visual block step index and active state.
 interface Props {
   numero: number;
   active?: boolean;

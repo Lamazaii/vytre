@@ -1,9 +1,13 @@
 <template>
   <div class="blockRow">
+    <div class="blockContainer">
         <div class="stepNumber">
             {{ numero }}
         </div>
         <div class="blockContent">
+            <div class="repetitionValue">
+                x{{ modelValue }}
+            </div>
             <div class="contentWrapper">
               <div class="description" v-html="description"></div>
               <div v-if="textZones && textZones.length > 0" class="textZonesContainer">
@@ -23,9 +27,7 @@
               </div>
             </div>
         </div>
-        <div class="repetitionValue">
-            {{ modelValue }}
-        </div>
+    </div>
   </div>
   
   <ImageZoom 
@@ -54,12 +56,15 @@ interface Props {
   canvasData?: string;
 }
 
+// Props describing one block rendered in reader mode.
 const props = defineProps<Props>();
 
+// Image zoom modal state.
 const isModalOpen = ref(false);
 const selectedImageSrc = ref('');
 const selectedImageAlt = ref('');
 
+// Detect whether canvas JSON contains at least one drawable object.
 const hasCanvasObjects = computed(() => {
   if (!props.canvasData) return false
   try {
@@ -70,12 +75,14 @@ const hasCanvasObjects = computed(() => {
   }
 })
 
+// Open fullscreen image preview.
 const openImageZoom = (src: string, alt: string) => {
   selectedImageSrc.value = src;
   selectedImageAlt.value = alt;
   isModalOpen.value = true;
 };
 
+// Close fullscreen image preview.
 const closeImageModal = () => {
   isModalOpen.value = false;
 };
@@ -88,28 +95,31 @@ const closeImageModal = () => {
 .blockRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  width:auto;
-  max-width: 911px;
+  justify-content: flex-start;
   height: auto;
   min-height: 60px;
-  margin: 5px 0px;
-  padding: 0px 25px;
+  margin: 5px 0px 5px 0px;
+}
+
+.blockContainer {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin-left: 25px;
+  margin-right: 90px;
 }
 
 .stepNumber {
-  border-radius: 20px;
-  padding-bottom: 1px;
+  width: 40px;
+  height: 40px;
+  background-color: #DC2626;
+  border-radius: 50%;
   display: flex;
-  text-align: center;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(0, 0, 0, 0.42);
-  width: 30px;
-  height: 30px;
-  color: rgba(0, 0, 0, 0.42);
-  font-size: 22px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .blockContent {
@@ -118,11 +128,13 @@ const closeImageModal = () => {
   border-radius: 6px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: auto;
   min-height: 60px;
   width: 700px;
   font-size: 16px;
+  position: relative;
+  padding: 0px 15px 0px 15px;
 }
 
 
@@ -131,16 +143,17 @@ const closeImageModal = () => {
   flex-direction: column;
   width: 100%;
   overflow: hidden;
+  padding-right: 60px;
 }
 
 .description {
   font-size: 16px;
-  word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  text-align: left;
 }
 
 .textZonesContainer {
@@ -156,6 +169,7 @@ const closeImageModal = () => {
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  text-align: left;
 }
 
 
@@ -164,8 +178,8 @@ const closeImageModal = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;
-  align-items: center;;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .blockImage {
@@ -177,10 +191,20 @@ const closeImageModal = () => {
 }
 
 .repetitionValue {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 10px;
-    font-size: 24px;
+    background-color: #DC2626;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 </style>

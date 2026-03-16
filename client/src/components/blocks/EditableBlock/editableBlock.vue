@@ -81,11 +81,13 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 'update:images']);
 
+// Local UI state for delete affordance and content mode.
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const welcomeText = ref(props.description || '')
 const hasShapes = ref(false)
 
+// Shared stores used to sync text, canvas, and image crop state.
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const shapeStore = useShapeStore()
@@ -95,6 +97,7 @@ const textZoneEditorRefs = ref<Array<any>>([])
 const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
 const imageUploaderRef = ref<InstanceType<typeof ImageUploader> | null>(null)
 
+// Read initial canvas JSON for current block.
 function getInitialCanvasData(): string {
   if (props.blockIndex === undefined) return ''
   return blocksStore.blocks[props.blockIndex]?.canvasData || ''
@@ -115,12 +118,14 @@ onMounted(() => {
   }
 })
 
+// Computed list of extra text zones linked to the active block.
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
 
+// Ensure the canvas section is visible before injecting a new image.
 const handleNewImage = async (imageData: string) => {
   if (!shapeCanvasRef.value) return
   
@@ -133,6 +138,7 @@ const handleNewImage = async (imageData: string) => {
   emit('modified', true)
 }
 
+// Set text focus context to the main editor area.
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {
@@ -144,10 +150,12 @@ function onFocusEditable() {
   shapeStore.clearShapeSelection()
 }
 
+// Keep refs for dynamically rendered text zone editors.
 function setTextZoneEditorRef(el: any, index: number) {
   if (el) textZoneEditorRefs.value[index] = el
 }
 
+// Set text focus context to one of the extra text zones.
 function onTextZoneFocus(index: number) {
   emit('select')
   const editorRef = textZoneEditorRefs.value[index]
@@ -160,21 +168,25 @@ function onTextZoneFocus(index: number) {
   shapeStore.clearShapeSelection()
 }
 
+// Refresh text formatting state when selection changes.
 function onSelectionActivity() {
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
 }
 
+// Persist text zone content updates to store.
 function onTextZoneUpdate(index: number, html: string) {
   if (props.blockIndex === undefined) return
   blocksStore.updateTextZone(props.blockIndex, index, html)
 }
 
+// Remove a text zone from the current block.
 function onRemoveTextZone(index: number) {
   if (props.blockIndex === undefined) return
   blocksStore.removeTextZone(props.blockIndex, index)
 }
 
+// Persist canvas JSON snapshot after modifications.
 function handleCanvasUpdate(data: string) {
   if (props.blockIndex !== undefined) {
     blocksStore.updateBlockCanvas(props.blockIndex, data)
@@ -182,6 +194,7 @@ function handleCanvasUpdate(data: string) {
   canvasData.value = data
 }
 
+// Toggle between upload placeholder and canvas section.
 function handleHasObjectsUpdate(value: boolean) {
   hasShapes.value = value
 }
@@ -192,6 +205,7 @@ watch(() => props.description, (newDesc) => {
   if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
 })
 
+// Create selected shape type inside current active block.
 watch(() => shapeStore.addShapeRequest, async () => {
   if (!shapeCanvasRef.value || !props.active) return
   
@@ -211,12 +225,15 @@ watch(() => shapeStore.addShapeRequest, async () => {
   }
 })
 
+// Sync main block description while user types.
 watch(welcomeText, (newValue) => {
   if (props.blockIndex !== undefined) {
     blocksStore.updateBlockDescription(props.blockIndex, newValue)
   }
   emit('update:description', newValue)
 })
+
+// Trigger image file dialog from toolbar command.
 watch(() => shapeStore.addImageRequest, () => {
   if (!props.active || !imageUploaderRef.value) return
   
@@ -226,6 +243,7 @@ watch(() => shapeStore.addImageRequest, () => {
   }
 })
 
+// Layer controls for selected image objects.
 watch(() => shapeStore.bringImageForwardRequest, () => {
   if (!props.active || !shapeCanvasRef.value) return
   shapeCanvasRef.value.bringSelectedImageForward()
@@ -238,6 +256,20 @@ watch(() => shapeStore.sendImageToBackRequest, () => {
   emit('modified', true)
 })
 
+// Layer controls for selected shape objects.
+watch(() => shapeStore.bringShapeForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedShapeForward()
+  emit('modified', true)
+})
+
+watch(() => shapeStore.sendShapeToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedShapeToBack()
+  emit('modified', true)
+})
+
+// Open cropper with currently selected image source.
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
     const selectedImage = shapeCanvasRef.value.getSelectedImage()
@@ -248,6 +280,7 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   }
 })
 
+// Replace selected image with cropped result.
 watch(() => imageCropStore.croppedImageData, (croppedData) => {
   if (croppedData && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
     shapeCanvasRef.value.replaceSelectedImage(croppedData)
@@ -257,6 +290,7 @@ watch(() => imageCropStore.croppedImageData, (croppedData) => {
 })
 
 
+// Initialize editor binding and migrate legacy image array to canvas if needed.
 onMounted(() => {
   setTimeout(() => {
     if (welcomeEditorRef.value) {

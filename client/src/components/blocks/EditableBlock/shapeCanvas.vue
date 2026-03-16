@@ -34,12 +34,15 @@ const emit = defineEmits<{
   'update:hasObjects': [value: boolean]
 }>()
 
+// Canvas DOM reference and Fabric instance.
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 let canvas: fabric.Canvas | null = null
+// Shared stores for cross-toolbar selection and formatting sync.
 const imageCropStore = useImageCropStore()
 const shapeStore = useShapeStore()
 const textFormatStore = useTextFormatStore()
 
+// Handle delete/backspace shortcuts when canvas is active.
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
   if (!props.active) return
@@ -55,6 +58,7 @@ function handleKeyDown(event: KeyboardEvent) {
   deleteSelectedObjects(canvas)
 }
 
+// Persist canvas JSON and notify parent state.
 function saveCanvas() {
   if (!canvas) return
   const json = JSON.stringify(canvas.toJSON())
@@ -63,12 +67,14 @@ function saveCanvas() {
   checkHasObjects()
 }
 
+// Notify parent whether canvas contains at least one object.
 function checkHasObjects() {
   if (!canvas) return
   const objectCount = canvas.getObjects().length
   emit('update:hasObjects', objectCount > 0)
 }
 
+// Factory for shape creation using current toolbar style values.
 function createShape(type: 'rect' | 'circle' | 'triangle') {
   if (!canvas) return
 
@@ -120,6 +126,7 @@ function createShape(type: 'rect' | 'circle' | 'triangle') {
   canvas.renderAll()
 }
 
+// Public helpers exposed to parent component.
 function addSquare() {
   createShape('rect')
 }
@@ -132,6 +139,7 @@ function addTriangle() {
   createShape('triangle')
 }
 
+// Insert image object and fit it inside the canvas bounds.
 function addImage(imageSrc: string) {
   if (!canvas) return
 
@@ -168,6 +176,7 @@ function addImage(imageSrc: string) {
   })
 }
 
+// Return active image object when selection is an image.
 function getSelectedImage() {
   if (!canvas) return null
   const activeObject = canvas.getActiveObject()
@@ -177,6 +186,17 @@ function getSelectedImage() {
   return null
 }
 
+// Return active shape object when selection is a shape.
+function getSelectedShape() {
+  if (!canvas) return null
+  const activeObject = canvas.getActiveObject()
+  if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
+    return activeObject as fabric.Object
+  }
+  return null
+}
+
+// Replace selected image while preserving transform values.
 function replaceSelectedImage(newImageSrc: string) {
   const selectedImage = getSelectedImage()
   if (!selectedImage || !canvas) return
@@ -209,6 +229,7 @@ function replaceSelectedImage(newImageSrc: string) {
   })
 }
 
+// Move selected image one step forward in object stack.
 function bringSelectedImageForward() {
   if (!canvas) return false
   const selectedImage = getSelectedImage()
@@ -220,6 +241,7 @@ function bringSelectedImageForward() {
   return true
 }
 
+// Move selected image one step backward in object stack.
 function sendSelectedImageToBack() {
   if (!canvas) return false
   const selectedImage = getSelectedImage()
@@ -231,6 +253,31 @@ function sendSelectedImageToBack() {
   return true
 }
 
+// Move selected shape one step forward in object stack.
+function bringSelectedShapeForward() {
+  if (!canvas) return false
+  const selectedShape = getSelectedShape()
+  if (!selectedShape) return false
+
+  canvas.bringForward(selectedShape)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+// Move selected shape one step backward in object stack.
+function sendSelectedShapeToBack() {
+  if (!canvas) return false
+  const selectedShape = getSelectedShape()
+  if (!selectedShape) return false
+
+  canvas.sendBackwards(selectedShape)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+// Sync selection context (image vs shape) with corresponding stores.
 function handleSelection(e: any) {
   const selected = e.selected?.[0]
   if (selected && selected.type === 'image') {
@@ -240,7 +287,7 @@ function handleSelection(e: any) {
     }
     textFormatStore.clearTextFocus()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
-    // Update store with selected shape's style
+    // Keep toolbar controls in sync with selected shape style.
     const fill = selected.fill || '#000000'
     const stroke = selected.stroke || '#1F2937'
     const strokeWidth = selected.strokeWidth || 2
@@ -252,11 +299,13 @@ function handleSelection(e: any) {
   }
 }
 
+// Clear shape/image selection state when selection is removed.
 function handleSelectionCleared() {
   imageCropStore.clearSelection()
   shapeStore.clearShapeSelection()
 }
 
+// Initialize Fabric canvas, events, and optional JSON restore.
 onMounted(() => {
   if (!canvasElement.value) return
 
@@ -315,6 +364,7 @@ onMounted(() => {
   }
 })
 
+// Dispose canvas instance and global listeners.
 onBeforeUnmount(() => {
   if (canvas) {
     canvas.dispose()
@@ -323,6 +373,7 @@ onBeforeUnmount(() => {
   globalThis.removeEventListener('keydown', handleKeyDown)
 })
 
+// Toggle object interactivity when block active state changes.
 watch(() => props.active, (isActive) => {
   if (canvas) {
     canvas.selection = isActive
@@ -340,16 +391,16 @@ watch(() => props.active, (isActive) => {
   }
 })
 
-// Watch for fill color changes
+// Apply fill updates from toolbar to selected shape.
 watch(() => shapeStore.fillColor, (newColor) => {
   if (!canvas || !props.active) return
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
   
-  // Only apply to shapes, not images
+  // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Only update if the color is actually different
+    // Avoid unnecessary render/save cycles.
     if (activeObject.fill !== newColor) {
       activeObject.set({ fill: newColor })
       canvas.renderAll()
@@ -358,16 +409,16 @@ watch(() => shapeStore.fillColor, (newColor) => {
   }
 })
 
-// Watch for stroke color changes
+// Apply stroke color updates from toolbar to selected shape.
 watch(() => shapeStore.strokeColor, (newColor) => {
   if (!canvas || !props.active) return
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
   
-  // Only apply to shapes, not images
+  // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Only update if the color is actually different
+    // Avoid unnecessary render/save cycles.
     if (activeObject.stroke !== newColor) {
       activeObject.set({ stroke: newColor })
       canvas.renderAll()
@@ -376,16 +427,16 @@ watch(() => shapeStore.strokeColor, (newColor) => {
   }
 })
 
-// Watch for stroke width changes
+// Apply stroke width updates from toolbar to selected shape.
 watch(() => shapeStore.strokeWidth, (newWidth) => {
   if (!canvas || !props.active) return
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
   
-  // Only apply to shapes, not images
+  // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Only update if the width is actually different
+    // Avoid unnecessary render/save cycles.
     if (activeObject.strokeWidth !== newWidth) {
       activeObject.set({ strokeWidth: newWidth })
       canvas.renderAll()
@@ -400,9 +451,12 @@ defineExpose({
   addTriangle,
   addImage,
   getSelectedImage,
+  getSelectedShape,
   replaceSelectedImage,
   bringSelectedImageForward,
   sendSelectedImageToBack,
+  bringSelectedShapeForward,
+  sendSelectedShapeToBack,
 })
 </script>
 

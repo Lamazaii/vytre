@@ -11,13 +11,16 @@
 <script setup lang="ts">
   import {computed } from 'vue'
 
+  // Optional disabled prop (defaults to false).
   const props = defineProps<{ disabled?: boolean }>()
   const disabled = computed(() => props.disabled ?? false)
 
+  // Emitted when user requests a new block creation.
   const emit = defineEmits<{
     add: []
   }>()
 
+  // Guard click action when the zone is disabled.
   function onClick() {
     if (disabled.value) return
     emit('add')

@@ -28,7 +28,7 @@
           :disabled="!hasSelectedImage"
           @click="toggleLayerMenu"
         >
-          <img class="organize-select-icon" :src="squareIcon" alt="Organiser" />
+          <img class="organize-select-icon" :src="organizationIcon" alt="Organiser" />
           <span class="organize-select-label">Organiser</span>
         </button>
 
@@ -64,24 +64,32 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+
+
 import { useImageCropStore } from '../../../stores/imageCropStore'
 import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 import { useShapeStore } from '../../../stores/shapeStore'
 import { useBlocksStore } from '../../../stores/blockStores'
+
 import cropIcon from "../../../assets/imageOptionBar/crop.svg"
 import cropIconActive from "../../../assets/imageOptionBar/cropActive.svg"
 import imageIcon from "../../../assets/blockImage/imageIcon.svg"
+import organizationIcon from "../../../assets/optionBarImage/organisation.svg"
 import flipToFrontIcon from "../../../assets/optionBarImage/flip_to_front.svg"
 import flipToBackIcon from "../../../assets/optionBarImage/flip_to_back.svg"
-import squareIcon from "../../../assets/formOptionBar/square.svg"
 
+
+// Stores for image selection/cropping, block context, and canvas commands.
 const imageCropStore = useImageCropStore()
 const errorPopupStore = useErrorPopupStore()
 const shapeStore = useShapeStore()
 const blocksStore = useBlocksStore()
+// Layer menu state for the "Organiser" control.
 const isLayerMenuOpen = ref(false)
+// True when an image object is selected on the canvas.
 const hasSelectedImage = computed(() => Boolean(imageCropStore.selectedImageId))
 
+// Toggle organize dropdown only if an image is selected.
 function toggleLayerMenu() {
   if (!hasSelectedImage.value) {
     return
@@ -94,6 +102,7 @@ function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }
 
+// Close menu when image selection is lost.
 watch(hasSelectedImage, (isSelected) => {
   if (!isSelected) {
     closeLayerMenu()
@@ -101,7 +110,7 @@ watch(hasSelectedImage, (isSelected) => {
 })
 
 function onAddImageClick() {
-  // Vérifier si un bloc est sélectionné
+  // Adding an image requires a selected block.
   if (blocksStore.selectedIndex === null) {
     errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une image.')
     return
@@ -110,6 +119,7 @@ function onAddImageClick() {
   shapeStore.requestAddImage()
 }
 
+// Trigger crop mode for current selected image.
 function onCropClick() {
   if (!imageCropStore.selectedImageId) {
     errorPopupStore.show('Veuillez sélectionner une image à rogner.')
@@ -118,6 +128,7 @@ function onCropClick() {
   imageCropStore.requestCrop()
 }
 
+// Move selected image one step forward in layer order.
 function onBringForwardClick() {
   if (!imageCropStore.selectedImageId) {
     errorPopupStore.show('Veuillez sélectionner une image à avancer.')
@@ -126,10 +137,12 @@ function onBringForwardClick() {
   shapeStore.requestBringImageForward()
 }
 
+// Menu wrapper for forward action.
 function onBringForwardMenuClick() {
   onBringForwardClick()
 }
 
+// Move selected image one step backward in layer order.
 function onSendToBackClick() {
   if (!imageCropStore.selectedImageId) {
     errorPopupStore.show('Veuillez sélectionner une image à reculer.')
@@ -138,6 +151,7 @@ function onSendToBackClick() {
   shapeStore.requestSendImageToBack()
 }
 
+// Menu wrapper for backward action.
 function onSendToBackMenuClick() {
   onSendToBackClick()
 }

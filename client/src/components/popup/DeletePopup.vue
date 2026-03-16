@@ -28,24 +28,30 @@ import { computed } from 'vue'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 import trashWhite from '../../assets/popUpDeleteBlock/trashWhite.svg'
 
+// Store handling delete confirmation state and actions.
 const store = useDeletePopupStore()
 
+// Reactive visibility of delete modal.
 const isVisible = computed(() => store.isVisible)
 
+// Header title depends on current delete target type.
 const title = computed(() => {
   return store.deleteType === 'block' ? 'SUPPRIMER LE BLOC ?' : "SUPPRIMER L'IMAGE ?"
 })
 
+// Body message depends on current delete target type.
 const message = computed(() => {
   return store.deleteType === 'block' 
     ? 'Êtes-vous sûr de vouloir supprimer ce bloc ?'
     : 'Êtes-vous sûr de vouloir supprimer cette image ?'
 })
 
+// Close modal without deleting.
 function onCancel() {
   store.cancel()
 }
 
+// Confirm deletion action.
 function onConfirm() {
   store.confirm()
 }

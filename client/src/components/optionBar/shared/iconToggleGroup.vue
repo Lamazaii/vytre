@@ -41,12 +41,15 @@ const emit = defineEmits<{
   "change": [value: { left: boolean; right: boolean }]
 }>()
 
+// Internal controlled states mirrored from parent props.
 const leftActiveLocal = ref(props.leftActive)
 const rightActiveLocal = ref(props.rightActive)
 
+// Sync local state when parent updates props externally.
 watch(() => props.leftActive, (v) => (leftActiveLocal.value = !!v))
 watch(() => props.rightActive, (v) => (rightActiveLocal.value = !!v))
 
+// Emit new state to parent through both model and aggregated event.
 function setStates(left: boolean, right: boolean) {
   leftActiveLocal.value = left
   rightActiveLocal.value = right
@@ -55,6 +58,7 @@ function setStates(left: boolean, right: boolean) {
   emit("change", { left, right })
 }
 
+// Force left mode as active state.
 function toggleLeft() {
   if (!leftActiveLocal.value && !rightActiveLocal.value) {
     setStates(true, false)
@@ -67,6 +71,7 @@ function toggleLeft() {
   }
 }
 
+// Force right mode as active state.
 function toggleRight() {
   if (!leftActiveLocal.value && !rightActiveLocal.value) {
     setStates(false, true)
