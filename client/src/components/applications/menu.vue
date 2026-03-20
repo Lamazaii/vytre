@@ -50,7 +50,14 @@
             <button class="actionButton read" @click="openDocument(doc)">
               <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
             </button>
-            <button v-if="viewMode === 'editor'" class="actionButton edit" @click="editDocument(doc)">
+            <button
+              v-if="viewMode === 'editor'"
+              class="actionButton edit"
+              :class="{ 'is-disabled': isSelectedVersionOlder(doc) }"
+              :disabled="isSelectedVersionOlder(doc)"
+              :title="isSelectedVersionOlder(doc) ? 'Impossible de modifier une version antérieure' : 'Modifier'"
+              @click="editDocument(doc)"
+            >
               <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
             </button>
             <VersionHistoryMenu
@@ -58,7 +65,9 @@
               :doc="doc"
               :is-open="openVersionMenu === doc.id"
               :loading="loadingVersions === doc.id"
+              :selected-version="getSelectedVersion(doc)"
               @toggle="handleVersions(doc)"
+              @select-version="handleVersionSelect(doc, $event)"
             />
           </div>
         </div>
@@ -90,6 +99,7 @@ const searchQuery = ref('')
 const viewMode = ref<'editor' | 'reader'>('editor')
 const openVersionMenu = ref<number | null>(null)
 const loadingVersions = ref<number | null>(null)
+const selectedVersionByDoc = ref<Record<number, number>>({})
 
 const filteredDocuments = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -117,15 +127,52 @@ function formatDate(dateString: Date): string {
   return date.toLocaleDateString('fr-FR')
 }
 
-function openDocument(doc: Document) {
+function getSelectedVersion(doc: Document): number | null {
+  if (doc.id === undefined) return null
+  return selectedVersionByDoc.value[doc.id] ?? doc.version
+}
+
+function isSelectedVersionOlder(doc: Document): boolean {
+  if (doc.id === undefined) return false
+  const selected = selectedVersionByDoc.value[doc.id]
+  return selected !== undefined && selected !== doc.version
+}
+
+function handleVersionSelect(doc: Document, version: number) {
+  if (doc.id === undefined) return
+  selectedVersionByDoc.value = {
+    ...selectedVersionByDoc.value,
+    [doc.id]: version
+  }
+}
+
+async function openDocument(doc: Document) {
+  if (!doc.id) return
   console.log('Ouverture en lecture:', doc)
-  store.loadDocument(doc.id!)
+  const selectedVersion = selectedVersionByDoc.value[doc.id]
+  if (selectedVersion && selectedVersion !== doc.version) {
+    await store.loadDocumentVersion(doc.id, selectedVersion)
+  } else {
+    await store.loadDocument(doc.id)
+  }
   emit('selectMode', 'reader')
 }
 
-function editDocument(doc: Document) {
+async function editDocument(doc: Document) {
+  if (!doc.id) return
+  
+  // Bloquer l'accès à l'éditeur pour les versions antérieures
+  if (isSelectedVersionOlder(doc)) {
+    return
+  }
+  
   console.log('Édition du document:', doc)
-  store.loadDocument(doc.id!)
+  const selectedVersion = selectedVersionByDoc.value[doc.id]
+  if (selectedVersion && selectedVersion !== doc.version) {
+    await store.loadDocumentVersion(doc.id, selectedVersion)
+  } else {
+    await store.loadDocument(doc.id)
+  }
   emit('selectMode', 'editor')
 }
 
@@ -419,6 +466,16 @@ onMounted(() => {
 
 .actionButton.edit:hover {
   background-color: #fff5f5;
+}
+
+.actionButton.edit.is-disabled {
+  color: #ccc;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionButton.edit.is-disabled:hover {
+  background-color: transparent;
 }
 
 .documentCardWrapper {

@@ -22,19 +22,21 @@
           v-for="(version, index) in visibleVersions"
           :key="version.id ?? `version-${version.version}-${index}`"
           class="versionItem"
+          :class="{ 'is-selected': version.version === effectiveSelectedVersion }"
+          @click="emit('selectVersion', version.version)"
         >
           <div class="versionHeader">
             <span class="versionLabel">
               {{ getVersionDayLabel(version.createdAt) }}
               <span v-if="index === 0" class="versionCurrent"> (Actuelle)</span>
             </span>
-            <span v-if="index === 0" class="versionCheck">✓</span>
+            <span v-if="version.version === effectiveSelectedVersion" class="versionCheck">✓</span>
           </div>
           <div class="versionMeta">
             <span>{{ formatVersionHour(version.createdAt) }}</span>
-            <span v-if="version.state" class="versionDot">•</span>
-            <span v-if="version.state" :class="{ versionSourceMuted: index !== 0 }">
-              {{ version.state }}
+            <span class="versionDot">•</span>
+            <span :class="{ versionSourceMuted: index !== 0 }">
+              {{ getVersionState(version) }}
             </span>
           </div>
         </div>
@@ -60,10 +62,12 @@ const props = defineProps<{
   doc: Document
   isOpen: boolean
   loading: boolean
+  selectedVersion: number | null
 }>()
 
 const emit = defineEmits<{
   toggle: []
+  selectVersion: [version: number]
 }>()
 
 const isHistoryExpanded = ref(false)
@@ -100,6 +104,16 @@ function getVersionDayLabel(dateInput?: Date | string): string {
   return date.toLocaleDateString('fr-FR')
 }
 
+function getVersionState(version: any): string {
+  if (version.state && version.state.trim()) {
+    return version.state
+  }
+  if (version.snapshot?.state && version.snapshot.state.trim()) {
+    return version.snapshot.state
+  }
+  return 'En édition'
+}
+
 const displayVersions = computed(() => {
   if (!props.doc.versions) return []
   return [...props.doc.versions].sort((a, b) => {
@@ -115,6 +129,8 @@ const visibleVersions = computed(() => {
   }
   return displayVersions.value.slice(0, 2)
 })
+
+const effectiveSelectedVersion = computed(() => props.selectedVersion ?? props.doc.version)
 
 function toggleVersionHistory() {
   isHistoryExpanded.value = !isHistoryExpanded.value
@@ -238,6 +254,10 @@ function toggleVersionHistory() {
 
 .versionItem:hover {
   background-color: #f9f9f9;
+}
+
+.versionItem.is-selected {
+  background-color: #f4f7fb;
 }
 
 .versionItem:last-child {
