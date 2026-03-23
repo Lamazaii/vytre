@@ -2,7 +2,7 @@
  * @openapi
  * /documents:
  *   post:
- *     summary: Créer un nouveau document avec ses blocs et images
+ *     summary: Créer un nouveau document avec ses blocs
  *     tags: [Documents]
  *     requestBody:
  *       required: true
@@ -20,6 +20,10 @@
  *               version:
  *                 type: integer
  *                 example: 1
+ *               state:
+ *                 type: string
+ *                 enum: [En édition, Actif, Archivé]
+ *                 example: "En édition"
  *               blocks:
  *                 type: array
  *                 items:
@@ -36,6 +40,18 @@
  *                     nbOfRepeats:
  *                       type: integer
  *                       example: 1
+ *                     textZones:
+ *                       type: array
+ *                       description: Zones de texte enrichi du bloc
+ *                       items:
+ *                         type: string
+ *                       example: ["Titre zone 1", "Description zone 2"]
+ *                     canvasData:
+ *                       type: string
+ *                       nullable: true
+ *                       description: >
+ *                         Données de la zone de dessin (JSON ou base64)
+ *                       example: "{\"objects\":[{\"type\":\"path\"}]}"
  *                     images:
  *                       type: array
  *                       items:
@@ -48,14 +64,19 @@
  *           example:
  *             title: "Document test"
  *             version: 1
+ *             state: "En édition"
  *             blocks:
  *               - text: "ceci est un test"
  *                 step: 1
  *                 nbOfRepeats: 1
+ *                 textZones: ["zone titre", "zone detail"]
+ *                 canvasData: "{\"objects\":[]}"
  *                 images: []
  *               - text: "ceci est un test aussi"
  *                 step: 2
  *                 nbOfRepeats: 3
+ *                 textZones: []
+ *                 canvasData: null
  *                 images: []
  *     responses:
  *       201:
@@ -65,7 +86,7 @@
  *       500:
  *         description: Erreur interne du serveur
  *   get:
- *     summary: Récupérer tous les documents avec leurs blocs et images
+ *     summary: Récupérer tous les documents avec leurs blocs
  *     tags: [Documents]
  *     responses:
  *       200:
@@ -75,7 +96,7 @@
  * 
  * /documents/{id}:
  *   get:
- *     summary: Récupérer un document par son ID avec ses blocs et images
+ *     summary: Récupérer un document par son ID avec ses blocs
  *     tags: [Documents]
  *     parameters:
  *       - in: path
@@ -117,6 +138,10 @@
  *               version:
  *                 type: integer
  *                 example: 2
+ *               state:
+ *                 type: string
+ *                 enum: [En édition, Actif, Archivé]
+ *                 example: "Actif"
  *               blocks:
  *                 type: array
  *                 items:
@@ -133,6 +158,18 @@
  *                     nbOfRepeats:
  *                       type: integer
  *                       example: 2
+ *                     textZones:
+ *                       type: array
+ *                       description: Zones de texte enrichi du bloc
+ *                       items:
+ *                         type: string
+ *                       example: ["zone titre", "zone description"]
+ *                     canvasData:
+ *                       type: string
+ *                       nullable: true
+ *                       description: >
+ *                         Données de la zone de dessin
+ *                       example: "{\"objects\":[{\"type\":\"path\"}]}"
  *                     images:
  *                       type: array
  *                       items:
@@ -145,10 +182,13 @@
  *           example:
  *             title: "Document mis à jour"
  *             version: 2
+ *             state: "Actif"
  *             blocks:
  *               - text: "ceci est un test mis à jour"
  *                 step: 1
  *                 nbOfRepeats: 2
+ *                 textZones: ["zone principale"]
+ *                 canvasData: "{\"objects\":[{\"type\":\"rect\"}]}"
  *                 images: []
  *     responses:
  *       200:
@@ -157,6 +197,52 @@
  *         description: Données invalides
  *       404:
  *         description: Document non trouvé
+ *       500:
+ *         description: Erreur interne du serveur
+ *
+ * /documents/{id}/versions:
+ *   get:
+ *     summary: Récupérer les versions d'un document
+ *     tags: [Documents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID du document
+ *     responses:
+ *       200:
+ *         description: Historique des versions récupéré avec succès
+ *       400:
+ *         description: ID invalide
+ *       500:
+ *         description: Erreur interne du serveur
+ *
+ * /documents/{id}/versions/{version}:
+ *   get:
+ *     summary: Récupérer un snapshot de version d'un document
+ *     tags: [Documents]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID du document
+ *       - in: path
+ *         name: version
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Numéro de version
+ *     responses:
+ *       200:
+ *         description: Snapshot de version récupéré avec succès
+ *       400:
+ *         description: Paramètres invalides
+ *       404:
+ *         description: Version non trouvée
  *       500:
  *         description: Erreur interne du serveur
  */
