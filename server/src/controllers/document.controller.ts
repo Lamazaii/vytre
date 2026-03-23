@@ -175,3 +175,68 @@ export const getDocumentVersion = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const updateDocumentVersionState = async (
+    req: Request,
+    res: Response,
+) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+        const versionId = parsePositiveIntParam(
+            req.params.versionId,
+        );
+
+        if (id === null || versionId === null) {
+            res.status(400).json({
+                message: 'Paramètres invalides',
+            });
+            return;
+        }
+
+        const { state } = req.body as { state?: string };
+
+        if (!state || typeof state !== 'string') {
+            res.status(400).json({
+                message: 'Le champ "state" est requis et doit ' +
+                    'être une chaîne',
+            });
+            return;
+        }
+
+        debug(
+            'Mise à jour de l\'état de la version ID: %d ' +
+                'pour le document %d',
+            versionId,
+            id,
+        );
+
+        const updatedVersion =
+            await DocumentVersionManager.updateVersionState(
+                versionId,
+                state,
+            );
+
+        if (!updatedVersion) {
+            res.status(404).json({
+                message: 'Version non trouvée',
+            });
+            return;
+        }
+
+        debug('État de la version mis à jour avec succès');
+        res.status(200).json(updatedVersion);
+
+    } catch (error) {
+        debug(
+            'Erreur lors de la mise à jour de l\'état ' +
+                'de la version :',
+            error,
+        );
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error
+                ? error.message
+                : String(error),
+        });
+    }
+};

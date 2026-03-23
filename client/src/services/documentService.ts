@@ -122,4 +122,36 @@ export const documentService = {
     const documents = await this.getAll();
     return documents.some(doc => doc.title === title && doc.id !== excludeId);
   },
+
+  async updateState(id: number, state: string): Promise<Document> {
+    const response = await fetch(`${API_BASE_URL}/documents/${id}/state`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ state }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour de l\'état du document');
+    }
+
+    return response.json();
+  },
+
+  async updateVersionState(documentId: number, versionId: number, state: string): Promise<DocumentVersion> {
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/versions/${versionId}/state`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ state }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour de l\'état de la version');
+    }
+
+    return response.json();
+  },
 };
