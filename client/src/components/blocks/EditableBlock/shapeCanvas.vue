@@ -207,15 +207,18 @@ function addTriangle() {
   createShape('triangle')
 }
 
-// Enter two-click drawing mode: first click = start point, second click = end point.
+// Create a default arrow when the button is clicked.
 function addArrow() {
   if (!canvas) return
-  isDrawingArrow = true
-  arrowStartPoint = null
-  arrowPreviewPointer = null
-  canvas.defaultCursor = 'crosshair'
-  canvas.hoverCursor = 'crosshair'
-  canvas.selection = false
+  
+  const canvasWidth = canvas.width || props.width
+  const canvasHeight = canvas.height || props.height
+  
+  // Create a shorter horizontal arrow in the center of the canvas
+  const defaultStart = { x: canvasWidth * 0.35, y: canvasHeight * 0.5 }
+  const defaultEnd = { x: canvasWidth * 0.65, y: canvasHeight * 0.5 }
+  
+  createArrowBetweenPoints(defaultStart, defaultEnd)
 }
 
 // Insert image object and fit it inside the canvas bounds.
