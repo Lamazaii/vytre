@@ -4,48 +4,73 @@
       class="actionButton versions"
       :class="{ 'is-open': isOpen }"
       @click="emit('toggle')"
-      aria-label="Historique des versions"
       title="Historique des versions"
     >
       <img :src="versionIcon" alt="Versions" class="buttonIcon" />
     </button>
+
     <div v-if="isOpen" class="versionMenu">
       <div class="versionMenuTitle">HISTORIQUE DES VERSIONS</div>
+      
       <div class="versionList" :class="{ 'is-scrollable': isHistoryExpanded }">
-        <div v-if="loading" class="loadingVersions">
-          Chargement des versions...
-        </div>
-        <div v-else-if="!doc.versions || doc.versions.length === 0" class="emptyVersions">
-          Aucune version disponible
-        </div>
+        <div v-if="loading" class="loadingVersions">Chargement...</div>
+        <div v-else-if="!doc.versions?.length" class="emptyVersions">Aucune version</div>
+
         <div
           v-for="(version, index) in visibleVersions"
-          :key="version.id ?? `version-${version.version}-${index}`"
+          :key="version.id"
           class="versionItem"
           :class="{ 'is-selected': version.version === effectiveSelectedVersion }"
           @click="emit('selectVersion', version.version)"
         >
           <div class="versionHeader">
             <span class="versionLabel">
-              {{ getVersionDayLabel(version.createdAt) }}
+              {{ getDayLabel(version.createdAt!) }}
               <span v-if="index === 0" class="versionCurrent"> (Actuelle)</span>
             </span>
             <span v-if="version.version === effectiveSelectedVersion" class="versionCheck">✓</span>
           </div>
+
           <div class="versionMeta">
-            <span>{{ formatVersionHour(version.createdAt) }}</span>
+            <span>{{ formatHour(version.createdAt!) }}</span>
             <span class="versionDot">•</span>
-            <span :class="{ versionSourceMuted: index !== 0 }">
-              {{ getVersionState(version) }}
-            </span>
+            
+            <div class="versionStateWrapper" :class="{ versionSourceMuted: index !== 0 }">
+              <button 
+                class="versionStateButton"
+                :class="{ 'is-open': openStateMenuFor === version.id }"
+                @click.stop="e => toggleStateMenu(e, version.id!)"
+              >
+                {{ getVersionState(version) }}
+                <span class="stateArrow">▼</span>
+              </button>
+
+              <Teleport to="body">
+                <div 
+                  v-if="openStateMenuFor === version.id"
+                  class="stateDropdown"
+                  :style="dropdownStyle"
+                >
+                  <button 
+                    v-for="state in availableStates"
+                    :key="state"
+                    class="stateOption"
+                    :class="{ 'is-active': getVersionState(version) === state }"
+                    @click.stop="changeState(version, state)"
+                  >
+                    {{ state }}
+                  </button>
+                </div>
+              </Teleport>
+            </div>
           </div>
         </div>
       </div>
+
       <button
         v-if="displayVersions.length > 3"
         class="versionHistoryButton"
-        type="button"
-        @click="toggleVersionHistory"
+        @click="isHistoryExpanded = !isHistoryExpanded"
       >
         {{ isHistoryExpanded ? 'Voir moins' : "Voir tout l'historique" }}
       </button>
@@ -54,86 +79,70 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, reactive } from 'vue'
 import versionIcon from '../../assets/menu/version.svg'
 import type { Document } from '../../types/Document'
 
-const props = defineProps<{
-  doc: Document
-  isOpen: boolean
-  loading: boolean
-  selectedVersion: number | null
-}>()
-
-const emit = defineEmits<{
-  toggle: []
-  selectVersion: [version: number]
-}>()
+const props = defineProps<{ doc: Document; isOpen: boolean; loading: boolean; selectedVersion: number | null }>()
+const emit = defineEmits(['toggle', 'selectVersion', 'updateState'])
 
 const isHistoryExpanded = ref(false)
+const openStateMenuFor = ref<number | null>(null)
+const dropdownStyle = reactive({ top: '0px', left: '0px' })
+const availableStates = ['En édition', 'Actif', 'Archivé']
 
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (!open) {
-      isHistoryExpanded.value = false
-    }
-  }
-)
-
-function normalizeDate(dateInput?: Date | string): Date {
-  if (!dateInput) return new Date()
-  const parsed = new Date(dateInput)
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
-}
-
-function formatVersionHour(dateInput?: Date | string): string {
-  const date = normalizeDate(dateInput)
-  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-}
-
-function getVersionDayLabel(dateInput?: Date | string): string {
-  const date = normalizeDate(dateInput)
-  const now = new Date()
-  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const dayDiff = Math.floor((todayStart - dayStart) / 86400000)
-
-  if (dayDiff === 0) return "Aujourd'hui"
-  if (dayDiff === 1) return 'Hier'
-  return date.toLocaleDateString('fr-FR')
-}
-
-function getVersionState(version: any): string {
-  if (version.state && version.state.trim()) {
-    return version.state
-  }
-  if (version.snapshot?.state && version.snapshot.state.trim()) {
-    return version.snapshot.state
-  }
-  return 'En édition'
-}
-
-const displayVersions = computed(() => {
-  if (!props.doc.versions) return []
-  return [...props.doc.versions].sort((a, b) => {
-    const dateA = normalizeDate(a.createdAt).getTime()
-    const dateB = normalizeDate(b.createdAt).getTime()
-    return dateB - dateA
-  })
-})
-
-const visibleVersions = computed(() => {
-  if (isHistoryExpanded.value) {
-    return displayVersions.value
-  }
-  return displayVersions.value.slice(0, 2)
-})
+// --- Logique de simplification ---
 
 const effectiveSelectedVersion = computed(() => props.selectedVersion ?? props.doc.version)
 
-function toggleVersionHistory() {
-  isHistoryExpanded.value = !isHistoryExpanded.value
+const displayVersions = computed(() => {
+  return [...(props.doc.versions || [])]
+    .filter(v => v.id && v.createdAt)
+    .sort((a, b) => 
+      new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+    )
+})
+
+const visibleVersions = computed(() => 
+  isHistoryExpanded.value ? displayVersions.value : displayVersions.value.slice(0, 2)
+)
+
+// Reset si on ferme le menu
+watch(() => props.isOpen, (val) => { if (!val) { isHistoryExpanded.value = false; openStateMenuFor.value = null } })
+
+// --- Helpers ---
+
+const getDayLabel = (date: string | Date) => {
+  const d = new Date(date)
+  const today = new Date().toDateString()
+  const yesterday = new Date(Date.now() - 86400000).toDateString()
+  if (d.toDateString() === today) return "Aujourd'hui"
+  if (d.toDateString() === yesterday) return "Hier"
+  return d.toLocaleDateString('fr-FR')
+}
+
+const formatHour = (date: string | Date) => 
+  new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+
+const getVersionState = (v: any) => v.state?.trim() || v.snapshot?.state?.trim() || 'En édition'
+
+function toggleStateMenu(event: MouseEvent, id: number) {
+  if (openStateMenuFor.value === id) {
+    openStateMenuFor.value = null
+  } else {
+    // On calcule la position pour le Teleport
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    dropdownStyle.top = `${rect.bottom + window.scrollY + 5}px`
+    dropdownStyle.left = `${rect.left + window.scrollX}px`
+    openStateMenuFor.value = id
+  }
+}
+
+function changeState(version: any, newState: string) {
+  openStateMenuFor.value = null
+  if (version.id) {
+    emit('updateState', version.id, newState)
+  }
 }
 </script>
 
@@ -142,7 +151,6 @@ function toggleVersionHistory() {
   position: relative;
   border-left: 1px solid #e5e7eb;
   padding-left: 12px;
-  margin-left: 4px;
 }
 
 .actionButton {
@@ -208,7 +216,7 @@ function toggleVersionHistory() {
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
   z-index: 1000;
   width: 240px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .versionMenuTitle {
@@ -227,6 +235,7 @@ function toggleVersionHistory() {
 .versionList.is-scrollable {
   max-height: 240px;
   overflow-y: auto;
+  clip-path: inset(0 0 -500px 0);
 }
 
 .emptyVersions {
@@ -246,7 +255,6 @@ function toggleVersionHistory() {
 .versionItem {
   position: relative;
   padding: 10px 14px;
-  padding-right: 34px;
   border-bottom: 1px solid #eef1f5;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -324,5 +332,71 @@ function toggleVersionHistory() {
 
 .versionHistoryButton:hover {
   background-color: #e9edf2;
+}
+
+.versionStateWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.versionStateButton {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.versionStateButton:hover {
+  background-color: #f0f0f0;
+  color: #374151;
+}
+
+.stateArrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.versionStateButton.is-open .stateArrow {
+  transform: rotate(180deg);
+}
+
+.stateDropdown {
+  position: fixed;
+  background-color: white;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.stateOption {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: #374151;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.stateOption:hover {
+  background-color: #f3f4f6;
+}
+
+.stateOption.is-active {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
 }
 </style>

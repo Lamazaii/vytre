@@ -53,9 +53,6 @@
             <button
               v-if="viewMode === 'editor'"
               class="actionButton edit"
-              :class="{ 'is-disabled': isSelectedVersionOlder(doc) }"
-              :disabled="isSelectedVersionOlder(doc)"
-              :title="isSelectedVersionOlder(doc) ? 'Impossible de modifier une version antérieure' : 'Modifier'"
               @click="editDocument(doc)"
             >
               <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
@@ -68,6 +65,7 @@
               :selected-version="getSelectedVersion(doc)"
               @toggle="handleVersions(doc)"
               @select-version="handleVersionSelect(doc, $event)"
+              @update-state="(versionId, newState) => handleStateUpdate(doc, versionId, newState)"
             />
           </div>
         </div>
@@ -161,11 +159,6 @@ async function openDocument(doc: Document) {
 async function editDocument(doc: Document) {
   if (!doc.id) return
   
-  // Bloquer l'accès à l'éditeur pour les versions antérieures
-  if (isSelectedVersionOlder(doc)) {
-    return
-  }
-  
   console.log('Édition du document:', doc)
   const selectedVersion = selectedVersionByDoc.value[doc.id]
   if (selectedVersion && selectedVersion !== doc.version) {
@@ -179,6 +172,18 @@ async function editDocument(doc: Document) {
 function handleNewDocument() {
   store.createNewDocument()
   emit('selectMode', 'editor')
+}
+
+async function handleStateUpdate(doc: Document, versionId: number, newState: string) {
+  if (!doc.id) return
+  
+  try {
+    await documentService.updateVersionState(doc.id, versionId, newState)
+    // Recharger la liste des documents pour refléter le changement
+    await store.loadAllDocuments()
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'état de la version:', error)
+  }
 }
 
 function handleVersions(doc: Document) {
