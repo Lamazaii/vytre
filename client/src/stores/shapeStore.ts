@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export type ShapeType = 'square' | 'circle' | 'triangle' | 'arrow' | null
-export type ArrowHeadStyle = 'none' | 'open' | 'filled'
+export type ArrowHeadStyle = 'none' | 'stroke' | 'open' | 'filled'
 
 export const useShapeStore = defineStore('shape', () => {
   // Currently selected shape type from toolbar.
@@ -26,8 +26,8 @@ export const useShapeStore = defineStore('shape', () => {
   const strokeColor = ref('#1F2937')
   const strokeWidth = ref(2)
   // Arrow-specific start/end head rendering styles.
-  const arrowStartStyle = ref<ArrowHeadStyle>('filled')
-  const arrowEndStyle = ref<ArrowHeadStyle>('filled')
+  const arrowStartStyle = ref<ArrowHeadStyle>('stroke')
+  const arrowEndStyle = ref<ArrowHeadStyle>('stroke')
 
   // Set selected shape preset.
   function setActiveShape(shape: ShapeType) {

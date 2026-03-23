@@ -23,6 +23,7 @@
         role="menuitem"
         @click="selectArrowStyle(option.value)"
       >
+        <div class="arrow-preview" :class="`preview-${option.value}`"></div>
         <span class="arrow-style-menu-label">{{ option.label }}</span>
       </button>
     </div>
@@ -51,13 +52,14 @@ const label = computed(() => props.label ?? 'Extrémité')
 
 const options: Array<{ value: ArrowHeadStyle; label: string }> = [
   { value: 'none', label: 'Aucune' },
-  { value: 'open', label: 'Tête vide' },
-  { value: 'filled', label: 'Tête pleine' },
+  { value: 'stroke', label: 'Trait' },
+  { value: 'open', label: 'Vide' },
+  { value: 'filled', label: 'Pleine' },
 ]
 
 const selectedLabel = computed(() => {
   const option = options.find((item) => item.value === props.modelValue)
-  return option?.label ?? 'Tête pleine'
+  return option?.label ?? 'Trait'
 })
 
 function toggleArrowStyleMenu() {
@@ -154,7 +156,7 @@ onBeforeUnmount(() => {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 6px 8px;
   border: none;
   border-radius: 6px;
@@ -171,5 +173,34 @@ onBeforeUnmount(() => {
   font-family: 'Segoe UI', sans-serif;
   font-size: 12px;
   color: #1f2937;
+}
+
+.arrow-preview {
+  width: 50px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Arrow head style previews */
+.preview-none {
+  background: linear-gradient(to right, transparent 0%, #1f2937 50%, transparent 100%);
+  position: relative;
+}
+
+.preview-stroke {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 50 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='10' x2='32' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='40' y1='10' x2='30' y2='4' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='40' y1='10' x2='30' y2='16' stroke='%231f2937' stroke-width='1'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+}
+
+.preview-open {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 50 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='10' x2='30' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='30' y1='4' x2='40' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='30' y1='16' x2='40' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+}
+
+.preview-filled {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 50 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='10' x2='30' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cpolygon points='40,10 30,4 30,16' fill='%231f2937'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
 }
 </style>

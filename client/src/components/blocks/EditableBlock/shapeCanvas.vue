@@ -22,6 +22,8 @@ fabric.Path.prototype.toObject = function(propertiesToInclude?: string[]) {
     obj.isArrow = (this as any).isArrow
     obj.arrowStart = (this as any).arrowStart
     obj.arrowEnd = (this as any).arrowEnd
+    obj.arrowStartStyle = (this as any).arrowStartStyle
+    obj.arrowEndStyle = (this as any).arrowEndStyle
   }
   return obj
 }
@@ -106,6 +108,60 @@ function applyArrowStyle(arrow: fabric.Path, color: string, width: number) {
   })
 }
 
+// Generate arrow path based on start/end points and head style
+function generateArrowPath(
+  startPoint: { x: number; y: number },
+  endPoint: { x: number; y: number },
+  startStyle: string,
+  endStyle: string
+) {
+  const dx = endPoint.x - startPoint.x
+  const dy = endPoint.y - startPoint.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  
+  if (distance < 5) return ''
+  
+  const arrowHeadSize = 12
+  let pathStr = ''
+
+  // Determine where the line starts and ends based on arrow head styles
+  const startOffset = startStyle === 'none' ? 0 : arrowHeadSize + 2
+  const endOffset = endStyle === 'none' ? 0 : arrowHeadSize + 2
+
+  // Main line (doesn't go through the heads)
+  pathStr = `M ${startOffset},0 L ${distance - endOffset},0`
+
+  // Handle end head based on style
+  if (endStyle === 'none') {
+    // No arrowhead
+  } else if (endStyle === 'stroke') {
+    // Just lines (no filled triangle)
+    pathStr += ` M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+  } else if (endStyle === 'open') {
+    // Triangle outline only
+    pathStr += ` M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6} Z`
+  } else {
+    // filled: triangle filled
+    pathStr += ` M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6} Z`
+  }
+
+  // Handle start head based on style
+  if (startStyle === 'none') {
+    // No arrowhead at start
+  } else if (startStyle === 'stroke') {
+    // Just lines (no filled triangle)
+    pathStr += ` M ${arrowHeadSize},${-arrowHeadSize * 0.6} L 0,0 L ${arrowHeadSize},${arrowHeadSize * 0.6}`
+  } else if (startStyle === 'open') {
+    // Triangle outline only
+    pathStr += ` M ${arrowHeadSize},${-arrowHeadSize * 0.6} L 0,0 L ${arrowHeadSize},${arrowHeadSize * 0.6} Z`
+  } else {
+    // filled: triangle filled
+    pathStr += ` M ${arrowHeadSize},${-arrowHeadSize * 0.6} L 0,0 L ${arrowHeadSize},${arrowHeadSize * 0.6} Z`
+  }
+
+  return pathStr
+}
+
 // Create an arrow object between two canvas-space points.
 function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }) {
   if (!canvas) return
@@ -117,10 +173,10 @@ function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: num
 
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
 
-  // Create arrow as a single path object
-  const arrowHeadSize = 12
-  const arrowPath = `M 0,0 L ${distance},0 M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+  // Generate arrow path with current head styles
+  const arrowPath = generateArrowPath(start, end, shapeStore.arrowStartStyle, shapeStore.arrowEndStyle)
 
+  // Always use transparent fill - heads will be drawn separately
   const arrow = new fabric.Path(arrowPath, {
     stroke: shapeStore.fillColor,
     strokeWidth: shapeStore.strokeWidth,
@@ -136,6 +192,8 @@ function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: num
   ;(arrow as any).isArrow = true
   ;(arrow as any).arrowStart = start
   ;(arrow as any).arrowEnd = end
+  ;(arrow as any).arrowStartStyle = shapeStore.arrowStartStyle
+  ;(arrow as any).arrowEndStyle = shapeStore.arrowEndStyle
 
   canvas.add(arrow)
   canvas.setActiveObject(arrow)
@@ -380,7 +438,13 @@ function handleSelection(e: any) {
     
     const fill = selected.stroke || '#000000'
     const width = selected.strokeWidth || 2
+    const startStyle = (selected as any).arrowStartStyle || 'filled'
+    const endStyle = (selected as any).arrowEndStyle || 'filled'
+    
     shapeStore.updateStylesFromSelection(fill as string, fill as string, width as number, 'arrow')
+    shapeStore.arrowStartStyle = startStyle
+    shapeStore.arrowEndStyle = endStyle
+    
     imageCropStore.clearSelection()
     textFormatStore.clearTextFocus()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
@@ -571,14 +635,15 @@ onMounted(() => {
 
       const start = (arrow as any).arrowStart as { x: number; y: number }
       const end = (arrow as any).arrowEnd as { x: number; y: number }
+      const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
+      const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
       const dx = end.x - start.x
       const dy = end.y - start.y
       const distance = Math.sqrt(dx * dx + dy * dy)
       const angle = Math.atan2(dy, dx) * (180 / Math.PI)
 
       if (distance > 5) {
-        const arrowHeadSize = 12
-        const arrowPathStr = `M 0,0 L ${distance},0 M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+        const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle)
 
         // Remove old and create new arrow with updated path
         canvas!.remove(arrow)
@@ -598,6 +663,8 @@ onMounted(() => {
         ;(newArrow as any).isArrow = true
         ;(newArrow as any).arrowStart = start
         ;(newArrow as any).arrowEnd = end
+        ;(newArrow as any).arrowStartStyle = startStyle
+        ;(newArrow as any).arrowEndStyle = endStyle
 
         canvas!.add(newArrow)
         modifyingArrow = newArrow
@@ -612,9 +679,57 @@ onMounted(() => {
     canvas!.requestRenderAll()
   })
 
-  // Draw a dashed preview line directly onto the canvas context.
+  // Draw filled arrow heads and endpoint circles.
   canvas.on('after:render', () => {
     const ctx = canvas!.getContext()
+    
+    // Draw filled triangles for all arrows
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+        const startStyle = (arrow as any).arrowStartStyle || 'stroke'
+        const endStyle = (arrow as any).arrowEndStyle || 'stroke'
+        const color = arrow.stroke as string || shapeStore.fillColor
+        
+        const arrowHeadSize = 12
+        const dx = end.x - start.x
+        const dy = end.y - start.y
+        const angle = Math.atan2(dy, dx)
+        
+        // Draw end head if filled
+        if (endStyle === 'filled') {
+          ctx.save()
+          ctx.translate(end.x, end.y)
+          ctx.rotate(angle)
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+          ctx.restore()
+        }
+        
+        // Draw start head if filled
+        if (startStyle === 'filled') {
+          ctx.save()
+          ctx.translate(start.x, start.y)
+          ctx.rotate(angle)
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.moveTo(arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+          ctx.restore()
+        }
+      }
+    }
     
     // Draw circles at arrow endpoints only when selected
     const activeObj = canvas!.getActiveObject()
@@ -679,6 +794,8 @@ onMounted(() => {
             ;(obj as any).isArrow = jsonObj.isArrow
             ;(obj as any).arrowStart = jsonObj.arrowStart
             ;(obj as any).arrowEnd = jsonObj.arrowEnd
+            ;(obj as any).arrowStartStyle = jsonObj.arrowStartStyle
+            ;(obj as any).arrowEndStyle = jsonObj.arrowEndStyle
           }
         }
       })
@@ -796,6 +913,96 @@ watch(() => shapeStore.strokeWidth, (newWidth) => {
       saveCanvas()
     }
   }
+})
+
+// Apply arrow start head style changes from toolbar
+watch(() => shapeStore.arrowStartStyle, (newStyle) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject || !isArrowObject(activeObject)) return
+
+  const arrow = activeObject as fabric.Path
+  const start = (arrow as any).arrowStart as { x: number; y: number }
+  const end = (arrow as any).arrowEnd as { x: number; y: number }
+  const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
+
+  ;(arrow as any).arrowStartStyle = newStyle
+
+  // Recreate the arrow with new path
+  const arrowPathStr = generateArrowPath(start, end, newStyle, endStyle)
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  canvas.remove(arrow)
+  const newArrow = new fabric.Path(arrowPathStr, {
+    stroke: arrow.stroke || shapeStore.fillColor,
+    strokeWidth: arrow.strokeWidth || 2,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(newArrow as any).isArrow = true
+  ;(newArrow as any).arrowStart = start
+  ;(newArrow as any).arrowEnd = end
+  ;(newArrow as any).arrowStartStyle = newStyle
+  ;(newArrow as any).arrowEndStyle = endStyle
+
+  canvas.add(newArrow)
+  canvas.setActiveObject(newArrow)
+  canvas.renderAll()
+  saveCanvas()
+})
+
+// Apply arrow end head style changes from toolbar
+watch(() => shapeStore.arrowEndStyle, (newStyle) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject || !isArrowObject(activeObject)) return
+
+  const arrow = activeObject as fabric.Path
+  const start = (arrow as any).arrowStart as { x: number; y: number }
+  const end = (arrow as any).arrowEnd as { x: number; y: number }
+  const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
+
+  ;(arrow as any).arrowEndStyle = newStyle
+
+  // Recreate the arrow with new path
+  const arrowPathStr = generateArrowPath(start, end, startStyle, newStyle)
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  canvas.remove(arrow)
+  const newArrow = new fabric.Path(arrowPathStr, {
+    stroke: arrow.stroke || shapeStore.fillColor,
+    strokeWidth: arrow.strokeWidth || 2,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(newArrow as any).isArrow = true
+  ;(newArrow as any).arrowStart = start
+  ;(newArrow as any).arrowEnd = end
+  ;(newArrow as any).arrowStartStyle = startStyle
+  ;(newArrow as any).arrowEndStyle = newStyle
+
+  canvas.add(newArrow)
+  canvas.setActiveObject(newArrow)
+  canvas.renderAll()
+  saveCanvas()
 })
 
 defineExpose({
