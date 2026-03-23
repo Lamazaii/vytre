@@ -53,6 +53,9 @@
             <button
               v-if="viewMode === 'editor'"
               class="actionButton edit"
+              :class="{ 'is-disabled': isSelectedVersionOlder(doc) }"
+              :disabled="isSelectedVersionOlder(doc)"
+              :title="isSelectedVersionOlder(doc) ? 'Impossible de modifier une version antérieure' : 'Modifier'"
               @click="editDocument(doc)"
             >
               <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
@@ -131,9 +134,18 @@ function getSelectedVersion(doc: Document): number | null {
 }
 
 function isSelectedVersionOlder(doc: Document): boolean {
-  if (doc.id === undefined) return false
+  if (doc.id === undefined || !doc.versions?.length) return false
   const selected = selectedVersionByDoc.value[doc.id]
-  return selected !== undefined && selected !== doc.version
+  // Si aucune version n'est sélectionnée explicitement, c'est OK
+  if (selected === undefined) return false
+  
+  // Trouver la version la plus récente (comme dans le versionHistoryMenu)
+  const sortedVersions = [...doc.versions].sort((a, b) => 
+    new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+  )
+  const latestVersion = sortedVersions[0]?.version
+  
+  return latestVersion !== undefined && selected !== latestVersion
 }
 
 function handleVersionSelect(doc: Document, version: number) {
@@ -158,6 +170,11 @@ async function openDocument(doc: Document) {
 
 async function editDocument(doc: Document) {
   if (!doc.id) return
+  
+  // Bloquer l'accès à l'éditeur pour les versions antérieures
+  if (isSelectedVersionOlder(doc)) {
+    return
+  }
   
   console.log('Édition du document:', doc)
   const selectedVersion = selectedVersionByDoc.value[doc.id]
