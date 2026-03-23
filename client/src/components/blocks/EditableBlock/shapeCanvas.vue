@@ -149,9 +149,10 @@ function addTextZone() {
     left: 0,
     top: 0,
     width: Math.min(280, Math.max(180, canvasWidth - 40)),
-    fontSize: 24,
+    fontSize: 18,
     fill: '#111827',
     fontFamily: 'Arial',
+    lockScalingY: true,
     ...objectDefaults,
   })
 
@@ -169,6 +170,24 @@ function addTextZone() {
   text.enterEditing()
   text.selectAll()
   canvas.renderAll()
+}
+
+// Keep text visual size fixed by converting scale into width.
+function normalizeTextboxScale(textbox: fabric.Textbox) {
+  const currentScaleX = textbox.scaleX || 1
+  const baseWidth = textbox.width || 0
+  if (currentScaleX !== 1 && baseWidth > 0) {
+    textbox.set({
+      width: Math.max(60, baseWidth * currentScaleX),
+      scaleX: 1,
+    })
+  }
+
+  if ((textbox.scaleY || 1) !== 1) {
+    textbox.set({ scaleY: 1 })
+  }
+
+  textbox.setCoords()
 }
 
 // Insert image object and fit it inside the canvas bounds.
@@ -343,6 +362,13 @@ function handleSelectionCleared() {
   textFormatStore.setFabricTextbox(null, null)
 }
 
+// Keep text toolbar state synced while editing a Fabric textbox.
+function handleTextboxStateUpdate(e: any) {
+  const target = e?.target as fabric.Object | undefined
+  if (!target || target.type !== 'textbox') return
+  textFormatStore.updateFabricStatesFromObject(target as fabric.Textbox)
+}
+
 // Initialize Fabric canvas, events, and optional JSON restore.
 onMounted(() => {
   if (!canvasElement.value) return
@@ -357,6 +383,7 @@ onMounted(() => {
 
   fabric.Object.prototype.controls.deleteControl = createDeleteControl()
   fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
+  fabric.Textbox.prototype.controls.deleteControl = createDeleteControl()
 
   canvas.on('object:added', saveCanvas)
   canvas.on('object:modified', saveCanvas)
@@ -379,12 +406,20 @@ onMounted(() => {
     const canvasWidth = canvas.width || props.width
     const canvasHeight = canvas.height || props.height
 
+    if (obj.type === 'textbox') {
+      normalizeTextboxScale(obj as fabric.Textbox)
+    }
+
     handleObjectScaling(obj, canvasWidth, canvasHeight)
   })
 
   canvas.on('selection:created', handleSelection)
   canvas.on('selection:updated', handleSelection)
   canvas.on('selection:cleared', handleSelectionCleared)
+  canvas.on('text:selection:changed', handleTextboxStateUpdate)
+  canvas.on('text:editing:entered', handleTextboxStateUpdate)
+  canvas.on('text:editing:exited', handleTextboxStateUpdate)
+  canvas.on('text:changed', handleTextboxStateUpdate)
 
   globalThis.addEventListener('keydown', handleKeyDown)
 
@@ -392,6 +427,10 @@ onMounted(() => {
     canvas.loadFromJSON(props.canvasData, () => {
       canvas?.getObjects().forEach((obj) => {
         Object.assign(obj, objectDefaults)
+        if (obj.type === 'textbox') {
+          ;(obj as fabric.Textbox).set({ lockScalingY: true })
+          normalizeTextboxScale(obj as fabric.Textbox)
+        }
         obj.setCoords()
       })
       canvas?.renderAll()

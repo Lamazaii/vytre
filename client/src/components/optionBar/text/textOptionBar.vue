@@ -66,11 +66,10 @@ const textFormatStore = useTextFormatStore()
 const shapeStore = useShapeStore()
 
 // Reactive formatting flags mirrored from the text format store.
-const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
+const { bold, italic, underline, fontSize, color } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
 
 // Local UI state for add-text toggle and color picker.
-const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
@@ -89,7 +88,6 @@ function toggleColorPicker() {
 
 // Apply selected text color and close menu.
 function selectColor(c: string) {
-  color.value = c
   applyColor(c)
   showColor.value = false
 }

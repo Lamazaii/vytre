@@ -43,22 +43,43 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     }
   }
 
+  // Resolve current style using selection style in editing mode when available.
+  function getFabricCurrentStyle(textbox: fabric.Textbox) {
+    if (textbox.isEditing) {
+      const styles = textbox.getSelectionStyles()
+      const firstStyle = styles && styles.length > 0 ? (styles[0] as Record<string, any>) : null
+      if (firstStyle) {
+        return {
+          fontWeight: firstStyle.fontWeight ?? textbox.fontWeight,
+          fontStyle: firstStyle.fontStyle ?? textbox.fontStyle,
+          underline: firstStyle.underline ?? textbox.underline,
+          fill: firstStyle.fill ?? textbox.fill,
+          fontSize: firstStyle.fontSize ?? textbox.fontSize,
+        }
+      }
+    }
+
+    return {
+      fontWeight: textbox.fontWeight,
+      fontStyle: textbox.fontStyle,
+      underline: textbox.underline,
+      fill: textbox.fill,
+      fontSize: textbox.fontSize,
+    }
+  }
+
   // Read formatting state from Fabric textbox object
   function updateFabricStatesFromObject(textbox: fabric.Textbox) {
     if (!textbox) return
-    
-    // Get state from first character or selected text
-    const startIndex = textbox.selectionStart ?? 0
-    const endIndex = textbox.selectionEnd ?? startIndex
-    
-    // For bold/italic/underline, check if any selected character has the property
-    bold.value = textbox.fontWeight === 'bold' || textbox.fontWeight === 700
-    italic.value = textbox.fontStyle === 'italic'
-    underline.value = textbox.underline === true
-    color.value = (textbox.fill as string) || '#000000'
+
+    const currentStyle = getFabricCurrentStyle(textbox)
+    bold.value = currentStyle.fontWeight === 'bold' || currentStyle.fontWeight === 700
+    italic.value = currentStyle.fontStyle === 'italic'
+    underline.value = currentStyle.underline === true
+    color.value = (currentStyle.fill as string) || '#000000'
     
     // Estimate font size category
-    const size = textbox.fontSize || 16
+    const size = (currentStyle.fontSize as number) || 16
     if (size <= 13) {
       fontSize.value = 'Small'
     } else if (size >= 19) {
@@ -74,18 +95,20 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     
     const textbox = fabricTextbox.value
     
-    // Check if textbox is in editing mode with selected text
-    if (textbox.isEditing && textbox.selectionStart !== textbox.selectionEnd) {
-      // Apply only to selected text using multi-style
+    // In editing mode, Fabric applies style as per-character style (multi-style).
+    if (textbox.isEditing) {
       textbox.setSelectionStyles(styleObj)
     } else {
       // Apply to entire textbox
       textbox.set(styleObj)
     }
+
+    textbox.set('dirty', true)
     
     // Render canvas and update state
     if (fabricCanvas.value) {
-      fabricCanvas.value.renderAll()
+      fabricCanvas.value.requestRenderAll()
+      fabricCanvas.value.fire('object:modified', { target: textbox } as any)
     }
     updateFabricStatesFromObject(textbox)
   }
@@ -176,7 +199,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   // Toggle bold
   const applyBold = () => {
     if (fabricTextbox.value) {
-      const isBold = fabricTextbox.value.fontWeight === 'bold' || fabricTextbox.value.fontWeight === 700
+      const currentStyle = getFabricCurrentStyle(fabricTextbox.value)
+      const isBold = currentStyle.fontWeight === 'bold' || currentStyle.fontWeight === 700
       applyFabricFormatting({ fontWeight: isBold ? 'normal' : 'bold' })
       return
     }
@@ -192,7 +216,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   // Toggle italic
   const applyItalic = () => {
     if (fabricTextbox.value) {
-      const isItalic = fabricTextbox.value.fontStyle === 'italic'
+      const currentStyle = getFabricCurrentStyle(fabricTextbox.value)
+      const isItalic = currentStyle.fontStyle === 'italic'
       applyFabricFormatting({ fontStyle: isItalic ? 'normal' : 'italic' })
       return
     }
@@ -208,7 +233,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   // Toggle underline
   const applyUnderline = () => {
     if (fabricTextbox.value) {
-      const isUnderlined = fabricTextbox.value.underline === true
+      const currentStyle = getFabricCurrentStyle(fabricTextbox.value)
+      const isUnderlined = currentStyle.underline === true
       applyFabricFormatting({ underline: !isUnderlined })
       return
     }
@@ -278,6 +304,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
 
   function clearTextFocus() {
     hasTextFocus.value = false
+    fabricTextbox.value = null
+    fabricCanvas.value = null
   }
 
   return {
