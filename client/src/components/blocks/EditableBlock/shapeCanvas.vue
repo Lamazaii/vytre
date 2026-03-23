@@ -14,6 +14,18 @@ import { objectDefaults } from './utils/canvasConfig'
 import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
 import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
 
+// Configure Fabric.js to serialize custom arrow properties
+const originalPathToObject = fabric.Path.prototype.toObject
+fabric.Path.prototype.toObject = function(propertiesToInclude?: string[]) {
+  const obj = originalPathToObject.call(this, propertiesToInclude)
+  if ((this as any).isArrow) {
+    obj.isArrow = (this as any).isArrow
+    obj.arrowStart = (this as any).arrowStart
+    obj.arrowEnd = (this as any).arrowEnd
+  }
+  return obj
+}
+
 interface Props {
   width?: number
   height?: number
@@ -650,10 +662,22 @@ onMounted(() => {
   globalThis.addEventListener('keydown', handleKeyDown)
 
   if (props.canvasData) {
+    const jsonData = JSON.parse(props.canvasData)
     canvas.loadFromJSON(props.canvasData, () => {
-      canvas?.getObjects().forEach((obj) => {
+      const objects = canvas?.getObjects() || []
+      objects.forEach((obj, index) => {
         Object.assign(obj, objectDefaults)
         obj.setCoords()
+        
+        // Restore custom arrow properties after JSON deserialization
+        if (jsonData.objects && jsonData.objects[index]) {
+          const jsonObj = jsonData.objects[index]
+          if (jsonObj.isArrow) {
+            ;(obj as any).isArrow = jsonObj.isArrow
+            ;(obj as any).arrowStart = jsonObj.arrowStart
+            ;(obj as any).arrowEnd = jsonObj.arrowEnd
+          }
+        }
       })
       canvas?.renderAll()
       checkHasObjects()
