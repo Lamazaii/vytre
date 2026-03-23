@@ -16,8 +16,8 @@
 
       <div class="divider"></div>
 
-      <button class="formatButton" :class="{ active: addText }" @click="onAddText" title="Add text">
-        <img :src="addText ? addTextIconActive : addTextIcon" alt="Add text" />
+      <button class="formatButton" @click="onAddText" title="Add text">
+        <img :src="addTextIcon" alt="Add text" />
       </button>
     </div>
 
@@ -56,22 +56,20 @@ import italicIconActive from "../../../assets/textOptionBar/italicActive.svg"
 import underlineIcon from "../../../assets/textOptionBar/underline.svg"
 import underlineIconActive from "../../../assets/textOptionBar/underlineActive.svg"
 import addTextIcon from "../../../assets/textOptionBar/addText.svg"
-import addTextIconActive from "../../../assets/textOptionBar/addTextActive.svg"
 
 import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
-import { useBlocksStore } from '../../../stores/blockStores'
+import { useShapeStore } from '../../../stores/shapeStore'
 
 // Stores for text formatting commands and block-level text zone actions.
 const textFormatStore = useTextFormatStore()
-const blocksStore = useBlocksStore()
+const shapeStore = useShapeStore()
 
 // Reactive formatting flags mirrored from the text format store.
 const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
 
 // Local UI state for add-text toggle and color picker.
-const addText = ref(false)
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
@@ -98,11 +96,8 @@ function selectColor(c: string) {
 
 // Add a new text zone to the selected block.
 function onAddText() {
-  addText.value = !addText.value
-  if (addText.value) {
-    blocksStore.addTextZone()
-    addText.value = false
-  }
+  shapeStore.setActiveShape('text')
+  shapeStore.requestAddShape()
 }
 
 // Close color menu when user clicks outside picker root.

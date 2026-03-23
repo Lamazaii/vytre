@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Editor } from '@tiptap/core'
+import type { fabric } from 'fabric'
 
 // Text formatting store: manages bold, italic, underline, font size, and color
-// Supports both Tiptap editor and contentEditable elements
+// Supports Tiptap editor, contentEditable elements, and Fabric.Textbox (with multi-style)
 export const useTextFormatStore = defineStore('textFormat', () => {
   // Formatting state
   const bold = ref(false)
@@ -11,19 +12,82 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const underline = ref(false)
   const fontSize = ref('Medium')
   const hasTextFocus = ref(false)
+  const color = ref('#000000')
 
   // Editor references
   const activeEl = ref<HTMLElement | null>(null)      // Active contentEditable element
   const lastRange = ref<Range | null>(null)           // Saved text selection
   const tiptapEditor = ref<Editor | null>(null)       // Tiptap editor instance
+  const fabricTextbox = ref<fabric.Textbox | null>(null) // Active Fabric textbox object
+  const fabricCanvas = ref<fabric.Canvas | null>(null) // Canvas reference for rendering
 
   function setTiptapEditor(editor: Editor | null) {
     tiptapEditor.value = editor
+    fabricTextbox.value = null
+    fabricCanvas.value = null
     hasTextFocus.value = editor !== null
   }
 
   function setActiveEl(el: HTMLElement | null) {
     activeEl.value = el
+  }
+
+  // Set active Fabric textbox and read its current formatting state
+  function setFabricTextbox(textbox: fabric.Textbox | null, canvas: fabric.Canvas | null) {
+    fabricTextbox.value = textbox
+    fabricCanvas.value = canvas
+    tiptapEditor.value = null
+    hasTextFocus.value = textbox !== null
+    if (textbox) {
+      updateFabricStatesFromObject(textbox)
+    }
+  }
+
+  // Read formatting state from Fabric textbox object
+  function updateFabricStatesFromObject(textbox: fabric.Textbox) {
+    if (!textbox) return
+    
+    // Get state from first character or selected text
+    const startIndex = textbox.selectionStart ?? 0
+    const endIndex = textbox.selectionEnd ?? startIndex
+    
+    // For bold/italic/underline, check if any selected character has the property
+    bold.value = textbox.fontWeight === 'bold' || textbox.fontWeight === 700
+    italic.value = textbox.fontStyle === 'italic'
+    underline.value = textbox.underline === true
+    color.value = (textbox.fill as string) || '#000000'
+    
+    // Estimate font size category
+    const size = textbox.fontSize || 16
+    if (size <= 13) {
+      fontSize.value = 'Small'
+    } else if (size >= 19) {
+      fontSize.value = 'Large'
+    } else {
+      fontSize.value = 'Medium'
+    }
+  }
+
+  // Apply formatting with multi-style support (different styles per character)
+  function applyFabricFormatting(styleObj: Record<string, any>) {
+    if (!fabricTextbox.value) return
+    
+    const textbox = fabricTextbox.value
+    
+    // Check if textbox is in editing mode with selected text
+    if (textbox.isEditing && textbox.selectionStart !== textbox.selectionEnd) {
+      // Apply only to selected text using multi-style
+      textbox.setSelectionStyles(styleObj)
+    } else {
+      // Apply to entire textbox
+      textbox.set(styleObj)
+    }
+    
+    // Render canvas and update state
+    if (fabricCanvas.value) {
+      fabricCanvas.value.renderAll()
+    }
+    updateFabricStatesFromObject(textbox)
   }
 
   // Save current text selection
@@ -52,6 +116,11 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   // Update formatting indicators based on current selection
   function updateStatesFromCommand() {
     try {
+      if (fabricTextbox.value) {
+        updateFabricStatesFromObject(fabricTextbox.value)
+        return
+      }
+
       if (tiptapEditor.value) {
         // Tiptap: check active marks
         bold.value = tiptapEditor.value.isActive('bold')
@@ -106,6 +175,12 @@ export const useTextFormatStore = defineStore('textFormat', () => {
 
   // Toggle bold
   const applyBold = () => {
+    if (fabricTextbox.value) {
+      const isBold = fabricTextbox.value.fontWeight === 'bold' || fabricTextbox.value.fontWeight === 700
+      applyFabricFormatting({ fontWeight: isBold ? 'normal' : 'bold' })
+      return
+    }
+
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleBold().run()
       updateStatesFromCommand()
@@ -116,6 +191,12 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   
   // Toggle italic
   const applyItalic = () => {
+    if (fabricTextbox.value) {
+      const isItalic = fabricTextbox.value.fontStyle === 'italic'
+      applyFabricFormatting({ fontStyle: isItalic ? 'normal' : 'italic' })
+      return
+    }
+
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleItalic().run()
       updateStatesFromCommand()
@@ -126,6 +207,12 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   
   // Toggle underline
   const applyUnderline = () => {
+    if (fabricTextbox.value) {
+      const isUnderlined = fabricTextbox.value.underline === true
+      applyFabricFormatting({ underline: !isUnderlined })
+      return
+    }
+
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().toggleUnderline().run()
       updateStatesFromCommand()
@@ -136,6 +223,11 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   
   // Apply text color
   const applyColor = (value: string) => {
+    if (fabricTextbox.value) {
+      applyFabricFormatting({ fill: value })
+      return
+    }
+
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().setColor(value).run()
     } else {
@@ -145,6 +237,17 @@ export const useTextFormatStore = defineStore('textFormat', () => {
 
   // Apply font size: Small (12px), Medium (16px), Large (20px)
   const applyFontSize = (sizeLabel: string) => {
+    if (fabricTextbox.value) {
+      const sizeMap: Record<string, number> = {
+        'Small': 12,
+        'Medium': 16,
+        'Large': 20
+      }
+      const size = sizeMap[sizeLabel] || 16
+      applyFabricFormatting({ fontSize: size })
+      return
+    }
+
     if (tiptapEditor.value) {
       const sizeMap: Record<string, string> = {
         'Small': '12px',
@@ -183,12 +286,18 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     underline,
     fontSize,
     hasTextFocus,
+    color,
 
     activeEl,
     lastRange,
     tiptapEditor,
+    fabricTextbox,
+    fabricCanvas,
     setTiptapEditor,
     setActiveEl,
+    setFabricTextbox,
+    updateFabricStatesFromObject,
+    applyFabricFormatting,
     saveSelection,
     restoreSelection,
     updateStatesFromCommand,

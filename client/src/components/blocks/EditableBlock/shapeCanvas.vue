@@ -139,6 +139,38 @@ function addTriangle() {
   createShape('triangle')
 }
 
+// Insert an editable text object centered in the drawing area.
+function addTextZone() {
+  if (!canvas) return
+
+  const canvasWidth = canvas.width || props.width
+  const canvasHeight = canvas.height || props.height
+  const text = new fabric.Textbox('Nouvelle zone de texte', {
+    left: 0,
+    top: 0,
+    width: Math.min(280, Math.max(180, canvasWidth - 40)),
+    fontSize: 24,
+    fill: '#111827',
+    fontFamily: 'Arial',
+    ...objectDefaults,
+  })
+
+  const textWidth = (text.width || 0) * (text.scaleX || 1)
+  const textHeight = (text.height || 0) * (text.scaleY || 1)
+  text.set({
+    left: Math.max(0, (canvasWidth - textWidth) / 2),
+    top: Math.max(0, (canvasHeight - textHeight) / 2),
+  })
+
+  canvas.add(text)
+  handleObjectMoving(text, canvasWidth, canvasHeight)
+  text.setCoords()
+  canvas.setActiveObject(text)
+  text.enterEditing()
+  text.selectAll()
+  canvas.renderAll()
+}
+
 // Insert image object and fit it inside the canvas bounds.
 function addImage(imageSrc: string) {
   if (!canvas) return
@@ -286,6 +318,10 @@ function handleSelection(e: any) {
       imageCropStore.selectImage(imageId, props.blockIndex)
     }
     textFormatStore.clearTextFocus()
+  } else if (selected && selected.type === 'textbox') {
+    // Activate text formatting toolbar for Fabric textbox with multi-style support
+    textFormatStore.setFabricTextbox(selected as fabric.Textbox, canvas)
+    imageCropStore.clearSelection()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
     // Keep toolbar controls in sync with selected shape style.
     const fill = selected.fill || '#000000'
@@ -296,6 +332,7 @@ function handleSelection(e: any) {
     textFormatStore.clearTextFocus()
   } else {
     imageCropStore.clearSelection()
+    textFormatStore.clearTextFocus()
   }
 }
 
@@ -303,6 +340,7 @@ function handleSelection(e: any) {
 function handleSelectionCleared() {
   imageCropStore.clearSelection()
   shapeStore.clearShapeSelection()
+  textFormatStore.setFabricTextbox(null, null)
 }
 
 // Initialize Fabric canvas, events, and optional JSON restore.
@@ -449,6 +487,7 @@ defineExpose({
   addSquare,
   addCircle,
   addTriangle,
+  addTextZone,
   addImage,
   getSelectedImage,
   getSelectedShape,
