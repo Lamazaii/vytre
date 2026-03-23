@@ -89,6 +89,6 @@ describe('ReaderViewBlock.vue', () => {
       },
     })
     const repValue = wrapper.find('.repetitionValue')
-    expect(repValue.text()).toBe('3')
+    expect(repValue.text()).toBe('x3')
   })
 })

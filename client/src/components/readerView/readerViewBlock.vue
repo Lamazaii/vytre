@@ -14,7 +14,12 @@
                 <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
                 </div>
               </div>
-              <ReaderViewCanvas v-if="hasCanvasObjects" :canvas-data="canvasData" />
+              <ReaderViewCanvas 
+                v-if="hasCanvasObjects" 
+                :canvas-data="canvasData" 
+                class="clickable-canvas"
+                @click="openCanvasZoom"
+              />
               <div v-if="images && images.length > 0" class="imagesContainer">
                 <img 
                   v-for="(image, index) in images" 
@@ -38,6 +43,12 @@
     :defaultWidth="500"
     @close="closeImageModal" 
   />
+
+  <CanvasZoomPopUp 
+    :isOpen="isCanvasModalOpen" 
+    :canvasData="canvasData"
+    @close="closeCanvasModal" 
+  />
 </template>
 
 
@@ -46,6 +57,7 @@ import { ref, computed } from 'vue';
 import type { Image } from '../../types/Image';
 import ImageZoom from '../popup/ImageZoomPopUp.vue';
 import ReaderViewCanvas from './readerViewCanvas.vue';
+import CanvasZoomPopUp from '../popup/CanvasZoomPopUp.vue';
 
 interface Props {
   numero: number;
@@ -63,6 +75,17 @@ const props = defineProps<Props>();
 const isModalOpen = ref(false);
 const selectedImageSrc = ref('');
 const selectedImageAlt = ref('');
+
+// Canvas zoom modal state.
+const isCanvasModalOpen = ref(false);
+
+const openCanvasZoom = () => {
+  isCanvasModalOpen.value = true;
+};
+
+const closeCanvasModal = () => {
+  isCanvasModalOpen.value = false;
+};
 
 // Detect whether canvas JSON contains at least one drawable object.
 const hasCanvasObjects = computed(() => {
@@ -82,7 +105,7 @@ const openImageZoom = (src: string, alt: string) => {
   isModalOpen.value = true;
 };
 
-// Close fullscreen image preview.
+//
 const closeImageModal = () => {
   isModalOpen.value = false;
 };
@@ -172,7 +195,14 @@ const closeImageModal = () => {
   text-align: left;
 }
 
+.clickable-canvas {
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
 
+.clickable-canvas:hover {
+  transform: scale(1.02);
+}
 
 .imagesContainer {
   display: flex;
