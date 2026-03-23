@@ -10,7 +10,7 @@ const blockSchema = z.object({
     nbOfRepeats: z.union([z.string(), z.number()])
         .transform((val) => {
             const str = String(val).replace(',', '.');
-            const num = parseFloat(str);
+            const num = Number.parseFloat(str);
             if (Number.isNaN(num)) return 1;
             return Math.round(num * 1000) / 1000;
         })
