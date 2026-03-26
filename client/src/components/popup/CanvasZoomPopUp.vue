@@ -160,13 +160,11 @@ onBeforeUnmount(() => {
   position: relative;
   background-color: #ffffff;
   border-radius: 8px;
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 90%;
+  max-height: 90%;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  /* Espace pour le bouton en haut à droite */
-  padding-top: 50px;
 }
 
 .canvas-scroll-area {
