@@ -26,18 +26,21 @@
 <script setup lang="ts">
 import visibilityIcon from "../../assets/optionBarImage/visibility.svg";
 import personEditIcon from "../../assets/optionBarImage/personEdit.svg";
-import IconToggleGroup from "../optionBar/iconToggleGroup.vue";
+import IconToggleGroup from "../optionBar/shared/iconToggleGroup.vue";
 import { usePopupStore } from '../../stores/popupStore'
 
+// Popup store used to leave reader mode.
 const popupStore = usePopupStore()
 
 
+// Switch back to edit mode when left toggle is selected.
 function handleToggleChange(value: { left: boolean; right: boolean }) {
   if (value.left) {
     popupStore.closeReader()
   }
 }
 
+// Explicit close action from the X button.
 function handleClose() {
   popupStore.closeReader()
 }

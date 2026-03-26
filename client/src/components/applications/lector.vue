@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useBlocksStore } from '../../stores/blockStores'
 import ReaderViewBlock from '../readerView/readerViewBlock.vue'
-import TitleBar from '../optionBar/titleBar.vue'
+import TitleBar from '../optionBar/shared/titleBar.vue'
 
 const blocksStore = useBlocksStore()
 
@@ -22,7 +22,6 @@ function handleHome() {
       <div class="blockHeader">
         <div class="headerNumber">N°</div>
         <div class="headerDescription">DÉTAIL DE L'OPÉRATION</div>
-        <div class="headerRep">RÉP.</div>
       </div>
       <ReaderViewBlock
         v-for="block in blocksStore.blocks"
@@ -32,6 +31,7 @@ function handleHome() {
         :modelValue="block.nbOfRepeats"
         :images="block.images"
         :textZones="block.textZones"
+        :canvasData="block.canvasData"
       />
     </div>
   </div>

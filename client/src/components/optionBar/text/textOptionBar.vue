@@ -2,17 +2,14 @@
   <div class="textOptionBar">
     <!-- Formatting buttons: bold, italic, underline -->
     <div class="formatGroup">
-      <!-- Bold (Ctrl+B) -->
       <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
       </button>
 
-      <!-- Italic (Ctrl+I) -->
       <button class="formatButton" :class="{ active: italic }" @mousedown.prevent @click="applyItalic" title="Italic">
         <img :src="italic ? italicIconActive : italicIcon" alt="Italic" />
       </button>
 
-      <!-- Underline (Ctrl+U) -->
       <button class="formatButton" :class="{ active: underline }" @mousedown.prevent @click="applyUnderline" title="Underline">
         <img :src="underline ? underlineIconActive : underlineIcon" alt="Underline" />
       </button>
@@ -52,48 +49,54 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 // SVG icons for formatting buttons
-import boldIcon from "../../assets/textOptionBar/bold.svg"
-import boldIconActive from "../../assets/textOptionBar/boldActive.svg"
-import italicIcon from "../../assets/textOptionBar/italic.svg"
-import italicIconActive from "../../assets/textOptionBar/italicActive.svg"
-import underlineIcon from "../../assets/textOptionBar/underline.svg"
-import underlineIconActive from "../../assets/textOptionBar/underlineActive.svg"
-import addTextIcon from "../../assets/textOptionBar/addText.svg"
-import addTextIconActive from "../../assets/textOptionBar/addTextActive.svg"
+import boldIcon from "../../../assets/textOptionBar/bold.svg"
+import boldIconActive from "../../../assets/textOptionBar/boldActive.svg"
+import italicIcon from "../../../assets/textOptionBar/italic.svg"
+import italicIconActive from "../../../assets/textOptionBar/italicActive.svg"
+import underlineIcon from "../../../assets/textOptionBar/underline.svg"
+import underlineIconActive from "../../../assets/textOptionBar/underlineActive.svg"
+import addTextIcon from "../../../assets/textOptionBar/addText.svg"
+import addTextIconActive from "../../../assets/textOptionBar/addTextActive.svg"
 
 import { storeToRefs } from 'pinia'
-import { useTextFormatStore } from '../../stores/textFormatStore'
-import { useBlocksStore } from '../../stores/blockStores'
+import { useTextFormatStore } from '../../../stores/textFormatStore'
+import { useBlocksStore } from '../../../stores/blockStores'
 
+// Stores for text formatting commands and block-level text zone actions.
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 
-// Formatting state: bold, italic, underline, fontSize
+// Reactive formatting flags mirrored from the text format store.
 const { bold, italic, underline, fontSize } = storeToRefs(textFormatStore)
 const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
 
+// Local UI state for add-text toggle and color picker.
 const addText = ref(false)
 const color = ref('#000000')
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
 
-// Preset colors
+// Preset color palette displayed in picker.
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
 
+// Apply selected font size through text formatting store.
 function handleSizeChange() {
   applyFontSize(fontSize.value)
 }
 
+// Toggle color menu visibility.
 function toggleColorPicker() {
   showColor.value = !showColor.value
 }
 
+// Apply selected text color and close menu.
 function selectColor(c: string) {
   color.value = c
   applyColor(c)
   showColor.value = false
 }
 
+// Add a new text zone to the selected block.
 function onAddText() {
   addText.value = !addText.value
   if (addText.value) {
@@ -102,6 +105,7 @@ function onAddText() {
   }
 }
 
+// Close color menu when user clicks outside picker root.
 function onDocClick(e: MouseEvent) {
   const root = colorRoot.value
   if (!root) return
@@ -111,6 +115,7 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
+// Register/unregister document-level listeners.
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   document.addEventListener('selectionchange', updateStatesFromCommand)
@@ -245,5 +250,10 @@ onBeforeUnmount(() => {
   border-radius: 3px;
   border: 1px solid #ddd;
   cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.swatch:hover {
+  transform: scale(1.15);
 }
 </style>

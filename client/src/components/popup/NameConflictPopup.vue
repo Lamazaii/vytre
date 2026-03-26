@@ -39,13 +39,17 @@ import { storeToRefs } from 'pinia'
 import { useNameConflictPopupStore } from '../../stores/nameConflictPopupStore'
 import warningIcon from '../../assets/savePopUp/floppy-disk.svg'
 
+// Store handling name conflict workflow during save.
 const nameConflictStore = useNameConflictPopupStore()
+// Reactive popup state and conflicting document name.
 const { isOpen, documentName } = storeToRefs(nameConflictStore)
 
+// Validate using existing name/document.
 function handleRename() {
     nameConflictStore.handleValidate()
 }
 
+// Return to rename flow.
 function handleCancel() {
     nameConflictStore.handleRename()
 }

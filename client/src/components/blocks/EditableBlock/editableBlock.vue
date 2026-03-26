@@ -34,35 +34,36 @@
 
     <div class="dottedSeparator"></div>
 
-    <div class="imageSection">
-      <div class="imagesContainer" v-if="images.length > 0">
-        <ImageItem 
-          v-for="(image, index) in images" 
-          :key="image.id || index"
-          :image-path="image.imagePath"
-          :is-selected="imageCropStore.selectedImageId === image.id"
-          @select="toggleSelectImage(image.id)"
-          @remove="removeImage(index)"
-        />
-      </div>
-  
-      <ImageUploader @upload="handleNewImage" />
+    <div class="shapeCanvasSection" v-show="hasShapes">
+      <ShapeCanvas 
+        ref="shapeCanvasRef"
+        :block-index="props.blockIndex"
+        :canvas-data="canvasData"
+        :active="props.active"
+        @update:canvasData="handleCanvasUpdate"
+        @update:hasObjects="handleHasObjectsUpdate"
+        @modified="(v) => emit('modified', v)"
+      />
+    </div>
+
+    <div class="imageUploaderSection" v-show="!hasShapes">
+      <ImageUploader ref="imageUploaderRef" @upload="handleNewImage" />
     </div>
   </div>
 </template>
 
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
+import { useShapeStore } from '../../../stores/shapeStore'
 import { useImageCropStore } from '../../../stores/imageCropStore'
-import { useDeletePopupStore } from '../../../stores/deletePopupStore'
 
 import TextZoneItem from './textZoneItem.vue'
-import ImageItem from './imageItem.vue'
 import ImageUploader from './imageUploader.vue'
 import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
+import ShapeCanvas from './shapeCanvas.vue'
 
 import trash from '../../../assets/blockImage/trash.svg'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
@@ -80,50 +81,64 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 'update:images']);
 
+// Local UI state for delete affordance and content mode.
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
-const images = ref<Image[]>(props.images || [])
 const welcomeText = ref(props.description || '')
+const hasShapes = ref(false)
 
+// Shared stores used to sync text, canvas, and image crop state.
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
+const shapeStore = useShapeStore()
 const imageCropStore = useImageCropStore()
-const deletePopupStore = useDeletePopupStore()
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
+const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
+const imageUploaderRef = ref<InstanceType<typeof ImageUploader> | null>(null)
 
+// Read initial canvas JSON for current block.
+function getInitialCanvasData(): string {
+  if (props.blockIndex === undefined) return ''
+  return blocksStore.blocks[props.blockIndex]?.canvasData || ''
+}
+
+const canvasData = ref(getInitialCanvasData())
+
+onMounted(() => {
+  if (canvasData.value) {
+    try {
+      const json = JSON.parse(canvasData.value)
+      if (json.objects && Array.isArray(json.objects) && json.objects.length > 0) {
+        hasShapes.value = true
+      }
+    } catch (e) {
+      console.error('Erreur lors de l\'analyse du canvasData JSON :', e)
+    }
+  }
+})
+
+// Computed list of extra text zones linked to the active block.
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
 
-const toggleSelectImage = (id: string) => {
-  if (imageCropStore.selectedImageId === id) {
-    imageCropStore.clearSelection()
-  } else {
-    imageCropStore.selectImage(id, props.blockIndex ?? 0)
+// Ensure the canvas section is visible before injecting a new image.
+const handleNewImage = async (imageData: string) => {
+  if (!shapeCanvasRef.value) return
+  
+  if (!hasShapes.value) {
+    hasShapes.value = true
+    await nextTick()
   }
-}
-
-const removeImage = (index: number) => {
-  deletePopupStore.show('image', () => {
-    images.value.splice(index, 1)
-    emit('update:images', [...images.value])
-  })
-}
-
-const handleNewImage = (imageData: string) => {
-  const newImage: Image = {
-    id: Date.now().toString(),
-    imagePath: imageData,
-    blockId: props.blockIndex ?? 0,
-  }
-  images.value = [...images.value, newImage]
-  emit('update:images', images.value)
+  
+  shapeCanvasRef.value.addImage(imageData)
   emit('modified', true)
 }
 
+// Set text focus context to the main editor area.
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {
@@ -131,12 +146,16 @@ function onFocusEditable() {
     if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
+  imageCropStore.clearSelection()
+  shapeStore.clearShapeSelection()
 }
 
+// Keep refs for dynamically rendered text zone editors.
 function setTextZoneEditorRef(el: any, index: number) {
   if (el) textZoneEditorRefs.value[index] = el
 }
 
+// Set text focus context to one of the extra text zones.
 function onTextZoneFocus(index: number) {
   emit('select')
   const editorRef = textZoneEditorRefs.value[index]
@@ -145,21 +164,39 @@ function onTextZoneFocus(index: number) {
     if (editor) textFormatStore.setTiptapEditor(editor as any)
   }
   textFormatStore.saveSelection()
+  imageCropStore.clearSelection()
+  shapeStore.clearShapeSelection()
 }
 
+// Refresh text formatting state when selection changes.
 function onSelectionActivity() {
   textFormatStore.saveSelection()
   textFormatStore.updateStatesFromCommand()
 }
 
+// Persist text zone content updates to store.
 function onTextZoneUpdate(index: number, html: string) {
   if (props.blockIndex === undefined) return
   blocksStore.updateTextZone(props.blockIndex, index, html)
 }
 
+// Remove a text zone from the current block.
 function onRemoveTextZone(index: number) {
   if (props.blockIndex === undefined) return
   blocksStore.removeTextZone(props.blockIndex, index)
+}
+
+// Persist canvas JSON snapshot after modifications.
+function handleCanvasUpdate(data: string) {
+  if (props.blockIndex !== undefined) {
+    blocksStore.updateBlockCanvas(props.blockIndex, data)
+  }
+  canvasData.value = data
+}
+
+// Toggle between upload placeholder and canvas section.
+function handleHasObjectsUpdate(value: boolean) {
+  hasShapes.value = value
 }
 
 function onDelete() { emit('delete') }
@@ -168,10 +205,27 @@ watch(() => props.description, (newDesc) => {
   if (newDesc !== welcomeText.value) welcomeText.value = newDesc || ''
 })
 
-watch(() => props.images, (newVal) => {
-  if (newVal) images.value = newVal
-}, { deep: true })
+// Create selected shape type inside current active block.
+watch(() => shapeStore.addShapeRequest, async () => {
+  if (!shapeCanvasRef.value || !props.active) return
+  
+  const shape = shapeStore.activeShape
+  
+  if (!hasShapes.value) {
+    hasShapes.value = true
+    await nextTick()
+  }
+  
+  if (shape === 'square') {
+    shapeCanvasRef.value.addSquare()
+  } else if (shape === 'circle') {
+    shapeCanvasRef.value.addCircle()
+  } else if (shape === 'triangle') {
+    shapeCanvasRef.value.addTriangle()
+  }
+})
 
+// Sync main block description while user types.
 watch(welcomeText, (newValue) => {
   if (props.blockIndex !== undefined) {
     blocksStore.updateBlockDescription(props.blockIndex, newValue)
@@ -179,15 +233,64 @@ watch(welcomeText, (newValue) => {
   emit('update:description', newValue)
 })
 
+// Trigger image file dialog from toolbar command.
+watch(() => shapeStore.addImageRequest, () => {
+  if (!props.active || !imageUploaderRef.value) return
+  
+  const uploaderEl = imageUploaderRef.value as any
+  if (uploaderEl && uploaderEl.triggerFileInput) {
+    uploaderEl.triggerFileInput()
+  }
+})
+
+// Layer controls for selected image objects.
+watch(() => shapeStore.bringImageForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedImageForward()
+  emit('modified', true)
+})
+
+watch(() => shapeStore.sendImageToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedImageToBack()
+  emit('modified', true)
+})
+
+// Layer controls for selected shape objects.
+watch(() => shapeStore.bringShapeForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedShapeForward()
+  emit('modified', true)
+})
+
+watch(() => shapeStore.sendShapeToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedShapeToBack()
+  emit('modified', true)
+})
+
+// Open cropper with currently selected image source.
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
-  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex) {
-    const imageToEdit = images.value.find(img => img.id === imageCropStore.selectedImageId)
-    if (imageToEdit) {
-      imageCropStore.openCropper(imageToEdit.imagePath)
+  if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
+    const selectedImage = shapeCanvasRef.value.getSelectedImage()
+    if (selectedImage) {
+      const imageSrc = (selectedImage as any).originalSrc || selectedImage.getSrc()
+      imageCropStore.openCropper(imageSrc)
     }
   }
 })
 
+// Replace selected image with cropped result.
+watch(() => imageCropStore.croppedImageData, (croppedData) => {
+  if (croppedData && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {
+    shapeCanvasRef.value.replaceSelectedImage(croppedData)
+    emit('modified', true)
+    imageCropStore.clearCroppedImage()
+  }
+})
+
+
+// Initialize editor binding and migrate legacy image array to canvas if needed.
 onMounted(() => {
   setTimeout(() => {
     if (welcomeEditorRef.value) {
@@ -195,6 +298,22 @@ onMounted(() => {
       if (editor) textFormatStore.setTiptapEditor(editor as any)
     }
   }, 100)
+
+  if (props.images && props.images.length > 0 && shapeCanvasRef.value) {
+    setTimeout(async () => {
+      const imagesToMigrate = props.images
+      if (!shapeCanvasRef.value || !imagesToMigrate) return
+      
+      hasShapes.value = true
+      await nextTick()
+      
+      for (const image of imagesToMigrate) {
+        shapeCanvasRef.value.addImage(image.imagePath)
+      }
+      
+      emit('update:images', [])
+    }, 200)
+  }
 })
 </script>
 
@@ -274,19 +393,19 @@ onMounted(() => {
     width: 900px; 
 }
 
-.imageSection { 
+.shapeCanvasSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 700px;
+  margin-bottom: 10px;
+}
+
+.imageUploaderSection {
   display: flex;
   flex-direction: column; 
   align-items: center; 
-  gap: 12px; 
-}
-
-.imagesContainer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  width : 900px;
+  padding-top: 5px;
+  width: 900px;
 }
 </style>

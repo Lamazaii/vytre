@@ -1,6 +1,10 @@
 <template>
+  <!-- Crop modal overlay - only displays if isOpen and imageSrc are defined -->
   <div v-if="isOpen && imageSrc" class="cropper-modal-overlay">
+    <!-- Main cropper card - @click.stop prevents closing on click -->
     <div class="cropper-card" @click.stop>
+      
+      <!-- Header with title and close button -->
       <div class="cropper-header">
         <div class="cropper-title-group">
           <img :src="cropIconActive" alt="Rogner" class="cropper-title-icon" />
@@ -8,8 +12,17 @@
         </div>
         <button class="cropper-close-button" @click="handleClose" aria-label="Fermer">✕</button>
       </div>
+
+      <!-- Modal body containing the cropping component -->
       <div class="cropper-body">
         <div class="cropper-engine-wrapper">
+          <!-- 
+            vue-advanced-cropper component 
+            - ref: reference to access cropping result
+            - src: source image to crop
+            - stencil-props: selection area configuration (aspectRatio: null = free ratio)
+            - min/max width/height: size constraints for the selection area
+          -->
           <cropper
             ref="cropperRef"
             class="cropper-engine"
@@ -22,7 +35,11 @@
           />
         </div>
       </div>
+
+      <!-- Visual separator between body and footer -->
       <div class="cropper-separator"></div>
+
+      <!-- Footer with action buttons -->
       <footer class="cropper-footer">
         <button class="cropper-ghost-button" @click="handleClose">Annuler</button>
         <button class="cropper-primary-button" @click="handleConfirm">CONFIRMER</button>
@@ -38,27 +55,54 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import cropIconActive from '../../assets/imageOptionBar/cropActive.svg'
 
+// Pinia store to manage crop popup state.
 const imageCropStore = useImageCropStore()
-const cropperRef = ref<any>(null)
 
+// Reactive modal visibility from the store.
 const isOpen = computed(() => imageCropStore.isCropperOpen)
+
+// Current image source to crop (URL or base64).
 const imageSrc = computed(() => {
   return imageCropStore.imageToCropSrc || null
 })
 
+// Events emitted to parent when crop is confirmed or popup closed.
 const emit = defineEmits(['crop', 'close'])
 
+// Cropper instance ref used to read crop result.
+const cropperRef = ref<any>(null)
+  
+/**
+ * Closes the crop popup
+ * - Updates state in the store
+ * - Emits 'close' event to parent
+ */
 function handleClose() {
   imageCropStore.isCropperOpen = false
   emit('close')
 }
 
+/**
+ * Confirms the crop and generates the cropped image
+ * 1. Retrieves the cropper result via getResult()
+ * 2. Extracts the canvas containing the cropped image
+ * 3. Converts the canvas to base64 via toDataURL() with PNG format to preserve transparency
+ * 4. Emits the cropped image to the parent component
+ * 5. Closes the popup
+ */
 function handleConfirm() {
   if (cropperRef.value) {
+    // getResult() returns an object with canvas and crop coordinates
     const { canvas } = cropperRef.value.getResult()
+    
     if (canvas) {
-      const croppedImage = canvas.toDataURL()
+      // Converts canvas to base64 PNG format (preserves transparency)
+      const croppedImage = canvas.toDataURL('image/png')
+      
+      // Sends cropped image to parent component (typically EditableBlock)
       emit('crop', croppedImage)
+      
+      // Closes popup after confirmation
       handleClose()
     }
   }
@@ -145,7 +189,56 @@ function handleConfirm() {
 .cropper-engine {
   height: 400px;
   width: 100%;
-  background: #eee;
+  /* Damier de transparence pour visualiser les zones transparentes */
+  background-image: 
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-color: #ffffff;
+}
+
+/* Force le fond blanc pour le cropper (override les styles de vue-advanced-cropper) */
+.cropper-engine :deep(.vue-advanced-cropper__background),
+.cropper-engine :deep(.vue-advanced-cropper__foreground) {
+  background: #ffffff !important;
+}
+
+/* Applique le motif damier au background du cropper */
+.cropper-engine :deep(.vue-advanced-cropper__background) {
+  background-image: 
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+  background-color: #ffffff !important;
+}
+
+/* Personnalisation du sélecteur (zone de crop) */
+.cropper-engine :deep(.vue-rectangle-stencil__preview) {
+  border: 2px solid #dc2626 !important;
+}
+
+/* Coins du sélecteur (handlers) */
+.cropper-engine :deep(.vue-simple-handler) {
+  background: #dc2626 !important;
+  border: 2px solid #ffffff !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* Lignes de guides */
+.cropper-engine :deep(.vue-simple-line) {
+  border-color: #dc2626 !important;
+}
+
+/* Hover sur les handlers */
+.cropper-engine :deep(.vue-simple-handler:hover) {
+  background: #b91c1c !important;
 }
 
 .cropper-separator {

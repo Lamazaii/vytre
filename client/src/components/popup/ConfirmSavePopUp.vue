@@ -22,9 +22,13 @@
 import { computed } from 'vue'
 import { useConfirmSavePopupStore } from '../../stores/confirmSavePopupStore'
 import tickicon from '../../assets/savePopUp/tickIcon.svg'
+
+// Central store for the success confirmation popup.
 const store = useConfirmSavePopupStore()
+// Reactive bindings for popup visibility and message.
 const isOpen = computed(() => store.isOpen)
 const message = computed(() => store.message)
+// Close helper forwarding action to the store.
 const close = () => store.close()
 </script>
 

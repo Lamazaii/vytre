@@ -8,6 +8,7 @@ import { useNameConflictPopupStore } from './nameConflictPopupStore'
 
 import type { Image } from '../types/Image'
 import type { Document } from '../types/Document'
+import type { DocumentVersion } from '../types/DocumentVersion'
 import { generateBlocksFromClipboardTable } from '../types/generateBlocks'
 import { documentService } from '../services/documentService'
 import { documentSchema } from '../validators/documentValidator'
@@ -22,6 +23,8 @@ function isContentEmpty(html: string): boolean {
   const textContent = html.replace(/<[^>]*>/g, '').trim()
   return textContent.length === 0
 }
+
+
 
 export const useBlocksStore = defineStore('blocks', () => {
   const errorPopup = useErrorPopupStore()
@@ -49,9 +52,11 @@ export const useBlocksStore = defineStore('blocks', () => {
     version: number;
     createdAt?: Date;
     updatedAt?: Date;
+    state?: string;
   }>({
     title: 'Titre du document',
-    version: 1
+    version: 1,
+    state: 'En édition'
   })
 
   const allDocuments = ref<Document[]>([])
@@ -114,9 +119,10 @@ export const useBlocksStore = defineStore('blocks', () => {
       currentDocument.value = {
         id: savedDocument.id,
         title: savedDocument.title,
-        version: savedDocument.version + 1, // bump local version for next edit
+        version: savedDocument.version,
         createdAt: savedDocument.createdAt,
-        updatedAt: savedDocument.updatedAt
+        updatedAt: savedDocument.updatedAt,
+        state: savedDocument.state ?? 'En édition'
       };
 
       confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
@@ -137,20 +143,20 @@ export const useBlocksStore = defineStore('blocks', () => {
         title: document.title,
         version: document.version,
         createdAt: document.createdAt,
-        updatedAt: document.updatedAt
-      };
-
-      documentTitle.value = document.title;
-
+        updatedAt: document.updatedAt,
+        state: document.state ?? 'En édition'
+      }
+      
+      documentTitle.value = document.title
       blocks.value = document.blocks.map((block: any) => ({
         ...block,
-        modified: true, // mark as cleanly loaded
-        textZones: typeof block.textZones === 'string' 
-          ? JSON.parse(block.textZones || '[]') // server may store as JSON string
-          : (block.textZones || []) // normalize to array
-      }));
-
-      selectedIndex.value = null; // clear selection on load
+        canvasData: block.canvasData ?? '',
+        modified: true,
+        textZones: typeof block.textZones === 'string'
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
+      }))
+      selectedIndex.value = null
       
       confirmSavePopup.show("Document chargé avec succès !", "Ouverture");
     } catch (error) {
@@ -160,10 +166,49 @@ export const useBlocksStore = defineStore('blocks', () => {
     }
   }
 
+  async function loadDocumentVersion(id: number, version: number) {
+    try {
+      const documentVersion: DocumentVersion = await documentService.getVersion(id, version)
+
+      if (!documentVersion.snapshot) {
+        errorPopup.show('Version de document invalide.')
+        return
+      }
+
+      currentDocument.value = {
+        id,
+        title: documentVersion.snapshot.title,
+        version: documentVersion.version,
+        createdAt: typeof documentVersion.createdAt === 'string'
+          ? new Date(documentVersion.createdAt)
+          : documentVersion.createdAt,
+        state: documentVersion.snapshot.state ?? documentVersion.state ?? 'En édition'
+      }
+
+      documentTitle.value = documentVersion.snapshot.title
+      blocks.value = documentVersion.snapshot.blocks.map((block: any) => ({
+        ...block,
+        canvasData: block.canvasData ?? '',
+        modified: true,
+        textZones: typeof block.textZones === 'string'
+          ? JSON.parse(block.textZones || '[]')
+          : (block.textZones || [])
+      }))
+      selectedIndex.value = null
+
+      confirmSavePopup.show("Version chargée avec succès !", "Ouverture")
+    } catch (error) {
+      console.error(error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement de la version.'
+      errorPopup.show(errorMessage)
+    }
+  }
+
   function createNewDocument() {
     currentDocument.value = {
       title: 'Titre du document',
-      version: 1
+      version: 1,
+      state: 'En édition'
     }
     documentTitle.value = 'Titre du document'
     blocks.value = [
@@ -315,6 +360,20 @@ export const useBlocksStore = defineStore('blocks', () => {
   }
 
   /**
+   * Update canvas data in a block
+   * @param blockIndex - Index of the block
+   * @param data - JSON string of canvas data
+   */
+  function updateBlockCanvas(blockIndex: number, data: string) {
+    if (blockIndex < 0 || blockIndex >= blocks.value.length) return
+    const block = blocks.value[blockIndex]
+    if (!block) return
+    
+    block.canvasData = data
+    block.modified = true
+  }
+
+  /**
    * Delete a specific text zone from a block
    * @param blockIndex - Index of the block
    * @param zoneIndex - Index of the text zone to delete
@@ -368,6 +427,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     toggleSelect,
     saveDocument,
     loadDocument,
+    loadDocumentVersion,
     createNewDocument,
     loadAllDocuments,
     setModified,
@@ -378,6 +438,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     confirmDelete,
     updateBlockDescription,
     updateTextZone,
+    updateBlockCanvas,
     removeTextZone,
     isContentEmpty,
     loadFromClipboard,

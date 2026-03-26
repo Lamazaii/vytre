@@ -6,6 +6,7 @@ describe('Document validator', () => {
             const validDoc = {
                 title: 'Test Document',
                 version: 1,
+                state: 'En édition',
                 blocks: [
                     {
                         text: 'Sample text',
@@ -156,25 +157,26 @@ describe('Document validator', () => {
                 }
             });
 
-            it('should default nbOfRepeats to 1 when NaN string provided', () => {
-                const doc = {
-                    title: 'Test',
-                    version: 1,
-                    blocks: [
-                        {
-                            text: 'text',
-                            step: 1,
-                            nbOfRepeats: 'invalid',
-                        },
-                    ],
-                };
+            it('should default nbOfRepeats to 1 when NaN string provided',
+                () => {
+                    const doc = {
+                        title: 'Test',
+                        version: 1,
+                        blocks: [
+                            {
+                                text: 'text',
+                                step: 1,
+                                nbOfRepeats: 'invalid',
+                            },
+                        ],
+                    };
 
-                const result = createDocumentSchema.safeParse(doc);
-                expect(result.success).toBe(true);
-                if (result.success) {
-                    expect(result.data.blocks![0].nbOfRepeats).toBe(1);
-                }
-            });
+                    const result = createDocumentSchema.safeParse(doc);
+                    expect(result.success).toBe(true);
+                    if (result.success) {
+                        expect(result.data.blocks![0].nbOfRepeats).toBe(1);
+                    }
+                });
 
             it('should reject nbOfRepeats less than 0.001', () => {
                 const doc = {
@@ -247,24 +249,25 @@ describe('Document validator', () => {
                 }
             });
 
-            it('should default to empty textZones array when not provided', () => {
-                const doc = {
-                    title: 'Test',
-                    version: 1,
-                    blocks: [
-                        {
-                            text: 'text',
-                            step: 1,
-                        },
-                    ],
-                };
+            it('should default to empty textZones array when not provided',
+                () => {
+                    const doc = {
+                        title: 'Test',
+                        version: 1,
+                        blocks: [
+                            {
+                                text: 'text',
+                                step: 1,
+                            },
+                        ],
+                    };
 
-                const result = createDocumentSchema.safeParse(doc);
-                expect(result.success).toBe(true);
-                if (result.success) {
-                    expect(result.data.blocks![0].textZones).toEqual([]);
-                }
-            });
+                    const result = createDocumentSchema.safeParse(doc);
+                    expect(result.success).toBe(true);
+                    if (result.success) {
+                        expect(result.data.blocks![0].textZones).toEqual([]);
+                    }
+                });
 
             it('should reject image with empty imagePath', () => {
                 const doc = {
@@ -302,7 +305,7 @@ describe('Document validator', () => {
                 const result = createDocumentSchema.safeParse(doc);
                 expect(result.success).toBe(true);
                 if (result.success) {
-                    expect(result.data.blocks![0].images!.length).toBe(2);
+                    expect(result.data.blocks![0].images.length).toBe(2);
                 }
             });
 
@@ -322,9 +325,71 @@ describe('Document validator', () => {
                 const result = createDocumentSchema.safeParse(doc);
                 expect(result.success).toBe(true);
                 if (result.success) {
-                    expect(result.data.blocks![0].textZones!.length).toBe(3);
+                    expect(result.data.blocks![0].textZones.length).toBe(3);
                 }
             });
+
+            it('should accept block with canvasData', () => {
+                const doc = {
+                    title: 'Test',
+                    version: 1,
+                    blocks: [
+                        {
+                            text: 'text',
+                            step: 1,
+                            canvasData: 'data:image/png;base64,abc123==',
+                        },
+                    ],
+                };
+
+                const result = createDocumentSchema.safeParse(doc);
+                expect(result.success).toBe(true);
+                if (result.success) {
+                    expect(result.data.blocks![0].canvasData)
+                        .toBe('data:image/png;base64,abc123==');
+                }
+            });
+
+            it('should allow canvasData to be omitted (optional)', () => {
+                const doc = {
+                    title: 'Test',
+                    version: 1,
+                    blocks: [{ text: 'text', step: 1 }],
+                };
+
+                const result = createDocumentSchema.safeParse(doc);
+                expect(result.success).toBe(true);
+                if (result.success) {
+                    expect(result.data.blocks![0].canvasData).toBeUndefined();
+                }
+            });
+
+            it('should accept a fully populated block including canvasData',
+                () => {
+                    const doc = {
+                        title: 'Full block',
+                        version: 1,
+                        blocks: [
+                            {
+                                text: 'some text',
+                                step: 2,
+                                nbOfRepeats: 3,
+                                images: [{ imagePath: '/img.png' }],
+                                textZones: ['zone A'],
+                                canvasData: 'canvas-json-string',
+                            },
+                        ],
+                    };
+
+                    const result = createDocumentSchema.safeParse(doc);
+                    expect(result.success).toBe(true);
+                    if (result.success) {
+                        const block = result.data.blocks![0];
+                        expect(block.canvasData).toBe('canvas-json-string');
+                        expect(block.images.length).toBe(1);
+                        expect(block.textZones.length).toBe(1);
+                    }
+                });
         });
     });
 });

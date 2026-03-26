@@ -10,6 +10,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const italic = ref(false)
   const underline = ref(false)
   const fontSize = ref('Medium')
+  const hasTextFocus = ref(false)
 
   // Editor references
   const activeEl = ref<HTMLElement | null>(null)      // Active contentEditable element
@@ -18,6 +19,7 @@ export const useTextFormatStore = defineStore('textFormat', () => {
 
   function setTiptapEditor(editor: Editor | null) {
     tiptapEditor.value = editor
+    hasTextFocus.value = editor !== null
   }
 
   function setActiveEl(el: HTMLElement | null) {
@@ -171,11 +173,16 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     fontSize.value = 'Medium'
   }
 
+  function clearTextFocus() {
+    hasTextFocus.value = false
+  }
+
   return {
     bold,
     italic,
     underline,
     fontSize,
+    hasTextFocus,
 
     activeEl,
     lastRange,
@@ -192,5 +199,6 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     applyColor,
     applyFontSize,
     resetFormattingIndicators,
+    clearTextFocus,
   }
 })

@@ -10,7 +10,7 @@ const blockSchema = z.object({
     nbOfRepeats: z.union([z.string(), z.number()])
         .transform((val) => {
             const str = String(val).replace(',', '.');
-            const num = parseFloat(str);
+            const num = Number.parseFloat(str);
             if (Number.isNaN(num)) return 1;
             return Math.round(num * 1000) / 1000;
         })
@@ -21,11 +21,13 @@ const blockSchema = z.object({
         .default(1),
     images: z.array(imageSchema).optional().default([]),
     textZones: z.array(z.string()).optional().default([]),
+    canvasData: z.string().optional(),
 });
 
 export const createDocumentSchema = z.object({
     title: z.string().min(1, 'Le titre ne peut pas être vide'),
     version: z.number().min(1, 'La version est requise'),
     blocks: z.array(blockSchema).optional(),
+    state: z.enum(['En édition', 'Actif', 'Archivé']).default('En édition'),
 });
 

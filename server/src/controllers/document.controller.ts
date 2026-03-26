@@ -1,11 +1,22 @@
 import { Request, Response } from 'express';
 import * as DocumentManager from '../managers/document.manager';
+import * as DocumentVersionManager from '../managers/documentVersion.manager';
 import { createDocumentSchema } from '../validators/document.validator';
+import createDebug from 'debug';
+
+const debug = createDebug('app:document.controller');
+
+// Normalize Express path param and enforce positive integer IDs.
+const parsePositiveIntParam = (rawId: string | string[]): number | null => {
+    const normalizedId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const id = Number(normalizedId);
+    return Number.isInteger(id) && id > 0 ? id : null;
+};
 
 export const createDocument = async (req: Request, res: Response) => {
     try {
-        console.log('Tentative de création d\'un document...');
-        console.log('Body reçu:', JSON.stringify(req.body, null, 2));
+        debug('Tentative de création d\'un document...');
+        debug('Body reçu:', JSON.stringify(req.body, null, 2));
         const validation = createDocumentSchema.safeParse(req.body);
 
         if (!validation.success) {
@@ -21,7 +32,7 @@ export const createDocument = async (req: Request, res: Response) => {
         res.status(201).json(newDoc);
 
     } catch (error) {
-        console.error('Erreur controller :', error);
+        debug('Erreur controller :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
             error: error instanceof Error ? error.message : String(error),
@@ -31,11 +42,11 @@ export const createDocument = async (req: Request, res: Response) => {
 
 export const getAllDocuments = async (req: Request, res: Response) => {
     try {
-        console.log('Récupération de tous les documents...');
+        debug('Récupération de tous les documents...');
         const documents = await DocumentManager.getAll();
         res.status(200).json(documents);
     } catch (error) {
-        console.error('Erreur lors de la récupération des documents :', error);
+        debug('Erreur lors de la récupération des documents :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
             error: error instanceof Error ? error.message : String(error),
@@ -45,10 +56,17 @@ export const getAllDocuments = async (req: Request, res: Response) => {
 
 export const getDocumentById = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        console.log(`Récupération du document ID: ${id}`);
+        const id = parsePositiveIntParam(req.params.id);
 
-        const document = await DocumentManager.getById(Number.parseInt(id as string));
+        // Fail fast on invalid IDs to avoid unnecessary manager/database calls.
+        if (id === null) {
+            res.status(400).json({ message: 'ID invalide' });
+            return;
+        }
+
+        debug('Récupération du document ID: %d', id);
+
+        const document = await DocumentManager.getById(id);
 
         if (!document) {
             res.status(404).json({ message: 'Document non trouvé' });
@@ -57,7 +75,7 @@ export const getDocumentById = async (req: Request, res: Response) => {
 
         res.status(200).json(document);
     } catch (error) {
-        console.error('Erreur lors de la récupération du document :', error);
+        debug('Erreur lors de la récupération du document :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
             error: error instanceof Error ? error.message : String(error),
@@ -67,10 +85,19 @@ export const getDocumentById = async (req: Request, res: Response) => {
 
 export const updateDocument = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        console.log('Mise à jour du document ID: ${id}');
-        console.log('Body reçu:', JSON.stringify(req.body, null, 2));
+        const id = parsePositiveIntParam(req.params.id);
 
+        // Keep route contract strict:
+        // update only supports numeric document IDs.
+        if (id === null) {
+            res.status(400).json({ message: 'ID invalide' });
+            return;
+        }
+
+        debug('Mise à jour du document ID: %d', id);
+        debug('Body reçu:', JSON.stringify(req.body, null, 2));
+
+        // Reuse creation schema so create/update stay aligned.
         const validation = createDocumentSchema.safeParse(req.body);
 
         if (!validation.success) {
@@ -82,16 +109,134 @@ export const updateDocument = async (req: Request, res: Response) => {
         }
 
         const updatedDoc =
-        await DocumentManager.update(Number.parseInt(id as string), validation.data);
+        await DocumentManager.update(id, validation.data);
 
-        console.log('Document mis à jour avec succès :', updatedDoc.id);
+        if (!updatedDoc) {
+            res.status(404).json({ message: 'Document non trouvé' });
+            return;
+        }
+
+        debug('Document mis à jour avec succès :', updatedDoc.id);
         res.status(200).json(updatedDoc);
 
     } catch (error) {
-        console.error('Erreur lors de la mise à jour :', error);
+        debug('Erreur lors de la mise à jour :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
             error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+export const getDocumentVersions = async (req: Request, res: Response) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+
+        if (id === null) {
+            res.status(400).json({ message: 'ID invalide' });
+            return;
+        }
+
+        const versions = await DocumentVersionManager.getDocumentVersions(id);
+        res.status(200).json(versions);
+    } catch (error) {
+        debug('Erreur lors de la récupération des versions :', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+export const getDocumentVersion = async (req: Request, res: Response) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+        const version = parsePositiveIntParam(req.params.version);
+
+        if (id === null || version === null) {
+            res.status(400).json({ message: 'Paramètres invalides' });
+            return;
+        }
+
+        const documentVersion =
+            await DocumentVersionManager.getDocumentVersion(id, version);
+
+        if (!documentVersion) {
+            res.status(404).json({ message: 'Version non trouvée' });
+            return;
+        }
+
+        res.status(200).json(documentVersion);
+    } catch (error) {
+        debug('Erreur lors de la récupération de la version :', error);
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+
+export const updateDocumentVersionState = async (
+    req: Request,
+    res: Response,
+) => {
+    try {
+        const id = parsePositiveIntParam(req.params.id);
+        const versionId = parsePositiveIntParam(
+            req.params.versionId,
+        );
+
+        if (id === null || versionId === null) {
+            res.status(400).json({
+                message: 'Paramètres invalides',
+            });
+            return;
+        }
+
+        const { state } = req.body as { state?: string };
+
+        if (!state || typeof state !== 'string') {
+            res.status(400).json({
+                message: 'Le champ "state" est requis et doit ' +
+                    'être une chaîne',
+            });
+            return;
+        }
+
+        debug(
+            'Mise à jour de l\'état de la version ID: %d ' +
+                'pour le document %d',
+            versionId,
+            id,
+        );
+
+        const updatedVersion =
+            await DocumentVersionManager.updateVersionState(
+                versionId,
+                state,
+            );
+
+        if (!updatedVersion) {
+            res.status(404).json({
+                message: 'Version non trouvée',
+            });
+            return;
+        }
+
+        debug('État de la version mis à jour avec succès');
+        res.status(200).json(updatedVersion);
+
+    } catch (error) {
+        debug(
+            'Erreur lors de la mise à jour de l\'état ' +
+                'de la version :',
+            error,
+        );
+        res.status(500).json({
+            message: 'Erreur interne du serveur',
+            error: error instanceof Error
+                ? error.message
+                : String(error),
         });
     }
 };

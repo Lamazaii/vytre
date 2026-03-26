@@ -27,6 +27,15 @@
             <img class="tab-item-icon" :src="iconImage" alt="Illustration" />
             <span class="tab-item-label">IMAGE</span>
           </button>
+
+          <button
+            :class="['tab-item', { 'tab-item--active': activeTab === 'form' }]"
+            type="button"
+            @click="activeTab = 'form'"
+          >
+            <img class="tab-item-icon" :src="iconShape" alt="Formes" />
+            <span class="tab-item-label">FORMES</span>
+          </button>
         </nav>
       </div>
 
@@ -53,6 +62,10 @@
     <div v-if="activeTab === 'image'" class="contextual-toolbar-wrapper">
       <ImageOptionBar />
     </div>
+    <div v-if="activeTab === 'form'" class="contextual-toolbar-wrapper">
+      <ShapeOptionBar />
+    </div>
+
   </div>
 </template>
 
@@ -63,19 +76,30 @@ import iconImage from "../../assets/optionBarImage/imageIcon.svg";
 import iconEditMode from "../../assets/optionBarImage/personEdit.svg";
 import iconText from "../../assets/optionBarImage/textField.svg";
 import iconViewMode from "../../assets/optionBarImage/visibility.svg";
+import iconShape from "../../assets/optionBarImage/shapeIcon.svg";
 
-import IconToggleGroup from "./iconToggleGroup.vue";
-import TextOptionBar from "./textOptionBar.vue";
-import ImageOptionBar from "./imageOptionBar.vue";
-import { ref } from 'vue'
+import IconToggleGroup from "./shared/iconToggleGroup.vue";
+import TextOptionBar from "./text/textOptionBar.vue";
+import ShapeOptionBar from "./formOptionBar.vue";
+import ImageOptionBar from "./image/imageOptionBar.vue";
+import { ref, watch } from 'vue'
 import { usePopupStore } from '../../stores/popupStore'
+import { useImageCropStore } from '../../stores/imageCropStore'
+import { useShapeStore } from '../../stores/shapeStore'
+import { useTextFormatStore } from '../../stores/textFormatStore'
 
-const activeTab = ref<'text' | 'image'>('text')
+// Active contextual toolbar tab.
+const activeTab = ref<'text' | 'image' | 'form'>('text')
+// Shared UI stores for popup mode and current selection context.
 const popupStore = usePopupStore()
+const imageCropStore = useImageCropStore()
+const shapeStore = useShapeStore()
+const textFormatStore = useTextFormatStore()
 const emit = defineEmits<{
   save: []
 }>()
 
+// Toggle between edit and reader modes from icon group.
 function handleIconChange(value: { left: boolean; right: boolean }) {
   if (value.right) {
     popupStore.openReader()
@@ -83,6 +107,28 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
     popupStore.closeReader()
   }
 }
+
+// Auto-switch to text tab when a text editor gets focus.
+watch(() => textFormatStore.hasTextFocus, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'text'
+  }
+})
+
+// Auto-switch to image tab when an image gets selected.
+watch(() => imageCropStore.selectedImageId, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'image'
+  }
+})
+
+// Auto-switch to shape tab when a shape gets selected.
+watch(() => shapeStore.hasSelectedShape, (newValue) => {
+  if (newValue) {
+    activeTab.value = 'form'
+  }
+})
+
 </script>
 
 <style scoped>
@@ -132,6 +178,7 @@ function handleIconChange(value: { left: boolean; right: boolean }) {
   align-items: center;
   gap: 25px;
 }
+
 
 .tab-item {
   display: inline-flex;

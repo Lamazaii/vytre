@@ -32,27 +32,45 @@
       <div v-else-if="store.documentsError" class="errorMessage">{{ store.documentsError }}</div>
       <div v-else-if="filteredDocuments.length === 0" class="emptyMessage">Aucun document trouvé</div>
       <div 
-        v-else
         v-for="(doc, index) in filteredDocuments" 
         :key="doc.id || index"
-        class="documentCard"
+        class="documentCardWrapper"
       >
-        <div class="docIcon">
-          <img :src="fileIcon" alt="Document Icon" />
-        </div>
-        <div class="docInfo">
-          <h3>{{ doc.title }}</h3>
-          <div class="docMeta">
-            <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ formatDate(doc.updatedAt ?? new Date()) }}</span>
+        <div class="documentCard">
+          <div class="docIcon">
+            <img :src="fileIcon" alt="Document Icon" />
           </div>
-        </div>
-        <div class="docActions">
-          <button class="actionButton read" @click="openDocument(doc)">
-            <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
-          </button>
-          <button v-if="viewMode === 'editor'" class="actionButton edit" @click="editDocument(doc)">
-            <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
-          </button>
+          <div class="docInfo">
+            <h3>{{ doc.title }}</h3>
+            <div class="docMeta">
+              <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ formatDate(doc.updatedAt ?? new Date()) }}</span>
+            </div>
+          </div>
+          <div class="docActions">
+            <button class="actionButton read" @click="openDocument(doc)">
+              <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
+            </button>
+            <button
+              v-if="viewMode === 'editor'"
+              class="actionButton edit"
+              :class="{ 'is-disabled': isSelectedVersionOlder(doc) }"
+              :disabled="isSelectedVersionOlder(doc)"
+              :title="isSelectedVersionOlder(doc) ? 'Impossible de modifier une version antérieure' : 'Modifier'"
+              @click="editDocument(doc)"
+            >
+              <img :src="editIcon" alt="Edit" class="buttonIcon" /> Modifier
+            </button>
+            <VersionHistoryMenu
+              v-if="viewMode === 'editor'"
+              :doc="doc"
+              :is-open="openVersionMenu === doc.id"
+              :loading="loadingVersions === doc.id"
+              :selected-version="getSelectedVersion(doc)"
+              @toggle="handleVersions(doc)"
+              @select-version="handleVersionSelect(doc, $event)"
+              @update-state="(versionId, newState) => handleStateUpdate(doc, versionId, newState)"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -68,16 +86,21 @@ import type { Document } from '../../types/Document'
 import timeImage from '../../assets/menu/timer.svg'
 import readIcon from '../../assets/optionBarImage/visibility.svg'
 import editIcon from '../../assets/menu/edit.svg'
-import TitleBar from '../optionBar/titleBar.vue'
+import TitleBar from '../optionBar/shared/titleBar.vue'
+import VersionHistoryMenu from './versionHistoryMenu.vue'
+import { documentService } from '../../services/documentService'
 
 
 const emit = defineEmits<{
-  (e: 'selectMode', mode: 'editor' | 'reader'): void
+  selectMode: [mode: 'editor' | 'reader']
 }>()
 
 const store = useBlocksStore()
 const searchQuery = ref('')
 const viewMode = ref<'editor' | 'reader'>('editor')
+const openVersionMenu = ref<number | null>(null)
+const loadingVersions = ref<number | null>(null)
+const selectedVersionByDoc = ref<Record<number, number>>({})
 
 const filteredDocuments = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -105,21 +128,112 @@ function formatDate(dateString: Date): string {
   return date.toLocaleDateString('fr-FR')
 }
 
-function openDocument(doc: Document) {
+function getSelectedVersion(doc: Document): number | null {
+  if (doc.id === undefined) return null
+  return selectedVersionByDoc.value[doc.id] ?? doc.version
+}
+
+function isSelectedVersionOlder(doc: Document): boolean {
+  if (doc.id === undefined || !doc.versions?.length) return false
+  const selected = selectedVersionByDoc.value[doc.id]
+  // Si aucune version n'est sélectionnée explicitement, c'est OK
+  if (selected === undefined) return false
+  
+  // Trouver la version la plus récente (comme dans le versionHistoryMenu)
+  const sortedVersions = [...doc.versions].sort((a, b) => 
+    new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+  )
+  const latestVersion = sortedVersions[0]?.version
+  
+  return latestVersion !== undefined && selected !== latestVersion
+}
+
+function handleVersionSelect(doc: Document, version: number) {
+  if (doc.id === undefined) return
+  selectedVersionByDoc.value = {
+    ...selectedVersionByDoc.value,
+    [doc.id]: version
+  }
+}
+
+async function openDocument(doc: Document) {
+  if (!doc.id) return
   console.log('Ouverture en lecture:', doc)
-  store.loadDocument(doc.id!)
+  const selectedVersion = selectedVersionByDoc.value[doc.id]
+  if (selectedVersion && selectedVersion !== doc.version) {
+    await store.loadDocumentVersion(doc.id, selectedVersion)
+  } else {
+    await store.loadDocument(doc.id)
+  }
   emit('selectMode', 'reader')
 }
 
-function editDocument(doc: Document) {
+async function editDocument(doc: Document) {
+  if (!doc.id) return
+  
+  // Bloquer l'accès à l'éditeur pour les versions antérieures
+  if (isSelectedVersionOlder(doc)) {
+    return
+  }
+  
   console.log('Édition du document:', doc)
-  store.loadDocument(doc.id!)
+  const selectedVersion = selectedVersionByDoc.value[doc.id]
+  if (selectedVersion && selectedVersion !== doc.version) {
+    await store.loadDocumentVersion(doc.id, selectedVersion)
+  } else {
+    await store.loadDocument(doc.id)
+  }
   emit('selectMode', 'editor')
 }
 
 function handleNewDocument() {
   store.createNewDocument()
   emit('selectMode', 'editor')
+}
+
+async function handleStateUpdate(doc: Document, versionId: number, newState: string) {
+  if (!doc.id) return
+  
+  try {
+    await documentService.updateVersionState(doc.id, versionId, newState)
+    // Recharger la liste des documents pour refléter le changement
+    await store.loadAllDocuments()
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'état de la version:', error)
+  }
+}
+
+function handleVersions(doc: Document) {
+  if (openVersionMenu.value === doc.id) {
+    openVersionMenu.value = null
+  } else {
+    openVersionMenu.value = doc.id ?? null
+    // Charger les versions si elles ne sont pas déjà chargées
+    if (!doc.versions || doc.versions.length === 0) {
+      loadVersions(doc)
+    }
+  }
+}
+
+async function loadVersions(doc: Document) {
+  if (!doc.id) return
+  
+  try {
+    loadingVersions.value = doc.id
+    const versions = await documentService.getVersions(doc.id)
+    // Mettre à jour les versions du document dans la liste
+    const docIndex = store.allDocuments.findIndex(d => d.id === doc.id)
+    if (docIndex !== -1) {
+      const document = store.allDocuments[docIndex]
+      if (document) {
+        document.versions = versions
+      }
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des versions:', error)
+  } finally {
+    loadingVersions.value = null
+  }
 }
 
 onMounted(() => {
@@ -147,6 +261,7 @@ onMounted(() => {
   padding: 0;
   min-height: 717px;
   transition: all 0.3s ease;
+  overflow: visible;
 }
 
 .menuContainer--reader {
@@ -242,6 +357,7 @@ onMounted(() => {
   margin-top: 25px;
   gap : 15px;
   transition: margin 0.3s ease;
+  overflow: visible;
 }
 
 .menuContainer--reader .documentsList {
@@ -285,6 +401,7 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid #e0e0e0;
   transition: box-shadow 0.3s ease;
+  overflow: visible;
 }
 
 .documentCard:hover {
@@ -328,9 +445,11 @@ onMounted(() => {
 
 .docActions {
   display: flex;
+  align-items: center;
   gap: 10px;
   margin-left: auto;
   margin-right: 20px;
+  overflow: visible;
 }
 
 .actionButton {
@@ -369,5 +488,20 @@ onMounted(() => {
 
 .actionButton.edit:hover {
   background-color: #fff5f5;
+}
+
+.actionButton.edit.is-disabled {
+  color: #ccc;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionButton.edit.is-disabled:hover {
+  background-color: transparent;
+}
+
+.documentCardWrapper {
+  width: 100%;
+  overflow: visible;
 }
 </style>

@@ -29,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { useBlocksStore } from '../../stores/blockStores'
-import homeIcon from '../../assets/menu/home.svg'
+import { useBlocksStore } from '../../../stores/blockStores'
+import homeIcon from '../../../assets/menu/home.svg'
 
 defineProps<{
   isReadOnly?: boolean
@@ -42,8 +42,10 @@ defineEmits<{
   (e: 'home'): void
 }>()
 
+// Store containing the editable document title.
 const blocksStore = useBlocksStore()
 
+// Blur title input on Enter to validate edition.
 function handleEnter(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target) {
@@ -51,6 +53,7 @@ function handleEnter(event: Event) {
   }
 }
 
+// Select full title text when input receives focus.
 function handleFocus(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target) {

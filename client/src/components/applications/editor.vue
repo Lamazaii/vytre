@@ -7,7 +7,7 @@ import NameConflictPopup from '../popup/NameConflictPopup.vue';
 import BlockWrapper from '../blocks/BlockWrapper.vue';
 import AddBlockZone from '../blocks/addBlockZone.vue';
 import OptionBar from '../optionBar/optionBar.vue';
-import TitleBar from '../optionBar/titleBar.vue';
+import TitleBar from '../optionBar/shared/titleBar.vue';
 import ReaderViewWindow from '../readerView/readerViewWindow.vue';
 import DeletePopup from '../popup/DeletePopup.vue';
 import ErrorPopup from '../popup/ErrorPopup.vue';
@@ -113,6 +113,8 @@ function handleHome() {
 }
 
 function handleCropComplete(croppedImageData: string) {
+  imageCropStore.setCroppedImage(croppedImageData)
+  
   if (imageCropStore.selectedImageId && imageCropStore.blockIndex !== null) {
     const blockIndex = imageCropStore.blockIndex
     const block = blocks.value[blockIndex]
@@ -154,6 +156,8 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         item-key="id"
         ghost-class="ghost"
         handle=".drag-handle"
+        filter=".shapeCanvasWrapper, .shapeCanvasWrapper *, canvas, .upper-canvas, .lower-canvas"
+        :preventOnFilter="false"
         @end="onDragEnd"
       >
         <template #item="{element: block, index: i}">
