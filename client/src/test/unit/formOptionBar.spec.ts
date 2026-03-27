@@ -130,4 +130,26 @@ describe('formOptionBar.vue', () => {
     await wrapper.find('.epaisseur-stub').trigger('click')
     expect(store.strokeWidth).toBe(3)
   })
+
+  it('shows arrow color picker and ArrowStyleSelector when arrow shape is selected', async () => {
+    const arrowStubs = {
+      ...stubs,
+      ArrowStyleSelector: { template: '<div class="arrow-style-selector-stub" />' },
+    }
+    const wrapper = mount(FormOptionBar, { global: { stubs: arrowStubs } })
+    const { useShapeStore } = await import('../../stores/shapeStore')
+    const store = useShapeStore()
+
+    store.setToolbarShape('arrow')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.arrow-style-selector-stub').exists()).toBe(true)
+  })
+
+  it('toggleLayerMenu does nothing when no shape is selected (direct call)', async () => {
+    const wrapper = mount(FormOptionBar, { global: { stubs } })
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
+  })
 })
