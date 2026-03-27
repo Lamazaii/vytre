@@ -37,6 +37,16 @@ export const useBlocksStore = defineStore('blocks', () => {
   ])
   const selectedIndex = ref<number | null>(null)
   const blockToDeleteIndex = ref<number | null>(null)
+  const hasUnsavedChanges = ref(false)
+  const isSaving = ref(false)
+
+  function markDocumentAsDirty() {
+    hasUnsavedChanges.value = true
+  }
+
+  function markDocumentAsClean() {
+    hasUnsavedChanges.value = false
+  }
 
   const canAdd = computed(() => {
     if (blocks.value.length === 0) return true // allow first block
@@ -63,8 +73,15 @@ export const useBlocksStore = defineStore('blocks', () => {
   const loadingDocuments = ref(false)
   const documentsError = ref<string | null>(null)
 
-  async function saveDocument(): Promise<'success' | 'rename' | void> {
+  async function saveDocument(options: { silent?: boolean } = {}): Promise<'success' | 'rename' | void> {
+    const { silent = false } = options
+
+    if (isSaving.value) {
+      return
+    }
+
     try {
+      isSaving.value = true
       // Filter out empty blocks before saving
       const filteredBlocks = blocks.value.filter((b) => {
         const hasText = b.text && !isContentEmpty(b.text); // keep blocks with actual text
@@ -125,12 +142,18 @@ export const useBlocksStore = defineStore('blocks', () => {
         state: savedDocument.state ?? 'En édition'
       };
 
-      confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
+      markDocumentAsClean()
+
+      if (!silent) {
+        confirmSavePopup.show("Document sauvegardé avec succès !", "Enregistrement");
+      }
       return 'success';
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du document.";
       errorPopup.show(errorMessage);
+    } finally {
+      isSaving.value = false
     }
   }
   // Load a document by ID
@@ -158,6 +181,8 @@ export const useBlocksStore = defineStore('blocks', () => {
       }))
       selectedIndex.value = null
       
+      markDocumentAsClean()
+
       confirmSavePopup.show("Document chargé avec succès !", "Ouverture");
     } catch (error) {
       console.error(error);
@@ -196,6 +221,8 @@ export const useBlocksStore = defineStore('blocks', () => {
       }))
       selectedIndex.value = null
 
+      markDocumentAsClean()
+
       confirmSavePopup.show("Version chargée avec succès !", "Ouverture")
     } catch (error) {
       console.error(error)
@@ -224,6 +251,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     ]
     selectedIndex.value = null
     blockToDeleteIndex.value = null
+    markDocumentAsClean()
   }
 
   // Load all documents
@@ -251,6 +279,9 @@ export const useBlocksStore = defineStore('blocks', () => {
   function setModified(i: number, value: boolean) {
     if (!blocks.value[i]) return
     blocks.value[i] = { ...blocks.value[i], modified: value } // replace to keep reactivity
+    if (value) {
+      markDocumentAsDirty()
+    }
   }
 
   // Add an empty block if allowed (if last block is not empty)
@@ -268,6 +299,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       images: [] as Image[],
       textZones: []
     })
+    markDocumentAsDirty()
   }
 
   // Add a new text zone to the selected block
@@ -292,6 +324,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     
     block.textZones ??= []
     block.textZones.push('') // append empty zone
+    markDocumentAsDirty()
   }
 
   // Renumber blocks after changes
@@ -299,6 +332,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     blocks.value.forEach((block, i) => {
       block.step = i + 1 // keep steps 1..N
     })
+    markDocumentAsDirty()
   }
 
   // Remove a block at index i
@@ -325,6 +359,7 @@ export const useBlocksStore = defineStore('blocks', () => {
       else if (selectedIndex.value >= blocks.value.length) selectedIndex.value = blocks.value.length - 1 // clamp to last
     }
     blockToDeleteIndex.value = null
+    markDocumentAsDirty()
   }
 
   /**
@@ -342,6 +377,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     const isModified = textContent.length > 0
     
     block.modified = isModified
+    markDocumentAsDirty()
   }
 
   /**
@@ -357,6 +393,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (zoneIndex < 0 || zoneIndex >= block.textZones.length) return
     
     block.textZones[zoneIndex] = html // replace zone content
+    markDocumentAsDirty()
   }
 
   /**
@@ -371,6 +408,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     
     block.canvasData = data
     block.modified = true
+    markDocumentAsDirty()
   }
 
   /**
@@ -385,6 +423,7 @@ export const useBlocksStore = defineStore('blocks', () => {
     if (zoneIndex < 0 || zoneIndex >= block.textZones.length) return
     
     block.textZones.splice(zoneIndex, 1) // remove zone at index
+    markDocumentAsDirty()
   }
 
   // Load blocks from clipboard text
@@ -409,6 +448,7 @@ export const useBlocksStore = defineStore('blocks', () => {
 
     blocks.value = parsed // replace current blocks
     selectedIndex.value = null // clear selection
+    markDocumentAsDirty()
   }
 
   return {
@@ -421,6 +461,8 @@ export const useBlocksStore = defineStore('blocks', () => {
     allDocuments,
     loadingDocuments,
     documentsError,
+    hasUnsavedChanges,
+    isSaving,
     // getters
     canAdd,
     // actions

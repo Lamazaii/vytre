@@ -12,7 +12,7 @@ import ReaderViewWindow from '../readerView/readerViewWindow.vue';
 import DeletePopup from '../popup/DeletePopup.vue';
 import ErrorPopup from '../popup/ErrorPopup.vue';
 import CropPopup from '../popup/CropPopup.vue';
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useBlocksStore } from '../../stores/blockStores';
 import { useImageCropStore } from '../../stores/imageCropStore';
 import { storeToRefs } from 'pinia'
@@ -29,7 +29,7 @@ const errorPopupStore = useErrorPopupStore()
 const confirmSavePopupStore = useConfirmSavePopupStore()
 const imageCropStore = useImageCropStore()
 
-const { blocks, selectedIndex, canAdd, documentTitle } = storeToRefs(blocksStore)
+const { blocks, selectedIndex, canAdd, documentTitle, hasUnsavedChanges, currentDocument, isSaving } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const clipboardText = ref('')
 
@@ -54,6 +54,36 @@ watch(anyPopupOpen, (open) => {
     appEl.classList.toggle('no-scroll', open)
   }
 }, { immediate: true })
+
+const AUTO_SAVE_INTERVAL_MS = 5 * 60 * 1000
+let autoSaveTimer: ReturnType<typeof setInterval> | null = null
+
+async function triggerAutoSave() {
+  if (!currentDocument.value.id) return
+  if (!hasUnsavedChanges.value) return
+  if (isSaving.value) return
+
+  await blocksStore.saveDocument({ silent: true })
+}
+
+onMounted(() => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  autoSaveTimer = window.setInterval(() => {
+    triggerAutoSave().catch((error) => {
+      console.error('Auto-save error', error)
+    })
+  }, AUTO_SAVE_INTERVAL_MS)
+})
+
+onUnmounted(() => {
+  if (autoSaveTimer !== null) {
+    clearInterval(autoSaveTimer)
+    autoSaveTimer = null
+  }
+})
 
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)
@@ -94,9 +124,7 @@ function removeBlock(i: number) {
 }
 
 function onDragEnd() {
-  blocks.value.forEach((block, index) => {
-    block.step = index + 1
-  })
+  blocksStore.renumberBlocks()
 }
 
 function handleClipboardSubmit(value: string) {
