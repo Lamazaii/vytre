@@ -14,6 +14,20 @@ import { objectDefaults } from './utils/canvasConfig'
 import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
 import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
 
+// Configure Fabric.js to serialize custom arrow properties
+const originalPathToObject = fabric.Path.prototype.toObject
+fabric.Path.prototype.toObject = function(propertiesToInclude?: string[]) {
+  const obj = originalPathToObject.call(this, propertiesToInclude)
+  if ((this as any).isArrow) {
+    obj.isArrow = (this as any).isArrow
+    obj.arrowStart = (this as any).arrowStart
+    obj.arrowEnd = (this as any).arrowEnd
+    obj.arrowStartStyle = (this as any).arrowStartStyle
+    obj.arrowEndStyle = (this as any).arrowEndStyle
+  }
+  return obj
+}
+
 interface Props {
   width?: number
   height?: number
@@ -41,6 +55,15 @@ let canvas: fabric.Canvas | null = null
 const imageCropStore = useImageCropStore()
 const shapeStore = useShapeStore()
 const textFormatStore = useTextFormatStore()
+
+// Arrow two-click drawing state.
+let isDrawingArrow = false
+let arrowStartPoint: { x: number; y: number } | null = null
+let arrowPreviewPointer: { x: number; y: number } | null = null
+
+// Arrow endpoint modification state.
+let modifyingArrow: fabric.Path | null = null
+let modifyingEnd: 'start' | 'end' | null = null
 
 // Handle delete/backspace shortcuts when canvas is active.
 function handleKeyDown(event: KeyboardEvent) {
@@ -72,6 +95,99 @@ function checkHasObjects() {
   if (!canvas) return
   const objectCount = canvas.getObjects().length
   emit('update:hasObjects', objectCount > 0)
+}
+
+function isArrowObject(obj: fabric.Object): obj is fabric.Path {
+  return obj.type === 'path' && (obj as any).isArrow === true
+}
+
+function applyArrowStyle(arrow: fabric.Path, color: string, width: number) {
+  arrow.set({
+    stroke: color,
+    strokeWidth: width,
+  })
+}
+
+// Generate arrow path based on start/end points and head style
+function generateArrowPath(
+  startPoint: { x: number; y: number },
+  endPoint: { x: number; y: number },
+  startStyle: string,
+  endStyle: string,
+  strokeWidth: number = 2
+) {
+  const dx = endPoint.x - startPoint.x
+  const dy = endPoint.y - startPoint.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  
+  if (distance < 5) return ''
+  
+  // Scale arrow head size based on stroke width (min 10, max 20)
+  const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
+  let pathStr = ''
+
+  // Determine where the line starts and ends based on arrow head styles
+  // For 'open' and 'filled' styles: use smaller offset (0.5) so line stops before the head
+  // For 'stroke' style: use larger offset (0.75) to prevent overlap
+  // For 'none': no offset needed
+  const startOffset = startStyle === 'none' ? 0 : (startStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
+  const endOffset = endStyle === 'none' ? 0 : (endStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
+
+  // Main line (doesn't go through the heads) - drawn in SVG
+  pathStr = `M ${startOffset},0 L ${distance - endOffset},0`
+
+  // Only draw 'stroke' style lines in the path (visual representation)
+  // Other styles (filled, open) are drawn via canvas in after:render callback
+  
+  // Handle end head - only stroke style in SVG path
+  if (endStyle === 'stroke') {
+    pathStr += ` M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
+  }
+
+  // Handle start head - only stroke style in SVG path
+  if (startStyle === 'stroke') {
+    pathStr += ` M ${arrowHeadSize},${-arrowHeadSize * 0.6} L 0,0 L ${arrowHeadSize},${arrowHeadSize * 0.6}`
+  }
+
+  return pathStr
+}
+
+// Create an arrow object between two canvas-space points.
+function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }) {
+  if (!canvas) return
+
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  if (distance < 5) return
+
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  // Generate arrow path with current head styles
+  const arrowPath = generateArrowPath(start, end, shapeStore.arrowStartStyle, shapeStore.arrowEndStyle, shapeStore.strokeWidth)
+
+  // Always use transparent fill - heads will be drawn separately
+  const arrow = new fabric.Path(arrowPath, {
+    stroke: shapeStore.fillColor,
+    strokeWidth: shapeStore.strokeWidth,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(arrow as any).isArrow = true
+  ;(arrow as any).arrowStart = start
+  ;(arrow as any).arrowEnd = end
+  ;(arrow as any).arrowStartStyle = shapeStore.arrowStartStyle
+  ;(arrow as any).arrowEndStyle = shapeStore.arrowEndStyle
+
+  canvas.add(arrow)
+  canvas.setActiveObject(arrow)
+  canvas.renderAll()
 }
 
 // Factory for shape creation using current toolbar style values.
@@ -190,6 +306,20 @@ function normalizeTextboxScale(textbox: fabric.Textbox) {
   textbox.setCoords()
 }
 
+// Create a default arrow when the button is clicked.
+function addArrow() {
+  if (!canvas) return
+  
+  const canvasWidth = canvas.width || props.width
+  const canvasHeight = canvas.height || props.height
+  
+  // Create a shorter horizontal arrow in the center of the canvas
+  const defaultStart = { x: canvasWidth * 0.35, y: canvasHeight * 0.5 }
+  const defaultEnd = { x: canvasWidth * 0.65, y: canvasHeight * 0.5 }
+  
+  createArrowBetweenPoints(defaultStart, defaultEnd)
+}
+
 // Insert image object and fit it inside the canvas bounds.
 function addImage(imageSrc: string) {
   if (!canvas) return
@@ -241,7 +371,12 @@ function getSelectedImage() {
 function getSelectedShape() {
   if (!canvas) return null
   const activeObject = canvas.getActiveObject()
-  if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
+  if (activeObject && (
+    activeObject.type === 'rect' ||
+    activeObject.type === 'circle' ||
+    activeObject.type === 'triangle' ||
+    isArrowObject(activeObject)
+  )) {
     return activeObject as fabric.Object
   }
   return null
@@ -375,12 +510,29 @@ function handleSelection(e: any) {
     // Activate text formatting toolbar for Fabric textbox with multi-style support
     textFormatStore.setFabricTextbox(selected as fabric.Textbox, canvas)
     imageCropStore.clearSelection()
+  } else if (selected && isArrowObject(selected)) {
+    // Hide selection box for arrows - they show green endpoints instead
+    selected.hasControls = false
+    selected.hasBorders = false
+    
+    const fill = selected.stroke || '#000000'
+    const width = selected.strokeWidth || 2
+    const startStyle = (selected as any).arrowStartStyle || 'filled'
+    const endStyle = (selected as any).arrowEndStyle || 'filled'
+    
+    shapeStore.updateStylesFromSelection(fill as string, fill as string, width as number, 'arrow')
+    shapeStore.arrowStartStyle = startStyle
+    shapeStore.arrowEndStyle = endStyle
+    
+    imageCropStore.clearSelection()
+    textFormatStore.clearTextFocus()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
     // Keep toolbar controls in sync with selected shape style.
     const fill = selected.fill || '#000000'
     const stroke = selected.stroke || '#1F2937'
     const strokeWidth = selected.strokeWidth || 2
-    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number)
+    const shapeType = selected.type === 'rect' ? 'square' : selected.type === 'circle' ? 'circle' : 'triangle'
+    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number, shapeType)
     imageCropStore.clearSelection()
     textFormatStore.clearTextFocus()
   } else {
@@ -420,10 +572,82 @@ onMounted(() => {
   fabric.Textbox.prototype.controls.deleteControl = createDeleteControl()
 
   canvas.on('object:added', saveCanvas)
-  canvas.on('object:modified', saveCanvas)
+  canvas.on('object:modified', (e) => {
+    // Reset tracking on drag end
+    if (e.target && isArrowObject(e.target)) {
+      const arrow = e.target as fabric.Path
+      ;(arrow as any).lastLeft = undefined
+      ;(arrow as any).lastTop = undefined
+    }
+    saveCanvas()
+  })
   canvas.on('object:removed', saveCanvas)
 
   canvas.on('object:moving', (e) => {
+    // Real-time endpoint updates during arrow drag
+    if (e.target && isArrowObject(e.target)) {
+      const arrow = e.target as fabric.Path
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+      
+      // Initialize tracking on first move
+      if ((arrow as any).lastLeft === undefined) {
+        ;(arrow as any).lastLeft = arrow.left || 0
+        ;(arrow as any).lastTop = arrow.top || 0
+      }
+      
+      // Get current position
+      const currentLeft = arrow.left || 0
+      const currentTop = arrow.top || 0
+      const lastLeft = (arrow as any).lastLeft || 0
+      const lastTop = (arrow as any).lastTop || 0
+      
+      // Calculate delta and check bounds
+      let deltaX = currentLeft - lastLeft
+      let deltaY = currentTop - lastTop
+      
+      const canvasWidth = canvas!.width || props.width
+      const canvasHeight = canvas!.height || props.height
+      
+      // Calculate new positions
+      const newStartX = start.x + deltaX
+      const newStartY = start.y + deltaY
+      const newEndX = end.x + deltaX
+      const newEndY = end.y + deltaY
+      
+      // Get arrow head size to account for them when checking bounds
+      const arrowHeadSize = Math.max(10, Math.min(20, 8 + (arrow.strokeWidth || 2) * 1.5))
+      
+      // Check if any endpoint would go out of bounds (using canvas edges as strict limits)
+      let constrained = false
+      
+      // Check start point
+      if (newStartX < 0 || newStartX > canvasWidth ||
+          newStartY < 0 || newStartY > canvasHeight) {
+        constrained = true
+      }
+      
+      // Check end point
+      if (newEndX < 0 || newEndX > canvasWidth ||
+          newEndY < 0 || newEndY > canvasHeight) {
+        constrained = true
+      }
+      
+      if (constrained) {
+        // Revert to last valid position
+        arrow.left = lastLeft
+        arrow.top = lastTop
+        return
+      }
+      
+      ;(arrow as any).arrowStart = { x: newStartX, y: newStartY }
+      ;(arrow as any).arrowEnd = { x: newEndX, y: newEndY }
+      ;(arrow as any).lastLeft = currentLeft
+      ;(arrow as any).lastTop = currentTop
+      
+      return
+    }
+
     const obj = e.target
     if (!obj || !canvas) return
 
@@ -455,17 +679,320 @@ onMounted(() => {
   canvas.on('text:editing:exited', handleTextboxStateUpdate)
   canvas.on('text:changed', handleTextboxStateUpdate)
 
+  // First click sets the start point; second click finalises the arrow.
+  canvas.on('mouse:down', (e: any) => {
+    const pointer = canvas!.getPointer(e.e)
+
+    // Check if clicking on an arrow endpoint to modify it
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+        const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
+        const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
+        const tolerance = 12
+
+        if (distToStart < tolerance) {
+          modifyingArrow = arrow
+          modifyingEnd = 'start'
+          canvas!.setActiveObject(arrow)
+          return
+        }
+        if (distToEnd < tolerance) {
+          modifyingArrow = arrow
+          modifyingEnd = 'end'
+          canvas!.setActiveObject(arrow)
+          return
+        }
+      }
+    }
+
+    if (!isDrawingArrow) return
+    if (e.e.button !== 0) return
+    
+    const canvasWidth = canvas!.width || props.width
+    const canvasHeight = canvas!.height || props.height
+    
+    // Constrain pointer within exact canvas bounds
+    const constrainedX = Math.max(0, Math.min(pointer.x, canvasWidth))
+    const constrainedY = Math.max(0, Math.min(pointer.y, canvasHeight))
+    
+    if (!arrowStartPoint) {
+      arrowStartPoint = { x: constrainedX, y: constrainedY }
+      arrowPreviewPointer = { x: constrainedX, y: constrainedY }
+      canvas!.requestRenderAll()
+    } else {
+      const startPoint = { ...arrowStartPoint }
+      const endPoint = { x: constrainedX, y: constrainedY }
+      isDrawingArrow = false
+      arrowStartPoint = null
+      arrowPreviewPointer = null
+      canvas!.defaultCursor = 'default'
+      canvas!.hoverCursor = 'move'
+      canvas!.selection = props.active
+      createArrowBetweenPoints(startPoint, endPoint)
+    }
+  })
+
+  // Update preview endpoint as the mouse moves after the first click or when modifying arrow.
+  canvas.on('mouse:move', (e: any) => {
+    const pointer = canvas!.getPointer(e.e)
+
+    // Check if near an arrow endpoint for visual feedback
+    let nearEndpoint = false
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+        const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
+        const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
+
+        if (distToStart < 12 || distToEnd < 12) {
+          nearEndpoint = true
+          break
+        }
+      }
+    }
+
+    canvas!.defaultCursor = nearEndpoint ? 'crosshair' : 'default'
+
+    // Handle arrow endpoint modification live
+    if (modifyingArrow && modifyingEnd) {
+      const arrow = modifyingArrow
+      const canvasWidth = canvas!.width || props.width
+      const canvasHeight = canvas!.height || props.height
+      
+      // Get arrow head size
+      // Constrain pointer position within exact canvas bounds
+      const constrainedX = Math.max(0, Math.min(pointer.x, canvasWidth))
+      const constrainedY = Math.max(0, Math.min(pointer.y, canvasHeight))
+
+      if (modifyingEnd === 'start') {
+        ;(arrow as any).arrowStart = { x: constrainedX, y: constrainedY }
+      } else {
+        ;(arrow as any).arrowEnd = { x: constrainedX, y: constrainedY }
+      }
+
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+      const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
+      const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
+      const dx = end.x - start.x
+      const dy = end.y - start.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+      if (distance > 5) {
+        const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, arrow.strokeWidth || 2)
+
+        // Remove old and create new arrow with updated path
+        canvas!.remove(arrow)
+
+        const newArrow = new fabric.Path(arrowPathStr, {
+          stroke: arrow.stroke || shapeStore.fillColor,
+          strokeWidth: arrow.strokeWidth || 2,
+          fill: 'transparent',
+          left: start.x,
+          top: start.y,
+          angle: angle,
+          originX: 'left',
+          originY: 'center',
+          ...objectDefaults,
+        })
+
+        ;(newArrow as any).isArrow = true
+        ;(newArrow as any).arrowStart = start
+        ;(newArrow as any).arrowEnd = end
+        ;(newArrow as any).arrowStartStyle = startStyle
+        ;(newArrow as any).arrowEndStyle = endStyle
+
+        canvas!.add(newArrow)
+        modifyingArrow = newArrow
+        canvas!.setActiveObject(newArrow)
+        canvas!.renderAll()
+      }
+      return
+    }
+
+    if (!isDrawingArrow || !arrowStartPoint) return
+    const canvasWidth = canvas!.width || props.width
+    const canvasHeight = canvas!.height || props.height
+    
+    // Constrain preview pointer within exact canvas bounds
+    arrowPreviewPointer = {
+      x: Math.max(0, Math.min(pointer.x, canvasWidth)),
+      y: Math.max(0, Math.min(pointer.y, canvasHeight))
+    }
+    canvas!.requestRenderAll()
+  })
+
+  // Draw filled arrow heads and endpoint circles.
+  canvas.on('after:render', () => {
+    const ctx = canvas!.getContext()
+    
+    // Draw filled triangles and outlines for all arrows
+    const allObjects = canvas!.getObjects()
+    for (const obj of allObjects) {
+      if (isArrowObject(obj)) {
+        const arrow = obj as fabric.Path
+        const start = (arrow as any).arrowStart as { x: number; y: number }
+        const end = (arrow as any).arrowEnd as { x: number; y: number }
+        const startStyle = (arrow as any).arrowStartStyle || 'stroke'
+        const endStyle = (arrow as any).arrowEndStyle || 'stroke'
+        const color = arrow.stroke as string || shapeStore.fillColor
+        const strokeWidth = arrow.strokeWidth || 2
+        
+        // Scale arrow head size based on stroke width (min 10, max 20)
+        const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
+        const dx = end.x - start.x
+        const dy = end.y - start.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        
+        if (distance < 5) continue // Skip if too short
+        
+        const angle = Math.atan2(dy, dx)
+        
+        // Draw end head (filled or outline) - directly at the endpoint
+        if (endStyle === 'filled' || endStyle === 'open') {
+          ctx.save()
+          ctx.translate(end.x, end.y)
+          ctx.rotate(angle)
+          
+          if (endStyle === 'filled') {
+            ctx.fillStyle = color
+            ctx.lineWidth = 0
+            ctx.beginPath()
+            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+            ctx.lineTo(0, 0)
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+            ctx.closePath()
+            ctx.fill()
+          } else if (endStyle === 'open') {
+            // Draw triangle outline with white fill to cover the body
+            ctx.fillStyle = '#ffffff'
+            ctx.strokeStyle = color
+            ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+            ctx.beginPath()
+            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+            ctx.lineTo(0, 0)
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+            ctx.closePath()
+            ctx.fill()
+            ctx.stroke()
+          }
+          ctx.restore()
+        }
+        
+        // Draw start head (filled or outline) - directly at the start point
+        if (startStyle === 'filled' || startStyle === 'open') {
+          ctx.save()
+          ctx.translate(start.x, start.y)
+          ctx.rotate(angle + Math.PI) // Opposite direction for start
+          
+          if (startStyle === 'filled') {
+            ctx.fillStyle = color
+            ctx.lineWidth = 0
+            ctx.beginPath()
+            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+            ctx.lineTo(0, 0)
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+            ctx.closePath()
+            ctx.fill()
+          } else if (startStyle === 'open') {
+            // Draw triangle outline with white fill to hide the body
+            ctx.fillStyle = '#ffffff'
+            ctx.strokeStyle = color
+            ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+            ctx.beginPath()
+            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+            ctx.lineTo(0, 0)
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+            ctx.closePath()
+            ctx.fill()
+            ctx.stroke()
+          }
+          ctx.restore()
+        }
+      }
+    }
+    
+    // Draw circles at arrow endpoints only when selected
+    const activeObj = canvas!.getActiveObject()
+    if (activeObj && isArrowObject(activeObj)) {
+      const arrow = activeObj as fabric.Path
+      const start = (arrow as any).arrowStart as { x: number; y: number }
+      const end = (arrow as any).arrowEnd as { x: number; y: number }
+
+      ctx.fillStyle = 'rgba(102, 153, 255, 1)'
+      ctx.strokeStyle = 'rgba(102, 153, 255, 1)'
+      ctx.lineWidth = 2
+
+      // Draw circle at start endpoint
+      ctx.beginPath()
+      ctx.arc(start.x, start.y, 6, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+
+      // Draw circle at end endpoint
+      ctx.beginPath()
+      ctx.arc(end.x, end.y, 6, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+    }
+
+    if (!isDrawingArrow || !arrowStartPoint || !arrowPreviewPointer) return
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(arrowStartPoint.x, arrowStartPoint.y)
+    ctx.lineTo(arrowPreviewPointer.x, arrowPreviewPointer.y)
+    ctx.strokeStyle = shapeStore.fillColor
+    ctx.lineWidth = shapeStore.strokeWidth
+    ctx.lineCap = 'round'
+    ctx.setLineDash([6, 4])
+    ctx.stroke()
+    ctx.restore()
+  })
+
+  // End arrow endpoint modification.
+  canvas.on('mouse:up', () => {
+    if (modifyingArrow && modifyingEnd) {
+      saveCanvas()
+    }
+    modifyingArrow = null
+    modifyingEnd = null
+  })
+
   globalThis.addEventListener('keydown', handleKeyDown)
 
   if (props.canvasData) {
+    const jsonData = JSON.parse(props.canvasData)
     canvas.loadFromJSON(props.canvasData, () => {
-      canvas?.getObjects().forEach((obj) => {
+      const objects = canvas?.getObjects() || []
+      objects.forEach((obj, index) => {
         Object.assign(obj, objectDefaults)
         if (obj.type === 'textbox') {
           ;(obj as fabric.Textbox).set({ lockScalingY: true })
           normalizeTextboxScale(obj as fabric.Textbox)
         }
         obj.setCoords()
+        
+        // Restore custom arrow properties after JSON deserialization
+        if (jsonData.objects && jsonData.objects[index]) {
+          const jsonObj = jsonData.objects[index]
+          if (jsonObj.isArrow) {
+            ;(obj as any).isArrow = jsonObj.isArrow
+            ;(obj as any).arrowStart = jsonObj.arrowStart
+            ;(obj as any).arrowEnd = jsonObj.arrowEnd
+            ;(obj as any).arrowStartStyle = jsonObj.arrowStartStyle
+            ;(obj as any).arrowEndStyle = jsonObj.arrowEndStyle
+          }
+        }
       })
       canvas?.renderAll()
       checkHasObjects()
@@ -486,6 +1013,19 @@ onBeforeUnmount(() => {
 
 // Toggle object interactivity when block active state changes.
 watch(() => props.active, (isActive) => {
+  if (!isActive) {
+    if (isDrawingArrow) {
+      isDrawingArrow = false
+      arrowStartPoint = null
+      arrowPreviewPointer = null
+      if (canvas) {
+        canvas.defaultCursor = 'default'
+        canvas.hoverCursor = 'move'
+      }
+    }
+    modifyingArrow = null
+    modifyingEnd = null
+  }
   if (canvas) {
     canvas.selection = isActive
     canvas.forEachObject((obj: fabric.Object) => {
@@ -508,6 +1048,13 @@ watch(() => shapeStore.fillColor, (newColor) => {
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
+
+  if (isArrowObject(activeObject)) {
+    applyArrowStyle(activeObject, newColor, shapeStore.strokeWidth)
+    canvas.renderAll()
+    saveCanvas()
+    return
+  }
   
   // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
@@ -544,6 +1091,45 @@ watch(() => shapeStore.strokeWidth, (newWidth) => {
   
   const activeObject = canvas.getActiveObject()
   if (!activeObject) return
+
+  if (isArrowObject(activeObject)) {
+    const arrow = activeObject as fabric.Path
+    const start = (arrow as any).arrowStart as { x: number; y: number }
+    const end = (arrow as any).arrowEnd as { x: number; y: number }
+    const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
+    const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
+
+    // Regenerate arrow path with new stroke width
+    const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, newWidth)
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+    canvas.remove(arrow)
+    const newArrow = new fabric.Path(arrowPathStr, {
+      stroke: arrow.stroke || shapeStore.fillColor,
+      strokeWidth: newWidth,
+      fill: 'transparent',
+      left: start.x,
+      top: start.y,
+      angle: angle,
+      originX: 'left',
+      originY: 'center',
+      ...objectDefaults,
+    })
+
+    ;(newArrow as any).isArrow = true
+    ;(newArrow as any).arrowStart = start
+    ;(newArrow as any).arrowEnd = end
+    ;(newArrow as any).arrowStartStyle = startStyle
+    ;(newArrow as any).arrowEndStyle = endStyle
+
+    canvas.add(newArrow)
+    canvas.setActiveObject(newArrow)
+    canvas.renderAll()
+    saveCanvas()
+    return
+  }
   
   // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
@@ -556,11 +1142,102 @@ watch(() => shapeStore.strokeWidth, (newWidth) => {
   }
 })
 
+// Apply arrow start head style changes from toolbar
+watch(() => shapeStore.arrowStartStyle, (newStyle) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject || !isArrowObject(activeObject)) return
+
+  const arrow = activeObject as fabric.Path
+  const start = (arrow as any).arrowStart as { x: number; y: number }
+  const end = (arrow as any).arrowEnd as { x: number; y: number }
+  const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
+
+  ;(arrow as any).arrowStartStyle = newStyle
+
+  // Recreate the arrow with new path
+  const arrowPathStr = generateArrowPath(start, end, newStyle, endStyle, arrow.strokeWidth || 2)
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  canvas.remove(arrow)
+  const newArrow = new fabric.Path(arrowPathStr, {
+    stroke: arrow.stroke || shapeStore.fillColor,
+    strokeWidth: arrow.strokeWidth || 2,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(newArrow as any).isArrow = true
+  ;(newArrow as any).arrowStart = start
+  ;(newArrow as any).arrowEnd = end
+  ;(newArrow as any).arrowStartStyle = newStyle
+  ;(newArrow as any).arrowEndStyle = endStyle
+
+  canvas.add(newArrow)
+  canvas.setActiveObject(newArrow)
+  canvas.renderAll()
+  saveCanvas()
+})
+
+// Apply arrow end head style changes from toolbar
+watch(() => shapeStore.arrowEndStyle, (newStyle) => {
+  if (!canvas || !props.active) return
+  
+  const activeObject = canvas.getActiveObject()
+  if (!activeObject || !isArrowObject(activeObject)) return
+
+  const arrow = activeObject as fabric.Path
+  const start = (arrow as any).arrowStart as { x: number; y: number }
+  const end = (arrow as any).arrowEnd as { x: number; y: number }
+  const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
+
+  ;(arrow as any).arrowEndStyle = newStyle
+
+  // Recreate the arrow with new path
+  const arrowPathStr = generateArrowPath(start, end, startStyle, newStyle, arrow.strokeWidth || 2)
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+  canvas.remove(arrow)
+  const newArrow = new fabric.Path(arrowPathStr, {
+    stroke: arrow.stroke || shapeStore.fillColor,
+    strokeWidth: arrow.strokeWidth || 2,
+    fill: 'transparent',
+    left: start.x,
+    top: start.y,
+    angle: angle,
+    originX: 'left',
+    originY: 'center',
+    ...objectDefaults,
+  })
+
+  ;(newArrow as any).isArrow = true
+  ;(newArrow as any).arrowStart = start
+  ;(newArrow as any).arrowEnd = end
+  ;(newArrow as any).arrowStartStyle = startStyle
+  ;(newArrow as any).arrowEndStyle = newStyle
+
+  canvas.add(newArrow)
+  canvas.setActiveObject(newArrow)
+  canvas.renderAll()
+  saveCanvas()
+})
+
 defineExpose({
   addSquare,
   addCircle,
   addTriangle,
   addTextZone,
+  addArrow,
   addImage,
   getSelectedImage,
   getSelectedShape,

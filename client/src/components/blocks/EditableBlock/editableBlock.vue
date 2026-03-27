@@ -227,6 +227,8 @@ watch(addShapeRequest, async () => {
   } else if (shape === 'text') {
     shapeCanvasRef.value.addTextZone()
     emit('modified', true)
+  } else if (shape === 'arrow') {
+    ;(shapeCanvasRef.value as any).addArrow()
   }
 })
 

@@ -21,6 +21,10 @@
     </button>
 
     <div v-if="isShapeMenuOpen" class="shape-menu" role="menu" aria-label="Choisir une forme">
+      <button v-if="selectedShape !== 'arrow'" class="shape-menu-item" type="button" role="menuitem" @click="selectShape('arrow')">
+        <img class="shape-menu-icon" :src="arrowIcon" alt="Flèche" />
+        <span class="shape-menu-label">Flèche</span>
+      </button>
       <button v-if="selectedShape !== 'circle'" class="shape-menu-item" type="button" role="menuitem" @click="selectShape('circle')">
         <img class="shape-menu-icon" :src="circleIcon" alt="Rond" />
         <span class="shape-menu-label">Rond</span>
@@ -45,8 +49,9 @@ import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 import squareIcon from "../../../assets/formOptionBar/square.svg"
 import circleIcon from "../../../assets/formOptionBar/circle.svg"
 import triangleIcon from "../../../assets/formOptionBar/triangle.svg"
+import arrowIcon from '../../../assets/imageOptionBar/arrow.svg'
 
-type ShapeType = 'square' | 'circle' | 'triangle'
+type ShapeType = 'square' | 'circle' | 'triangle' | 'arrow'
 
 // Stores for shape commands, block selection, and validation feedback.
 const shapeStore = useShapeStore()
@@ -55,10 +60,11 @@ const errorPopupStore = useErrorPopupStore()
 // Dropdown state and currently selected shape preset.
 const isShapeMenuOpen = ref(false)
 const shapeMenuRef = ref<HTMLElement | null>(null)
-const selectedShape = ref<ShapeType>('square')
+const selectedShape = ref<ShapeType>((shapeStore.toolbarShapeType as ShapeType) || 'square')
 
 // Resolve icon for currently selected shape.
 const selectedShapeIcon = computed(() => {
+  if (selectedShape.value === 'arrow') return arrowIcon
   if (selectedShape.value === 'circle') return circleIcon
   if (selectedShape.value === 'triangle') return triangleIcon
   return squareIcon
@@ -66,6 +72,7 @@ const selectedShapeIcon = computed(() => {
 
 // Resolve display label for currently selected shape.
 const selectedShapeLabel = computed(() => {
+  if (selectedShape.value === 'arrow') return 'Flèche'
   if (selectedShape.value === 'circle') return 'Rond'
   if (selectedShape.value === 'triangle') return 'Triangle'
   return 'Carre'
@@ -92,6 +99,7 @@ function addShape(shape: ShapeType) {
 // Update dropdown selection without creating object yet.
 function selectShape(shape: ShapeType) {
   selectedShape.value = shape
+  shapeStore.setToolbarShape(shape)
   isShapeMenuOpen.value = false
 }
 
