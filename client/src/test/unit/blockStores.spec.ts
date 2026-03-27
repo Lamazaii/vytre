@@ -22,6 +22,8 @@ vi.mock('../../services/documentService', () => ({
     update: vi.fn(),
     getById: vi.fn(),
     getAll: vi.fn(),
+    getVersion: vi.fn(),
+    checkNameExists: vi.fn(),
   },
 }))
 
@@ -416,5 +418,179 @@ describe('blocksStore', () => {
   it('initializes documentsError as null', () => {
     const store = useBlocksStore()
     expect(store.documentsError).toBeNull()
+  })
+
+  it('updateBlockCanvas updates canvas data and marks block modified', () => {
+    const store = useBlocksStore()
+    const canvasJson = JSON.stringify({ objects: [{ type: 'rect' }] })
+    store.updateBlockCanvas(0, canvasJson)
+    expect(store.blocks[0]!.canvasData).toBe(canvasJson)
+    expect(store.blocks[0]!.modified).toBe(true)
+  })
+
+  it('updateBlockCanvas does nothing for out-of-bounds index', () => {
+    const store = useBlocksStore()
+    const original = store.blocks[0]!.canvasData
+    store.updateBlockCanvas(-1, 'data')
+    store.updateBlockCanvas(999, 'data')
+    expect(store.blocks[0]!.canvasData).toBe(original)
+  })
+
+  it('canAdd returns true when last block has canvas shapes', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.canvasData = JSON.stringify({ objects: [{ type: 'circle' }] })
+    expect(store.canAdd).toBe(true)
+  })
+
+  it('canAdd returns false when canvasData has no objects', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.canvasData = JSON.stringify({ objects: [] })
+    expect(store.canAdd).toBe(false)
+  })
+
+  it('canAdd returns false when canvasData is invalid JSON', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.canvasData = 'not-json'
+    expect(store.canAdd).toBe(false)
+  })
+
+  it('removeBlock shows error when trying to remove the only block', () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    expect(store.blocks).toHaveLength(1)
+    store.removeBlock(0)
+    expect(spy).toHaveBeenCalled()
+    expect(store.blocks).toHaveLength(1)
+  })
+
+  it('loadDocumentVersion loads snapshot into store', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    const mockSnapshot = {
+      title: 'Version Title',
+      state: 'Archivé',
+      blocks: [{ id: 10, text: '<p>v</p>', step: 1, nbOfRepeats: 2, images: [], textZones: [] }]
+    }
+    docService.getVersion = vi.fn().mockResolvedValue({
+      id: 5, documentId: 1, version: 3, title: 'Version Title',
+      state: 'Archivé', snapshot: mockSnapshot, createdAt: new Date().toISOString()
+    })
+
+    await store.loadDocumentVersion(1, 3)
+
+    expect(store.currentDocument.version).toBe(3)
+    expect(store.blocks).toHaveLength(1)
+    expect(store.blocks[0]!.text).toBe('<p>v</p>')
+  })
+
+  it('loadDocumentVersion shows error on invalid snapshot', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    const docService = documentService as any
+    docService.getVersion = vi.fn().mockResolvedValue({
+      id: 5, documentId: 1, version: 3, title: 'T', state: 'En édition',
+      snapshot: null, createdAt: new Date().toISOString()
+    })
+
+    await store.loadDocumentVersion(1, 3)
+
+    expect(spy).toHaveBeenCalledWith('Version de document invalide.')
+  })
+
+  it('removeTextZone does nothing for out-of-bounds indices', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.textZones = ['zone1']
+    store.removeTextZone(-1, 0)
+    store.removeTextZone(0, -1)
+    store.removeTextZone(0, 999)
+    expect(store.blocks[0]!.textZones).toHaveLength(1)
+  })
+
+  it('loadFromClipboard shows error when clipboard generates no blocks', () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    // Invalid format that generates no blocks
+    store.loadFromClipboard('no valid table data here')
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('Impossible de générer des blocs'))
+  })
+
+  it('confirmDelete adjusts selectedIndex when deleted block is before selected', () => {
+    const store = useBlocksStore()
+    const deletePopupStore = useDeletePopupStore()
+    store.blocks = [
+      { id: 1, text: 'A', step: 1, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 2, text: 'B', step: 2, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 3, text: 'C', step: 3, nbOfRepeats: 1, modified: false, images: [] },
+    ]
+    store.selectedIndex = 2 // select last block
+    store.removeBlock(0) // delete first block → selectedIndex > i
+    deletePopupStore.confirm()
+    expect(store.selectedIndex).toBe(1) // shifted back by 1
+  })
+
+  it('confirmDelete clamps selectedIndex when last block is deleted', () => {
+    const store = useBlocksStore()
+    const deletePopupStore = useDeletePopupStore()
+    store.blocks = [
+      { id: 1, text: 'A', step: 1, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 2, text: 'B', step: 2, nbOfRepeats: 1, modified: false, images: [] },
+    ]
+    store.selectedIndex = 1 // select last block
+    store.removeBlock(1) // delete last block → selectedIndex >= blocks.length
+    deletePopupStore.confirm()
+    expect(store.selectedIndex).toBe(0) // clamped to 0
+  })
+
+  it('saveDocument retourne rename quand nameExists et userAction === rename', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.checkNameExists = vi.fn().mockResolvedValue(true)
+    const nameConflictStore = (await import('../../stores/nameConflictPopupStore')).useNameConflictPopupStore()
+    vi.spyOn(nameConflictStore, 'show').mockResolvedValue('rename')
+    store.updateBlockDescription(0, '<p>Content</p>')
+    const result = await store.saveDocument()
+    expect(result).toBe('rename')
+  })
+
+  it('saveDocument continue to save quand nameExists mais userAction !== rename', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.checkNameExists = vi.fn().mockResolvedValue(true)
+    docService.create = vi.fn().mockResolvedValue({ id: 5, title: 'T', version: 1, blocks: [], state: 'En édition', createdAt: new Date(), updatedAt: new Date() })
+    const nameConflictStore = (await import('../../stores/nameConflictPopupStore')).useNameConflictPopupStore()
+    vi.spyOn(nameConflictStore, 'show').mockResolvedValue('validate')
+    store.updateBlockDescription(0, '<p>Content</p>')
+    const result = await store.saveDocument()
+    expect(result).toBe('success')
+  })
+
+  it('saveDocument with existing id calls update', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    store.currentDocument.id = 1
+    docService.checkNameExists = vi.fn().mockResolvedValue(false)
+    docService.update = vi.fn().mockResolvedValue({ id: 1, title: 'T', version: 2, blocks: [], state: 'En édition', createdAt: new Date(), updatedAt: new Date() })
+    store.updateBlockDescription(0, '<p>Content</p>')
+    await store.saveDocument()
+    expect(docService.update).toHaveBeenCalledWith(1, expect.any(Object))
+  })
+
+  it('createNewDocument réinitialise le store', () => {
+    const store = useBlocksStore()
+    store.currentDocument.title = 'Old title'
+    store.blocks.push({ id: 99, text: 'extra', step: 2, nbOfRepeats: 1, modified: true, images: [] })
+    store.createNewDocument()
+    expect(store.currentDocument.title).toBe('Titre du document')
+    expect(store.blocks).toHaveLength(1)
+    expect(store.blocks[0]!.text).toBe('')
   })
 })

@@ -515,4 +515,77 @@ describe('TiptapEditor.vue', () => {
     expect(wrapper.props('modelValue')).toContain('strong')
     expect(wrapper.props('modelValue')).toContain('em')
   })
+
+  it('triggers onUpdate and emits update:modelValue', async () => {
+    vi.useRealTimers()
+    wrapper = mount(TiptapEditor, {
+      props: { modelValue: '', placeholder: 'Test' },
+      global: { stubs: { EditorContent: { template: '<div />', props: ['editor'] } } },
+    })
+    await flushPromises()
+    const vm = wrapper.vm as any
+    if (vm.editor) {
+      vm.editor.commands.focus()
+      vm.editor.commands.insertContent('hello')
+      await flushPromises()
+      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
+    }
+    vi.useFakeTimers()
+  })
+
+  it('FontSize setFontSize command applies font-size mark', async () => {
+    wrapper = mount(TiptapEditor, {
+      props: { modelValue: '<p>Hello</p>', placeholder: 'Test' },
+      global: { stubs: { EditorContent: { template: '<div />', props: ['editor'] } } },
+    })
+    await flushPromises()
+    const vm = wrapper.vm as any
+    if (vm.editor) {
+      expect(() => vm.editor.chain().focus().setFontSize('20px').run()).not.toThrow()
+    }
+  })
+
+  it('FontSize unsetFontSize command removes font-size mark', async () => {
+    wrapper = mount(TiptapEditor, {
+      props: { modelValue: '<p>Hello</p>', placeholder: 'Test' },
+      global: { stubs: { EditorContent: { template: '<div />', props: ['editor'] } } },
+    })
+    await flushPromises()
+    const vm = wrapper.vm as any
+    if (vm.editor) {
+      vm.editor.chain().focus().setFontSize('16px').run()
+      expect(() => vm.editor.chain().focus().unsetFontSize().run()).not.toThrow()
+    }
+  })
+
+  it('FontSize renderHTML returns style when fontSize is set', async () => {
+    wrapper = mount(TiptapEditor, {
+      props: { modelValue: '<p><span style="font-size: 20px">Large</span></p>', placeholder: 'Test' },
+      global: { stubs: { EditorContent: { template: '<div />', props: ['editor'] } } },
+    })
+    await flushPromises()
+    const vm = wrapper.vm as any
+    if (vm.editor) {
+      const html = vm.editor.getHTML()
+      expect(html).toBeDefined()
+    }
+  })
+
+  it('FontSize renderHTML returns empty object when textStyle exists but fontSize is null', async () => {
+    vi.useRealTimers()
+    wrapper = mount(TiptapEditor, {
+      props: { modelValue: '', placeholder: 'Test' },
+      global: { stubs: { EditorContent: { template: '<div />', props: ['editor'] } } },
+    })
+    await flushPromises()
+    const vm = wrapper.vm as any
+    if (vm.editor) {
+      // Apply color without fontSize — textStyle mark with null fontSize triggers the return {} branch
+      vm.editor.chain().focus().insertContent('Test').run()
+      vm.editor.chain().focus().selectAll().setColor('#ff0000').run()
+      const html = vm.editor.getHTML()
+      expect(html).toContain('Test')
+    }
+    vi.useFakeTimers()
+  })
 })

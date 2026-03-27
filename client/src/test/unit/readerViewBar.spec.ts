@@ -108,8 +108,30 @@ describe('ReaderViewBar.vue', () => {
         },
       },
     })
-    
+
     expect(wrapper.find('.rightSection').exists()).toBe(true)
+  })
+
+  it('clicking close button calls closeReader', async () => {
+    const store = usePopupStore()
+    store.openReader()
+    const wrapper = mount(ReaderViewBar, {
+      global: { stubs: { IconToggleGroup: { template: '<div />' } } },
+    })
+    await wrapper.find('.closeButton').trigger('click')
+    expect(store.isReaderOpen).toBe(false)
+  })
+
+  it('handleToggleChange does nothing when right is selected', () => {
+    const store = usePopupStore()
+    store.openReader()
+    const wrapper = mount(ReaderViewBar, {
+      global: { stubs: { IconToggleGroup: true } },
+    })
+    const vm = wrapper.vm as any
+    vm.handleToggleChange({ left: false, right: true })
+    // Reader stays open
+    expect(store.isReaderOpen).toBe(true)
   })
 })
 

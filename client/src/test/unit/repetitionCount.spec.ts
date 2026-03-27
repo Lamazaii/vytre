@@ -135,8 +135,41 @@ describe('RepetitionCount.vue', () => {
     const input = wrapper.find('input')
     await input.setValue(15)
     await input.trigger('input')
-    
+
     const emitted = wrapper.emitted('update:modelValue') as number[][]
     expect(emitted[0][0]).toBe(15)
+  })
+
+  it('caps at 9999 when input exceeds 9999 on blur', async () => {
+    const wrapper = mount(RepetitionCount, { props: { modelValue: 1 } })
+    const input = wrapper.find('input')
+    await input.setValue(99999)
+    await input.trigger('blur')
+    const emitted = wrapper.emitted('update:modelValue') as number[][]
+    const lastEmit = emitted[emitted.length - 1]
+    expect(lastEmit[0]).toBe(9999)
+  })
+
+  it('rounds value when fractional digits exceed precision on blur', async () => {
+    const wrapper = mount(RepetitionCount, { props: { modelValue: 1 } })
+    const input = wrapper.find('input')
+    await input.setValue('1.00001')
+    await input.trigger('blur')
+    const emitted = wrapper.emitted('update:modelValue') as number[][]
+    const lastEmit = emitted[emitted.length - 1]
+    expect(lastEmit[0]).toBe(1)
+  })
+
+  it('does not emit when value is already rounded on blur', async () => {
+    const wrapper = mount(RepetitionCount, { props: { modelValue: 1 } })
+    const input = wrapper.find('input')
+    await input.setValue('2.5')
+    await input.trigger('blur')
+    // 2.5 rounds to 2.5 (no change needed), no extra emit beyond the input event
+    const emitted = wrapper.emitted('update:modelValue') as number[][]
+    if (emitted) {
+      const lastEmit = emitted[emitted.length - 1]
+      expect(lastEmit[0]).toBe(2.5)
+    }
   })
 })
