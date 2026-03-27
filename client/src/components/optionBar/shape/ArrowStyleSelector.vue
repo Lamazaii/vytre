@@ -1,81 +1,118 @@
 <template>
-  <div ref="arrowStyleMenuRef" class="arrow-style-group">
-    <button class="arrow-style-button" type="button" title="Style de flèche">
-      <span class="arrow-style-label">{{ label }}: {{ selectedLabel }}</span>
-    </button>
-    <button
-      class="arrow-style-caret-button"
-      type="button"
-      title="Choisir le style de flèche"
-      aria-haspopup="menu"
-      :aria-expanded="isArrowStyleMenuOpen"
-      @click="toggleArrowStyleMenu"
-    >
-      <span class="arrow-style-caret" aria-hidden="true"></span>
-    </button>
-
-    <div v-if="isArrowStyleMenuOpen" class="arrow-style-menu" role="menu" aria-label="Choisir le style de flèche">
-      <button
-        v-for="option in options"
-        :key="option.value"
-        class="arrow-style-menu-item"
-        type="button"
-        role="menuitem"
-        @click="selectArrowStyle(option.value)"
-      >
-        <div class="arrow-preview" :class="`preview-${option.value}`"></div>
-        <span class="arrow-style-menu-label">{{ option.label }}</span>
+  <div class="arrow-style-containers">
+    <!-- Start head style selector -->
+    <div ref="arrowStyleMenuRefStart" class="arrow-style-group start-group">
+      <button class="arrow-style-button" type="button" title="Style de début de flèche">
+        <div class="arrow-head-preview start" :class="`head-preview-${modelValue}`"></div>
       </button>
+      <button
+        class="arrow-style-caret-button"
+        type="button"
+        title="Choisir le style de début"
+        aria-haspopup="menu"
+        :aria-expanded="isArrowStyleMenuOpenStart"
+        @click="toggleArrowStyleMenuStart"
+      >
+        <span class="arrow-style-caret" aria-hidden="true"></span>
+      </button>
+
+      <div v-if="isArrowStyleMenuOpenStart" class="arrow-style-menu" role="menu" aria-label="Choisir le style de début">
+        <button
+          v-for="option in options"
+          :key="option.value"
+          class="arrow-style-menu-item"
+          type="button"
+          role="menuitem"
+          @click="selectArrowStyle(option.value, 'start')"
+        >
+          <div class="arrow-preview" :class="`preview-${option.value}`"></div>
+          <span class="arrow-style-menu-label">{{ option.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- End head style selector -->
+    <div ref="arrowStyleMenuRefEnd" class="arrow-style-group end-group">
+      <button class="arrow-style-button" type="button" title="Style de fin de flèche">
+        <div class="arrow-head-preview end" :class="`head-preview-${endValue}`"></div>
+      </button>
+      <button
+        class="arrow-style-caret-button"
+        type="button"
+        title="Choisir le style de fin"
+        aria-haspopup="menu"
+        :aria-expanded="isArrowStyleMenuOpenEnd"
+        @click="toggleArrowStyleMenuEnd"
+      >
+        <span class="arrow-style-caret" aria-hidden="true"></span>
+      </button>
+
+      <div v-if="isArrowStyleMenuOpenEnd" class="arrow-style-menu" role="menu" aria-label="Choisir le style de fin">
+        <button
+          v-for="option in options"
+          :key="option.value"
+          class="arrow-style-menu-item"
+          type="button"
+          role="menuitem"
+          @click="selectArrowStyle(option.value, 'end')"
+        >
+          <div class="arrow-preview" :class="`preview-${option.value}`"></div>
+          <span class="arrow-style-menu-label">{{ option.label }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
-import type { ArrowHeadStyle } from '../../../stores/shapeStore'
+import { useShapeStore } from '../../../stores/shapeStore'
 
-interface Props {
-  modelValue: ArrowHeadStyle
-  label?: string
-}
+const shapeStore = useShapeStore()
 
-const props = defineProps<Props>()
+const isArrowStyleMenuOpenStart = ref(false)
+const isArrowStyleMenuOpenEnd = ref(false)
+const arrowStyleMenuRefStart = ref<HTMLElement | null>(null)
+const arrowStyleMenuRefEnd = ref<HTMLElement | null>(null)
 
-const emit = defineEmits<{
-  'update:modelValue': [style: ArrowHeadStyle]
-}>()
-
-const isArrowStyleMenuOpen = ref(false)
-const arrowStyleMenuRef = ref<HTMLElement | null>(null)
-
-const label = computed(() => props.label ?? 'Extrémité')
-
-const options: Array<{ value: ArrowHeadStyle; label: string }> = [
+const options: Array<{ value: string; label: string }> = [
   { value: 'none', label: 'Aucune' },
   { value: 'stroke', label: 'Trait' },
   { value: 'open', label: 'Vide' },
   { value: 'filled', label: 'Pleine' },
 ]
 
-const selectedLabel = computed(() => {
-  const option = options.find((item) => item.value === props.modelValue)
-  return option?.label ?? 'Trait'
-})
+const modelValue = computed(() => shapeStore.arrowStartStyle)
+const endValue = computed(() => shapeStore.arrowEndStyle)
 
-function toggleArrowStyleMenu() {
-  isArrowStyleMenuOpen.value = !isArrowStyleMenuOpen.value
+function toggleArrowStyleMenuStart() {
+  isArrowStyleMenuOpenStart.value = !isArrowStyleMenuOpenStart.value
+  isArrowStyleMenuOpenEnd.value = false
 }
 
-function selectArrowStyle(style: ArrowHeadStyle) {
-  emit('update:modelValue', style)
-  isArrowStyleMenuOpen.value = false
+function toggleArrowStyleMenuEnd() {
+  isArrowStyleMenuOpenEnd.value = !isArrowStyleMenuOpenEnd.value
+  isArrowStyleMenuOpenStart.value = false
+}
+
+function selectArrowStyle(style: string, end: 'start' | 'end') {
+  if (end === 'start') {
+    shapeStore.arrowStartStyle = style as any
+    isArrowStyleMenuOpenStart.value = false
+  } else {
+    shapeStore.arrowEndStyle = style as any
+    isArrowStyleMenuOpenEnd.value = false
+  }
 }
 
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
 
-  if (arrowStyleMenuRef.value && !arrowStyleMenuRef.value.contains(target)) {
-    isArrowStyleMenuOpen.value = false
+  if (arrowStyleMenuRefStart.value && !arrowStyleMenuRefStart.value.contains(target)) {
+    isArrowStyleMenuOpenStart.value = false
+  }
+  if (arrowStyleMenuRefEnd.value && !arrowStyleMenuRefEnd.value.contains(target)) {
+    isArrowStyleMenuOpenEnd.value = false
   }
 }
 
@@ -89,6 +126,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.arrow-style-containers {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .arrow-style-group {
   position: relative;
   display: inline-flex;
@@ -99,9 +142,11 @@ onBeforeUnmount(() => {
 
 .arrow-style-button {
   height: 30px;
+  width: 40px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  justify-content: center;
+  padding: 0;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
   background: #ffffff;
@@ -113,11 +158,47 @@ onBeforeUnmount(() => {
   background: #f9fafb;
 }
 
-.arrow-style-label {
-  font-family: 'Segoe UI', sans-serif;
-  font-size: 12px;
-  color: #1f2937;
-  white-space: nowrap;
+.arrow-head-preview {
+  width: 32px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.head-preview-none {
+  width: 20px;
+  height: 2px;
+  background: #1f2937;
+  border-radius: 1px;
+}
+
+.head-preview-stroke {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='10' x2='18' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='22' y1='10' x2='18' y2='6' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='22' y1='10' x2='18' y2='14' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.head-preview-open {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='10' x2='16' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='22,10 16,6 16,14' fill='none' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.head-preview-filled {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='10' x2='16' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='22,10 16,6 16,14' fill='%231f2937'/%3E%3C/svg%3E") no-repeat center;
+}
+
+/* End direction arrows (pointing left) */
+.arrow-head-preview.end.head-preview-stroke {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='12' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='8' y1='10' x2='12' y2='6' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='8' y1='10' x2='12' y2='14' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.arrow-head-preview.end.head-preview-open {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='14' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='8,10 14,6 14,14' fill='none' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+}
+
+.arrow-head-preview.end.head-preview-filled {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='14' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='8,10 14,6 14,14' fill='%231f2937'/%3E%3C/svg%3E") no-repeat center;
 }
 
 .arrow-style-caret-button {
@@ -183,10 +264,11 @@ onBeforeUnmount(() => {
   justify-content: flex-start;
 }
 
-/* Arrow head style previews */
 .preview-none {
-  background: linear-gradient(to right, transparent 0%, #1f2937 50%, transparent 100%);
-  position: relative;
+  width: 32px;
+  height: 2px;
+  background: #1f2937;
+  border-radius: 1px;
 }
 
 .preview-stroke {
@@ -195,7 +277,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-open {
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 50 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='10' x2='30' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='30' y1='4' x2='40' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cline x1='30' y1='16' x2='40' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3C/svg%3E") no-repeat center;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 50 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='0' y1='10' x2='28' y2='10' stroke='%231f2937' stroke-width='1'/%3E%3Cpolygon points='40,10 30,4 30,16' fill='none' stroke='%231f2937' stroke-width='1'/%3E%3C/svg%3E") no-repeat center;
   background-size: contain;
 }
 

@@ -33,14 +33,6 @@
 
     <ArrowStyleSelector
       v-if="isArrowSelected"
-      v-model="shapeStore.arrowStartStyle"
-      label="Début"
-    />
-
-    <ArrowStyleSelector
-      v-if="isArrowSelected"
-      v-model="shapeStore.arrowEndStyle"
-      label="Fin"
     />
 
     <SelecteurEpaisseur 
