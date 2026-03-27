@@ -139,6 +139,57 @@ function addTriangle() {
   createShape('triangle')
 }
 
+// Insert an editable text object centered in the drawing area.
+function addTextZone() {
+  if (!canvas) return
+
+  const canvasWidth = canvas.width || props.width
+  const canvasHeight = canvas.height || props.height
+  const text = new fabric.Textbox('Nouvelle zone de texte', {
+    left: 0,
+    top: 0,
+    width: Math.min(280, Math.max(180, canvasWidth - 40)),
+    fontSize: 18,
+    fill: '#111827',
+    fontFamily: 'Arial',
+    lockScalingY: true,
+    ...objectDefaults,
+  })
+
+  const textWidth = (text.width || 0) * (text.scaleX || 1)
+  const textHeight = (text.height || 0) * (text.scaleY || 1)
+  text.set({
+    left: Math.max(0, (canvasWidth - textWidth) / 2),
+    top: Math.max(0, (canvasHeight - textHeight) / 2),
+  })
+
+  canvas.add(text)
+  handleObjectMoving(text, canvasWidth, canvasHeight)
+  text.setCoords()
+  canvas.setActiveObject(text)
+  text.enterEditing()
+  text.selectAll()
+  canvas.renderAll()
+}
+
+// Keep text visual size fixed by converting scale into width.
+function normalizeTextboxScale(textbox: fabric.Textbox) {
+  const currentScaleX = textbox.scaleX || 1
+  const baseWidth = textbox.width || 0
+  if (currentScaleX !== 1 && baseWidth > 0) {
+    textbox.set({
+      width: Math.max(60, baseWidth * currentScaleX),
+      scaleX: 1,
+    })
+  }
+
+  if ((textbox.scaleY || 1) !== 1) {
+    textbox.set({ scaleY: 1 })
+  }
+
+  textbox.setCoords()
+}
+
 // Insert image object and fit it inside the canvas bounds.
 function addImage(imageSrc: string) {
   if (!canvas) return
@@ -192,6 +243,16 @@ function getSelectedShape() {
   const activeObject = canvas.getActiveObject()
   if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
     return activeObject as fabric.Object
+  }
+  return null
+}
+
+// Return active text object when selection is a text.
+function getSelectedText() {
+  if (!canvas) return null
+  const activeObject = canvas.getActiveObject()
+  if (activeObject && (activeObject.type === 'textbox' || activeObject.type === 'i-text' || activeObject.type === 'text')) {
+    return activeObject as fabric.Textbox
   }
   return null
 }
@@ -277,6 +338,30 @@ function sendSelectedShapeToBack() {
   return true
 }
 
+// Move selected text one step forward in object stack.
+function bringSelectedTextForward() {
+  if (!canvas) return false
+  const selectedText = getSelectedText()
+  if (!selectedText) return false
+
+  canvas.bringForward(selectedText)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+// Move selected text one step backward in object stack.
+function sendSelectedTextToBack() {
+  if (!canvas) return false
+  const selectedText = getSelectedText()
+  if (!selectedText) return false
+
+  canvas.sendBackwards(selectedText)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
 // Sync selection context (image vs shape) with corresponding stores.
 function handleSelection(e: any) {
   const selected = e.selected?.[0]
@@ -286,6 +371,10 @@ function handleSelection(e: any) {
       imageCropStore.selectImage(imageId, props.blockIndex)
     }
     textFormatStore.clearTextFocus()
+  } else if (selected && selected.type === 'textbox') {
+    // Activate text formatting toolbar for Fabric textbox with multi-style support
+    textFormatStore.setFabricTextbox(selected as fabric.Textbox, canvas)
+    imageCropStore.clearSelection()
   } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
     // Keep toolbar controls in sync with selected shape style.
     const fill = selected.fill || '#000000'
@@ -296,6 +385,7 @@ function handleSelection(e: any) {
     textFormatStore.clearTextFocus()
   } else {
     imageCropStore.clearSelection()
+    textFormatStore.clearTextFocus()
   }
 }
 
@@ -303,6 +393,14 @@ function handleSelection(e: any) {
 function handleSelectionCleared() {
   imageCropStore.clearSelection()
   shapeStore.clearShapeSelection()
+  textFormatStore.setFabricTextbox(null, null)
+}
+
+// Keep text toolbar state synced while editing a Fabric textbox.
+function handleTextboxStateUpdate(e: any) {
+  const target = e?.target as fabric.Object | undefined
+  if (!target || target.type !== 'textbox') return
+  textFormatStore.updateFabricStatesFromObject(target as fabric.Textbox)
 }
 
 // Initialize Fabric canvas, events, and optional JSON restore.
@@ -319,6 +417,7 @@ onMounted(() => {
 
   fabric.Object.prototype.controls.deleteControl = createDeleteControl()
   fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
+  fabric.Textbox.prototype.controls.deleteControl = createDeleteControl()
 
   canvas.on('object:added', saveCanvas)
   canvas.on('object:modified', saveCanvas)
@@ -341,12 +440,20 @@ onMounted(() => {
     const canvasWidth = canvas.width || props.width
     const canvasHeight = canvas.height || props.height
 
+    if (obj.type === 'textbox') {
+      normalizeTextboxScale(obj as fabric.Textbox)
+    }
+
     handleObjectScaling(obj, canvasWidth, canvasHeight)
   })
 
   canvas.on('selection:created', handleSelection)
   canvas.on('selection:updated', handleSelection)
   canvas.on('selection:cleared', handleSelectionCleared)
+  canvas.on('text:selection:changed', handleTextboxStateUpdate)
+  canvas.on('text:editing:entered', handleTextboxStateUpdate)
+  canvas.on('text:editing:exited', handleTextboxStateUpdate)
+  canvas.on('text:changed', handleTextboxStateUpdate)
 
   globalThis.addEventListener('keydown', handleKeyDown)
 
@@ -354,6 +461,10 @@ onMounted(() => {
     canvas.loadFromJSON(props.canvasData, () => {
       canvas?.getObjects().forEach((obj) => {
         Object.assign(obj, objectDefaults)
+        if (obj.type === 'textbox') {
+          ;(obj as fabric.Textbox).set({ lockScalingY: true })
+          normalizeTextboxScale(obj as fabric.Textbox)
+        }
         obj.setCoords()
       })
       canvas?.renderAll()
@@ -449,14 +560,18 @@ defineExpose({
   addSquare,
   addCircle,
   addTriangle,
+  addTextZone,
   addImage,
   getSelectedImage,
   getSelectedShape,
+  getSelectedText,
   replaceSelectedImage,
   bringSelectedImageForward,
   sendSelectedImageToBack,
   bringSelectedShapeForward,
   sendSelectedShapeToBack,
+  bringSelectedTextForward,
+  sendSelectedTextToBack,
 })
 </script>
 
