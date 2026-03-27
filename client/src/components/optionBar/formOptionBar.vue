@@ -4,7 +4,17 @@
 
     <div class="separator"></div>
 
-    <ColorPicker 
+    <ColorPicker
+      v-if="isArrowSelected"
+      v-model="shapeStore.fillColor"
+      title="Couleur de flèche"
+      :icon-path="fillIconPath"
+      :preset-colors="presetColors"
+      :allow-transparent="false"
+    />
+
+    <ColorPicker
+      v-else
       v-model="shapeStore.fillColor" 
       title="Couleur de remplissage"
       :icon-path="fillIconPath"
@@ -12,12 +22,17 @@
       :allow-transparent="true"
     />
 
-    <ColorPicker 
+    <ColorPicker
+      v-if="!isArrowSelected"
       v-model="shapeStore.strokeColor" 
       title="Couleur du contour"
       :icon-path="strokeIconPath"
       :preset-colors="presetColors"
       :allow-transparent="true"
+    />
+
+    <ArrowStyleSelector
+      v-if="isArrowSelected"
     />
 
     <SelecteurEpaisseur 
@@ -66,6 +81,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import ShapeSelector from './shape/ShapeSelector.vue'
+import ArrowStyleSelector from './shape/ArrowStyleSelector.vue'
 import ColorPicker from './shared/ColorPicker.vue'
 import SelecteurEpaisseur from './shared/SelecteurEpaisseur.vue'
 import { useShapeStore } from '../../stores/shapeStore'
@@ -79,6 +95,8 @@ const shapeStore = useShapeStore()
 const isLayerMenuOpen = ref(false)
 // True when a canvas shape is currently selected.
 const hasSelectedShape = computed(() => shapeStore.hasSelectedShape)
+// Arrow-specific toolbar mode based on selected shape.
+const isArrowSelected = computed(() => shapeStore.toolbarShapeType === 'arrow')
 
 // Shared swatches for fill/stroke pickers.
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']

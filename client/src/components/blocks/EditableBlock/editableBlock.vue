@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 import { useShapeStore } from '../../../stores/shapeStore'
@@ -92,6 +93,7 @@ const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const shapeStore = useShapeStore()
 const imageCropStore = useImageCropStore()
+const { addShapeRequest } = storeToRefs(shapeStore)
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
 const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
@@ -206,7 +208,7 @@ watch(() => props.description, (newDesc) => {
 })
 
 // Create selected shape type inside current active block.
-watch(() => shapeStore.addShapeRequest, async () => {
+watch(addShapeRequest, async () => {
   if (!shapeCanvasRef.value || !props.active) return
   
   const shape = shapeStore.activeShape
@@ -222,6 +224,11 @@ watch(() => shapeStore.addShapeRequest, async () => {
     shapeCanvasRef.value.addCircle()
   } else if (shape === 'triangle') {
     shapeCanvasRef.value.addTriangle()
+  } else if (shape === 'text') {
+    shapeCanvasRef.value.addTextZone()
+    emit('modified', true)
+  } else if (shape === 'arrow') {
+    ;(shapeCanvasRef.value as any).addArrow()
   }
 })
 
@@ -266,6 +273,19 @@ watch(() => shapeStore.bringShapeForwardRequest, () => {
 watch(() => shapeStore.sendShapeToBackRequest, () => {
   if (!props.active || !shapeCanvasRef.value) return
   shapeCanvasRef.value.sendSelectedShapeToBack()
+  emit('modified', true)
+})
+
+// Layer controls for selected text objects.
+watch(() => textFormatStore.bringTextForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedTextForward()
+  emit('modified', true)
+})
+
+watch(() => textFormatStore.sendTextToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedTextToBack()
   emit('modified', true)
 })
 
