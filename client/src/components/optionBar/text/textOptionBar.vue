@@ -42,12 +42,52 @@
         </div>
       </div>
     </div>
+
+    <div class="divider"></div>
+
+    <div class="organize-button-group" :class="{ disabled: !hasSelectedTextbox }">
+      <button
+        class="organize-select-button"
+        type="button"
+        title="Organiser"
+        :disabled="!hasSelectedTextbox"
+        @click="toggleLayerMenu"
+        @mousedown.prevent
+      >
+        <img class="organize-select-icon" :src="organizationIcon" alt="Organiser" />
+        <span class="organize-select-label">Organiser</span>
+      </button>
+
+      <button
+        class="organize-caret-button"
+        type="button"
+        title="Afficher le menu organiser"
+        aria-haspopup="menu"
+        :aria-expanded="isLayerMenuOpen"
+        :disabled="!hasSelectedTextbox"
+        @click="toggleLayerMenu"
+        @mousedown.prevent
+      >
+        <span class="organize-caret" aria-hidden="true"></span>
+      </button>
+
+      <div v-if="isLayerMenuOpen && hasSelectedTextbox" class="layerDropdown" role="menu" aria-label="Ordre du texte">
+        <button class="layerMenuItem" @click="onBringForwardMenuClick" @mousedown.prevent title="Avancer" type="button">
+          <img class="layerMenuIcon" :src="flipToFrontIcon" alt="Avancer" />
+          <span class="layerMenuLabel">Avancer</span>
+        </button>
+
+        <button class="layerMenuItem" @click="onSendToBackMenuClick" @mousedown.prevent title="Reculer" type="button">
+          <img class="layerMenuIcon" :src="flipToBackIcon" alt="Reculer" />
+          <span class="layerMenuLabel">Reculer</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 // SVG icons for formatting buttons
 import boldIcon from "../../../assets/textOptionBar/bold.svg"
 import boldIconActive from "../../../assets/textOptionBar/boldActive.svg"
@@ -56,6 +96,9 @@ import italicIconActive from "../../../assets/textOptionBar/italicActive.svg"
 import underlineIcon from "../../../assets/textOptionBar/underline.svg"
 import underlineIconActive from "../../../assets/textOptionBar/underlineActive.svg"
 import addTextIcon from "../../../assets/textOptionBar/addText.svg"
+import organizationIcon from '../../../assets/optionBarImage/organisation.svg'
+import flipToFrontIcon from '../../../assets/optionBarImage/flip_to_front.svg'
+import flipToBackIcon from '../../../assets/optionBarImage/flip_to_back.svg'
 
 import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
@@ -66,12 +109,41 @@ const textFormatStore = useTextFormatStore()
 const shapeStore = useShapeStore()
 
 // Reactive formatting flags mirrored from the text format store.
-const { bold, italic, underline, fontSize, color } = storeToRefs(textFormatStore)
-const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand } = textFormatStore
+const { bold, italic, underline, fontSize, color, fabricTextbox } = storeToRefs(textFormatStore)
+const { applyBold, applyItalic, applyUnderline, applyColor, applyFontSize, updateStatesFromCommand, requestBringTextForward, requestSendTextToBack } = textFormatStore
 
 // Local UI state for add-text toggle and color picker.
 const showColor = ref(false)
 const colorRoot = ref<HTMLElement | null>(null)
+
+// Layer menu state
+const isLayerMenuOpen = ref(false)
+const hasSelectedTextbox = computed(() => !!fabricTextbox.value)
+
+function toggleLayerMenu() {
+  if (!hasSelectedTextbox.value) return
+  isLayerMenuOpen.value = !isLayerMenuOpen.value
+}
+
+function closeLayerMenu() {
+  isLayerMenuOpen.value = false
+}
+
+watch(hasSelectedTextbox, (isSelected) => {
+  if (!isSelected) {
+    closeLayerMenu()
+  }
+})
+
+function onBringForwardMenuClick() {
+  requestBringTextForward()
+  closeLayerMenu()
+}
+
+function onSendToBackMenuClick() {
+  requestSendTextToBack()
+  closeLayerMenu()
+}
 
 // Preset color palette displayed in picker.
 const presetColors = ['#000000', '#3b82f6', '#dc2626', '#10b981', '#6b7280', '#f59e0b', '#92400e', '#7c3aed']
@@ -248,5 +320,112 @@ onBeforeUnmount(() => {
 
 .swatch:hover {
   transform: scale(1.15);
+}
+
+.organize-button-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.organize-select-button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.organize-select-button:hover {
+  background: #f8f8f8;
+}
+
+.organize-select-button:disabled {
+  cursor: not-allowed;
+  background: #ffffff;
+  opacity: 0.5;
+}
+
+.organize-select-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0);
+}
+
+.organize-select-label {
+  font-family: 'Segoe UI';
+  font-size: 12px;
+  color: #4B5563;
+}
+
+.organize-caret-button {
+  width: 22px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.organize-caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #4B5563;
+}
+
+.layerDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+}
+
+.layerMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.layerMenuItem:hover {
+  background: #F3F4F6;
+}
+
+.layerMenuIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.layerMenuLabel {
+  font-family: 'Segoe UI';
+  font-size: 12px;
+  color: #374151;
 }
 </style>

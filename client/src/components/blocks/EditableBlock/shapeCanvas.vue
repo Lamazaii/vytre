@@ -247,6 +247,16 @@ function getSelectedShape() {
   return null
 }
 
+// Return active text object when selection is a text.
+function getSelectedText() {
+  if (!canvas) return null
+  const activeObject = canvas.getActiveObject()
+  if (activeObject && (activeObject.type === 'textbox' || activeObject.type === 'i-text' || activeObject.type === 'text')) {
+    return activeObject as fabric.Textbox
+  }
+  return null
+}
+
 // Replace selected image while preserving transform values.
 function replaceSelectedImage(newImageSrc: string) {
   const selectedImage = getSelectedImage()
@@ -323,6 +333,30 @@ function sendSelectedShapeToBack() {
   if (!selectedShape) return false
 
   canvas.sendBackwards(selectedShape)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+// Move selected text one step forward in object stack.
+function bringSelectedTextForward() {
+  if (!canvas) return false
+  const selectedText = getSelectedText()
+  if (!selectedText) return false
+
+  canvas.bringForward(selectedText)
+  canvas.renderAll()
+  saveCanvas()
+  return true
+}
+
+// Move selected text one step backward in object stack.
+function sendSelectedTextToBack() {
+  if (!canvas) return false
+  const selectedText = getSelectedText()
+  if (!selectedText) return false
+
+  canvas.sendBackwards(selectedText)
   canvas.renderAll()
   saveCanvas()
   return true
@@ -530,11 +564,14 @@ defineExpose({
   addImage,
   getSelectedImage,
   getSelectedShape,
+  getSelectedText,
   replaceSelectedImage,
   bringSelectedImageForward,
   sendSelectedImageToBack,
   bringSelectedShapeForward,
   sendSelectedShapeToBack,
+  bringSelectedTextForward,
+  sendSelectedTextToBack,
 })
 </script>
 

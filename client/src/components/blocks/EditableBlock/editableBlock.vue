@@ -274,6 +274,19 @@ watch(() => shapeStore.sendShapeToBackRequest, () => {
   emit('modified', true)
 })
 
+// Layer controls for selected text objects.
+watch(() => textFormatStore.bringTextForwardRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.bringSelectedTextForward()
+  emit('modified', true)
+})
+
+watch(() => textFormatStore.sendTextToBackRequest, () => {
+  if (!props.active || !shapeCanvasRef.value) return
+  shapeCanvasRef.value.sendSelectedTextToBack()
+  emit('modified', true)
+})
+
 // Open cropper with currently selected image source.
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
   if (timestamp > 0 && imageCropStore.blockIndex === props.blockIndex && shapeCanvasRef.value) {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import type { Editor } from '@tiptap/core'
 import type { fabric } from 'fabric'
 
@@ -15,11 +15,11 @@ export const useTextFormatStore = defineStore('textFormat', () => {
   const color = ref('#000000')
 
   // Editor references
-  const activeEl = ref<HTMLElement | null>(null)      // Active contentEditable element
-  const lastRange = ref<Range | null>(null)           // Saved text selection
-  const tiptapEditor = ref<Editor | null>(null)       // Tiptap editor instance
-  const fabricTextbox = ref<fabric.Textbox | null>(null) // Active Fabric textbox object
-  const fabricCanvas = ref<fabric.Canvas | null>(null) // Canvas reference for rendering
+  const activeEl = shallowRef<HTMLElement | null>(null)      // Active contentEditable element
+  const lastRange = shallowRef<Range | null>(null)           // Saved text selection
+  const tiptapEditor = shallowRef<Editor | null>(null)       // Tiptap editor instance
+  const fabricTextbox = shallowRef<fabric.Textbox | null>(null) // Active Fabric textbox object
+  const fabricCanvas = shallowRef<fabric.Canvas | null>(null) // Canvas reference for rendering
 
   function setTiptapEditor(editor: Editor | null) {
     tiptapEditor.value = editor
@@ -302,6 +302,17 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     fontSize.value = 'Medium'
   }
 
+  const bringTextForwardRequest = ref(0)
+  const sendTextToBackRequest = ref(0)
+
+  function requestBringTextForward() {
+    bringTextForwardRequest.value++
+  }
+
+  function requestSendTextToBack() {
+    sendTextToBackRequest.value++
+  }
+
   function clearTextFocus() {
     hasTextFocus.value = false
     fabricTextbox.value = null
@@ -315,6 +326,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     fontSize,
     hasTextFocus,
     color,
+    bringTextForwardRequest,
+    sendTextToBackRequest,
 
     activeEl,
     lastRange,
@@ -337,5 +350,8 @@ export const useTextFormatStore = defineStore('textFormat', () => {
     applyFontSize,
     resetFormattingIndicators,
     clearTextFocus,
+
+    requestBringTextForward,
+    requestSendTextToBack,
   }
 })
