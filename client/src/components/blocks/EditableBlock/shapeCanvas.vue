@@ -280,9 +280,11 @@ function addTextZone() {
     fontSize: 18,
     fill: '#111827',
     fontFamily: 'Arial',
-    lockScalingY: true,
     ...objectDefaults,
   })
+
+  // Ensure vertical scaling is locked — set after construction to avoid typing issues
+  ;(text as any).lockScalingY = true
 
   const textWidth = (text.width || 0) * (text.scaleX || 1)
   const textHeight = (text.height || 0) * (text.scaleY || 1)
@@ -1063,8 +1065,8 @@ watch(() => props.active, (isActive) => {
       canvas.discardActiveObject()
       imageCropStore.clearSelection()
     }
-  },
-);
+  }
+});
 
 // Apply fill updates from toolbar to selected shape.
 watch(
@@ -1100,7 +1102,7 @@ watch(
         saveCanvas();
       }
     }
-  },
+  }
 );
 
 // Apply stroke color updates from toolbar to selected shape.
@@ -1138,32 +1140,32 @@ watch(
         saveCanvas();
       }
     }
-  },
+  }
 );
 
 // Apply stroke width updates from toolbar to selected shape.
 watch(() => shapeStore.strokeWidth, (newWidth) => {
-  if (!canvas || !props.active) return
-  
-  const activeObject = canvas.getActiveObject()
-  if (!activeObject) return
+  if (!canvas || !props.active) return;
+
+  const activeObject = canvas.getActiveObject();
+  if (!activeObject) return;
 
   if (isArrowObject(activeObject)) {
-    const arrow = activeObject as fabric.Path
-    const start = (arrow as any).arrowStart as { x: number; y: number }
-    const end = (arrow as any).arrowEnd as { x: number; y: number }
-    const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle
-    const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle
+    const arrow = activeObject as fabric.Path;
+    const start = (arrow as any).arrowStart as { x: number; y: number };
+    const end = (arrow as any).arrowEnd as { x: number; y: number };
+    const startStyle = (arrow as any).arrowStartStyle || shapeStore.arrowStartStyle;
+    const endStyle = (arrow as any).arrowEndStyle || shapeStore.arrowEndStyle;
 
     // Regenerate arrow path with new stroke width
-    const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, newWidth)
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+    const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, newWidth);
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-    canvas.remove(arrow)
+    canvas.remove(arrow);
     const newArrow = new fabric.Path(arrowPathStr, {
-      stroke: arrow.stroke || shapeStore.fillColor,
+      stroke: (arrow as any).stroke || shapeStore.fillColor,
       strokeWidth: newWidth,
       fill: 'transparent',
       left: start.x,
@@ -1172,31 +1174,31 @@ watch(() => shapeStore.strokeWidth, (newWidth) => {
       originX: 'left',
       originY: 'center',
       ...objectDefaults,
-    })
+    });
 
-    ;(newArrow as any).isArrow = true
-    ;(newArrow as any).arrowStart = start
-    ;(newArrow as any).arrowEnd = end
-    ;(newArrow as any).arrowStartStyle = startStyle
-    ;(newArrow as any).arrowEndStyle = endStyle
+    (newArrow as any).isArrow = true;
+    (newArrow as any).arrowStart = start;
+    (newArrow as any).arrowEnd = end;
+    (newArrow as any).arrowStartStyle = startStyle;
+    (newArrow as any).arrowEndStyle = endStyle;
 
-    canvas.add(newArrow)
-    canvas.setActiveObject(newArrow)
-    canvas.renderAll()
-    saveCanvas()
-    return
+    canvas.add(newArrow);
+    canvas.setActiveObject(newArrow);
+    canvas.renderAll();
+    saveCanvas();
+    return;
   }
-  
+
   // Ignore images; styles apply only to geometric shapes.
   if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
     // Avoid unnecessary render/save cycles.
     if (activeObject.strokeWidth !== newWidth) {
-      activeObject.set({ strokeWidth: newWidth })
-      canvas.renderAll()
-      saveCanvas()
+      activeObject.set({ strokeWidth: newWidth });
+      canvas.renderAll();
+      saveCanvas();
     }
-  },
-);
+  }
+});
 
 // Apply arrow start head style changes from toolbar
 watch(() => shapeStore.arrowStartStyle, (newStyle) => {
