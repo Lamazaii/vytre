@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type ShapeType = 'square' | 'circle' | 'triangle' | null
+export type ShapeType = 'square' | 'circle' | 'triangle' | 'text' | null
 
 export const useShapeStore = defineStore('shape', () => {
   // Currently selected shape type from toolbar.
