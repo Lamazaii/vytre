@@ -66,6 +66,38 @@ describe('documentVersion.manager', () => {
             expect(parsed.blocks[0].textZones).toEqual(['zone1', 'zone2']);
             expect(parsed.blocks[1].textZones).toEqual([]);
         });
+
+        it('returns empty arrays when textZones is missing or not an array',
+            () => {
+                const snapshot = buildSnapshot({
+                    title: 'Doc',
+                    state: 'En édition',
+                    blocks: [
+                        {
+                            text: 'A',
+                            step: 1,
+                            nbOfRepeats: 1,
+                            canvasData: null,
+                            images: [],
+                        },
+                        {
+                            text: 'B',
+                            step: 2,
+                            nbOfRepeats: 1,
+                            textZones: '{"unexpected":true}',
+                            canvasData: null,
+                            images: [],
+                        },
+                    ],
+                });
+
+                const parsed = JSON.parse(snapshot) as {
+                    blocks: { textZones: string[], }[],
+                };
+
+                expect(parsed.blocks[0].textZones).toEqual([]);
+                expect(parsed.blocks[1].textZones).toEqual([]);
+            });
     });
 
     describe('createDocumentVersion', () => {

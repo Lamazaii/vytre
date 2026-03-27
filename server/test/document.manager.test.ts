@@ -1,3 +1,5 @@
+const createDocumentVersionMock = jest.fn();
+
 jest.mock('../src/lib/prisma', () => {
     return {
         prisma: {
@@ -10,6 +12,10 @@ jest.mock('../src/lib/prisma', () => {
         },
     };
 });
+
+jest.mock('../src/managers/documentVersion.manager', () => ({
+    createDocumentVersion: createDocumentVersionMock,
+}));
 
 import * as documentManager from '../src/managers/document.manager';
 import { prisma } from '../src/lib/prisma';
@@ -48,6 +54,7 @@ const getFirstMockCallArg = <T>(mockFn: jest.Mock): T => {
 describe('DocumentManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        createDocumentVersionMock.mockResolvedValue(undefined);
         (prisma.document.findUnique as jest.Mock).mockResolvedValue({
             version: 1,
         });
@@ -292,6 +299,69 @@ describe('DocumentManager', () => {
                 expect(createCall.data.blocks.create[0].canvasData).toBeNull();
             },
         );
+
+        it('should forward persisted blocks to createDocumentVersion',
+            async () => {
+                const inputBlocks = [
+                    {
+                        text: 'persisted',
+                        step: 1,
+                        nbOfRepeats: 2,
+                        textZones: ['zone'],
+                        canvasData: 'canvas',
+                        images: [{ imagePath: 'img.png' }],
+                    },
+                ];
+
+                const persistedDocument = {
+                    id: 5,
+                    title: 'Persisted',
+                    version: 1,
+                    state: 'Actif',
+                    blocks: [
+                        {
+                            text: 'persisted',
+                            step: 1,
+                            nbOfRepeats: 2,
+                            textZones: '["zone"]',
+                            canvasData: 'canvas',
+                            images: [{ imagePath: 'img.png' }],
+                        },
+                    ],
+                };
+
+                (prisma.document.create as jest.Mock).mockResolvedValue(
+                    persistedDocument,
+                );
+
+                await documentManager.create({
+                    title: 'Persisted',
+                    version: 1,
+                    blocks: inputBlocks,
+                    state: 'Actif',
+                });
+
+                expect(createDocumentVersionMock).toHaveBeenCalledTimes(1);
+                expect(createDocumentVersionMock).toHaveBeenCalledWith(
+                    prisma,
+                    expect.objectContaining({
+                        id: persistedDocument.id,
+                        version: persistedDocument.version,
+                        title: persistedDocument.title,
+                        state: persistedDocument.state,
+                        blocks: [
+                            expect.objectContaining({
+                                text: 'persisted',
+                                step: 1,
+                                nbOfRepeats: 2,
+                                textZones: '["zone"]',
+                                canvasData: 'canvas',
+                                images: [{ imagePath: 'img.png' }],
+                            }),
+                        ],
+                    }),
+                );
+            });
     });
 
     describe('getAll', () => {
@@ -560,5 +630,82 @@ describe('DocumentManager', () => {
                 expect(updateCall.data.blocks.create[0].canvasData).toBeNull();
             },
         );
+
+        it('should return null when document does not exist', async () => {
+            (prisma.document.findUnique as jest.Mock).mockResolvedValueOnce(
+                null,
+            );
+
+            const result = await documentManager.update(99, {
+                title: 'Missing',
+                version: 1,
+            });
+
+            expect(result).toBeNull();
+            expect(prisma.document.update).not.toHaveBeenCalled();
+            expect(createDocumentVersionMock).not.toHaveBeenCalled();
+        });
+
+        it('should increment version and persist snapshot on update',
+            async () => {
+                (prisma.document.findUnique as jest.Mock)
+                    .mockResolvedValueOnce({
+                        version: 2,
+                    });
+
+                const updatedDocument = {
+                    id: 1,
+                    title: 'Doc',
+                    version: 3,
+                    state: 'Actif',
+                    blocks: [
+                        {
+                            text: 'updated',
+                            step: 1,
+                            nbOfRepeats: 1,
+                            textZones: '[]',
+                            canvasData: null,
+                            images: [{ imagePath: 'img.png' }],
+                        },
+                    ],
+                };
+
+                (prisma.document.update as jest.Mock).mockResolvedValue(
+                    updatedDocument,
+                );
+
+                await documentManager.update(1, {
+                    title: 'Doc',
+                    version: 999,
+                    blocks: [
+                        {
+                            text: 'updated',
+                            step: 1,
+                            nbOfRepeats: 1,
+                            textZones: [],
+                            images: [{ imagePath: 'img.png' }],
+                        },
+                    ],
+                    state: 'Actif',
+                });
+
+                const updateCall = getFirstMockCallArg<
+                    { data: { version: number, }, }
+                >(prisma.document.update as jest.Mock);
+
+                expect(updateCall.data.version).toBe(3);
+                expect(createDocumentVersionMock).toHaveBeenCalledWith(
+                    prisma,
+                    expect.objectContaining({
+                        id: updatedDocument.id,
+                        version: updatedDocument.version,
+                        blocks: [
+                            expect.objectContaining({
+                                images: [{ imagePath: 'img.png' }],
+                            }),
+                        ],
+                    }),
+                );
+            });
     });
 });

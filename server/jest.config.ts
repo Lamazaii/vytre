@@ -8,7 +8,13 @@ const config: Config = {
   transform: {
     '^.+\\.(ts)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/.*.ts', '!src/**/index.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/.*.ts',
+    '!src/**/index.ts',
+    '!src/lib/prisma.ts',
+    '!src/scripts/**',
+  ],
   coverageDirectory: '<rootDir>/coverage',
 };
 
