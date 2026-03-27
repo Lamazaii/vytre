@@ -562,7 +562,7 @@ onMounted(() => {
   canvas = new fabric.Canvas(canvasElement.value, {
     width: props.width,
     height: props.height,
-    selection: props.active,
+    selection: true,
     preserveObjectStacking: true,
     renderOnAddRemove: true,
   })
@@ -1027,10 +1027,11 @@ watch(() => props.active, (isActive) => {
     modifyingEnd = null
   }
   if (canvas) {
-    canvas.selection = isActive
+    // Keep selection and eventing always enabled for drag and drop
+    // Only toggle controls visibility based on active state
     canvas.forEachObject((obj: fabric.Object) => {
-      obj.selectable = isActive
-      obj.evented = isActive
+      obj.hasControls = isActive
+      obj.hasBorders = isActive
     })
     
     if (!isActive) {
