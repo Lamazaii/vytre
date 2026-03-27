@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useShapeStore } from '../../../stores/shapeStore'
 import { useBlocksStore } from '../../../stores/blockStores'
 import { useErrorPopupStore } from '../../../stores/errorPopupStore'
@@ -60,7 +60,18 @@ const errorPopupStore = useErrorPopupStore()
 // Dropdown state and currently selected shape preset.
 const isShapeMenuOpen = ref(false)
 const shapeMenuRef = ref<HTMLElement | null>(null)
-const selectedShape = ref<ShapeType>((shapeStore.toolbarShapeType as ShapeType) || 'square')
+
+const validShapes = ['square', 'circle', 'triangle', 'arrow']
+const initialShape = validShapes.includes(shapeStore.toolbarShapeType as string) 
+  ? (shapeStore.toolbarShapeType as ShapeType) 
+  : 'square'
+const selectedShape = ref<ShapeType>(initialShape)
+
+watch(() => shapeStore.toolbarShapeType, (newType) => {
+  if (validShapes.includes(newType as string)) {
+    selectedShape.value = newType as ShapeType
+  }
+})
 
 // Resolve icon for currently selected shape.
 const selectedShapeIcon = computed(() => {
