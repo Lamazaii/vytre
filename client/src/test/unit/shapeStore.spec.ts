@@ -98,4 +98,29 @@ describe('shapeStore', () => {
     store.clearShapeSelection()
     expect(store.hasSelectedShape).toBe(false)
   })
+
+  it('setToolbarShape updates toolbarShapeType', () => {
+    const store = useShapeStore()
+    store.setToolbarShape('arrow')
+    expect(store.toolbarShapeType).toBe('arrow')
+  })
+
+  it('updateStylesFromSelection sets toolbarShapeType when shapeType is provided', () => {
+    const store = useShapeStore()
+    store.updateStylesFromSelection('#ff0000', '#0000ff', 5, 'circle')
+    expect(store.toolbarShapeType).toBe('circle')
+    expect(store.selectedShapeType).toBe('circle')
+  })
+
+  it('updateStylesFromSelection sets arrowStartStyle when provided', () => {
+    const store = useShapeStore()
+    store.updateStylesFromSelection('#ff0000', '#0000ff', 5, 'arrow', 'filled')
+    expect(store.arrowStartStyle).toBe('filled')
+  })
+
+  it('updateStylesFromSelection sets arrowEndStyle when provided', () => {
+    const store = useShapeStore()
+    store.updateStylesFromSelection('#ff0000', '#0000ff', 5, null, undefined, 'open')
+    expect(store.arrowEndStyle).toBe('open')
+  })
 })
