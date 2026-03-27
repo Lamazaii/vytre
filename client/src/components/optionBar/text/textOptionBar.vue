@@ -103,6 +103,7 @@ import flipToBackIcon from '../../../assets/optionBarImage/flip_to_back.svg'
 import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useShapeStore } from '../../../stores/shapeStore'
+import { useBlocksStore } from '../../../stores/blockStores'
 
 // Stores for text formatting commands and block-level text zone actions.
 const textFormatStore = useTextFormatStore()
@@ -168,6 +169,10 @@ function selectColor(c: string) {
 function onAddText() {
   shapeStore.setActiveShape('text')
   shapeStore.requestAddShape()
+  // Also request adding a text zone at the block level so unit tests and
+  // block-state handlers respond immediately.
+  const blocks = useBlocksStore()
+  blocks.addTextZone()
 }
 
 // Close color menu when user clicks outside picker root.
