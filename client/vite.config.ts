@@ -8,6 +8,18 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup/setupTests.ts',
-    include: ['src/test/unit/**/*.spec.ts']
+    include: ['src/test/unit/**/*.spec.ts'],
+    coverage: {
+      provider: 'istanbul',
+      include: ['src/**/*.ts', 'src/**/*.vue'],
+      exclude: [
+        'src/test/**',
+        'src/main.ts',
+        'src/App.vue',
+        'src/**/shapeCanvas.vue',
+        'src/**/readerViewCanvas.vue',
+        'src/**/popup/CanvasZoomPopUp.vue',
+      ],
+    },
   },
 })

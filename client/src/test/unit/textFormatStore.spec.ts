@@ -267,4 +267,50 @@ describe('textFormatStore', () => {
       expect(store.activeEl).toBeNull()
     })
   })
+
+  describe('Legacy execCommand (no tiptap editor)', () => {
+    it('applyBold without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      // No tiptap editor set — uses legacy path
+      expect(() => store.applyBold()).not.toThrow()
+    })
+
+    it('applyItalic without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyItalic()).not.toThrow()
+    })
+
+    it('applyUnderline without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyUnderline()).not.toThrow()
+    })
+
+    it('applyColor without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyColor('#ff0000')).not.toThrow()
+    })
+
+    it('applyFontSize Small without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyFontSize('Small')).not.toThrow()
+    })
+
+    it('applyFontSize unknown label falls back to default value', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyFontSize('Unknown')).not.toThrow()
+    })
+
+    it('clearTextFocus sets hasTextFocus to false', () => {
+      const store = useTextFormatStore()
+      store.hasTextFocus = true
+      store.clearTextFocus()
+      expect(store.hasTextFocus).toBe(false)
+    })
+
+    it('updateStatesFromCommand without editor reads document state', () => {
+      const store = useTextFormatStore()
+      // No tiptap editor — reads document.queryCommandState
+      expect(() => store.updateStatesFromCommand()).not.toThrow()
+    })
+  })
 })

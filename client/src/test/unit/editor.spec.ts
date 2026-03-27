@@ -21,6 +21,7 @@ const globalStubs = {
   DeletePopup: { template: '<div class="delete-popup"></div>' },
   ErrorPopup: { template: '<div class="error-popup"></div>' },
   CropPopup: { template: '<div class="crop-popup"></div>', emits: ['crop'] },
+  NameConflictPopup: { template: '<div />' },
   draggable: { template: '<div><slot /></div>' },
 }
 
@@ -180,6 +181,54 @@ describe('Editor.vue', () => {
 
     expect(blocksStore.blocks[0]!.images[0]!.imagePath).toBe('new.png')
     expect(modSpy).toHaveBeenCalledWith(0, true)
+  })
+
+  it('handleHome émet selectMode menu', async () => {
+    const wrapper = mountEditor()
+    ;(wrapper.vm as any).handleHome()
+    expect(wrapper.emitted('selectMode')).toBeTruthy()
+    expect(wrapper.emitted('selectMode')![0]).toEqual(['menu'])
+  })
+
+  it('toggleSelect appelle blocksStore.toggleSelect', async () => {
+    const wrapper = mountEditor()
+    const store = useBlocksStore()
+    const spy = vi.spyOn(store, 'toggleSelect')
+    ;(wrapper.vm as any).toggleSelect(0)
+    expect(spy).toHaveBeenCalledWith(0)
+  })
+
+  it('removeBlock appelle blocksStore.removeBlock', async () => {
+    const wrapper = mountEditor()
+    const store = useBlocksStore()
+    const spy = vi.spyOn(store, 'removeBlock')
+    ;(wrapper.vm as any).removeBlock(0)
+    expect(spy).toHaveBeenCalledWith(0)
+  })
+
+  it('handleSaveConfirm rouvre le dialog quand saveDocument retourne rename', async () => {
+    const wrapper = mountEditor()
+    const store = useBlocksStore()
+    vi.spyOn(store, 'saveDocument').mockResolvedValue('rename')
+    await (wrapper.vm as any).handleSaveConfirm('Titre')
+    await wrapper.vm.$nextTick()
+    expect((wrapper.vm as any).saveDialogOpen).toBe(true)
+  })
+
+  it('watch cropRequestTimestamp ouvre le cropper quand timestamp > 0', async () => {
+    const wrapper = mountEditor()
+    const blocksStore = useBlocksStore()
+    const imageStore = useImageCropStore()
+
+    const img = { id: 'img1', imagePath: 'photo.jpg' }
+    blocksStore.blocks[0]!.images = [img as any]
+    imageStore.selectedImageId = 'img1'
+    imageStore.blockIndex = 0
+
+    const openSpy = vi.spyOn(imageStore, 'openCropper')
+    imageStore.cropRequestTimestamp = Date.now()
+    await wrapper.vm.$nextTick()
+    expect(openSpy).toHaveBeenCalledWith('photo.jpg')
   })
 
   it('le watcher anyPopupOpen ajoute/supprime la classe no-scroll', async () => {
