@@ -503,12 +503,46 @@ onMounted(() => {
       const lastLeft = (arrow as any).lastLeft || 0
       const lastTop = (arrow as any).lastTop || 0
       
-      // Calculate delta and update endpoints immediately
-      const deltaX = currentLeft - lastLeft
-      const deltaY = currentTop - lastTop
+      // Calculate delta and check bounds
+      let deltaX = currentLeft - lastLeft
+      let deltaY = currentTop - lastTop
       
-      ;(arrow as any).arrowStart = { x: start.x + deltaX, y: start.y + deltaY }
-      ;(arrow as any).arrowEnd = { x: end.x + deltaX, y: end.y + deltaY }
+      const canvasWidth = canvas!.width || props.width
+      const canvasHeight = canvas!.height || props.height
+      
+      // Calculate new positions
+      const newStartX = start.x + deltaX
+      const newStartY = start.y + deltaY
+      const newEndX = end.x + deltaX
+      const newEndY = end.y + deltaY
+      
+      // Get arrow head size to account for them when checking bounds
+      const arrowHeadSize = Math.max(10, Math.min(20, 8 + (arrow.strokeWidth || 2) * 1.5))
+      
+      // Check if any endpoint would go out of bounds (using canvas edges as strict limits)
+      let constrained = false
+      
+      // Check start point
+      if (newStartX < 0 || newStartX > canvasWidth ||
+          newStartY < 0 || newStartY > canvasHeight) {
+        constrained = true
+      }
+      
+      // Check end point
+      if (newEndX < 0 || newEndX > canvasWidth ||
+          newEndY < 0 || newEndY > canvasHeight) {
+        constrained = true
+      }
+      
+      if (constrained) {
+        // Revert to last valid position
+        arrow.left = lastLeft
+        arrow.top = lastTop
+        return
+      }
+      
+      ;(arrow as any).arrowStart = { x: newStartX, y: newStartY }
+      ;(arrow as any).arrowEnd = { x: newEndX, y: newEndY }
       ;(arrow as any).lastLeft = currentLeft
       ;(arrow as any).lastTop = currentTop
       
@@ -571,13 +605,21 @@ onMounted(() => {
 
     if (!isDrawingArrow) return
     if (e.e.button !== 0) return
+    
+    const canvasWidth = canvas!.width || props.width
+    const canvasHeight = canvas!.height || props.height
+    
+    // Constrain pointer within exact canvas bounds
+    const constrainedX = Math.max(0, Math.min(pointer.x, canvasWidth))
+    const constrainedY = Math.max(0, Math.min(pointer.y, canvasHeight))
+    
     if (!arrowStartPoint) {
-      arrowStartPoint = { x: pointer.x, y: pointer.y }
-      arrowPreviewPointer = { x: pointer.x, y: pointer.y }
+      arrowStartPoint = { x: constrainedX, y: constrainedY }
+      arrowPreviewPointer = { x: constrainedX, y: constrainedY }
       canvas!.requestRenderAll()
     } else {
       const startPoint = { ...arrowStartPoint }
-      const endPoint = { x: pointer.x, y: pointer.y }
+      const endPoint = { x: constrainedX, y: constrainedY }
       isDrawingArrow = false
       arrowStartPoint = null
       arrowPreviewPointer = null
@@ -616,11 +658,18 @@ onMounted(() => {
     // Handle arrow endpoint modification live
     if (modifyingArrow && modifyingEnd) {
       const arrow = modifyingArrow
+      const canvasWidth = canvas!.width || props.width
+      const canvasHeight = canvas!.height || props.height
+      
+      // Get arrow head size
+      // Constrain pointer position within exact canvas bounds
+      const constrainedX = Math.max(0, Math.min(pointer.x, canvasWidth))
+      const constrainedY = Math.max(0, Math.min(pointer.y, canvasHeight))
 
       if (modifyingEnd === 'start') {
-        ;(arrow as any).arrowStart = { x: pointer.x, y: pointer.y }
+        ;(arrow as any).arrowStart = { x: constrainedX, y: constrainedY }
       } else {
-        ;(arrow as any).arrowEnd = { x: pointer.x, y: pointer.y }
+        ;(arrow as any).arrowEnd = { x: constrainedX, y: constrainedY }
       }
 
       const start = (arrow as any).arrowStart as { x: number; y: number }
@@ -665,7 +714,14 @@ onMounted(() => {
     }
 
     if (!isDrawingArrow || !arrowStartPoint) return
-    arrowPreviewPointer = canvas!.getPointer(e.e)
+    const canvasWidth = canvas!.width || props.width
+    const canvasHeight = canvas!.height || props.height
+    
+    // Constrain preview pointer within exact canvas bounds
+    arrowPreviewPointer = {
+      x: Math.max(0, Math.min(pointer.x, canvasWidth)),
+      y: Math.max(0, Math.min(pointer.y, canvasHeight))
+    }
     canvas!.requestRenderAll()
   })
 
