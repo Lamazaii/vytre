@@ -121,14 +121,17 @@ describe('TextOptionBar.vue', () => {
   it('clicking add text button calls addTextZone from blocks store', async () => {
     const { useBlocksStore } = await import('../../stores/blockStores')
     const store = useBlocksStore()
-    const spy = vi.spyOn(store, 'addTextZone')
+    // Set up state so addTextZone can actually run (non-null selectedIndex + non-empty text)
+    store.selectedIndex = 0
+    store.blocks[0]!.text = '<p>content</p>'
 
     const wrapper = mount(TextOptionBar)
     // addText button is the 4th format button (index 3)
     const addTextBtn = wrapper.findAll('.formatButton')[3]!
     await addTextBtn.trigger('click')
 
-    expect(spy).toHaveBeenCalled()
+    // addTextZone was called — a new text zone was appended
+    expect(store.blocks[0]!.textZones?.length).toBeGreaterThan(0)
   })
 
   it('clicking outside the color picker closes it', async () => {
