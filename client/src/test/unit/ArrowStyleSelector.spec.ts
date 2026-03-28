@@ -13,13 +13,13 @@ describe('ArrowStyleSelector.vue', () => {
     const wrapper = mount(ArrowStyleSelector)
     const store = useShapeStore()
 
-    const caretBtn = wrapper.findAll('.arrow-style-caret-button')[0]
-    await caretBtn.trigger('click')
+    const [caretBtnStart] = wrapper.findAll('.arrow-style-caret-button')
+    await caretBtnStart!.trigger('click')
 
     expect(wrapper.find('.arrow-style-menu').exists()).toBe(true)
 
-    const optionBtn = wrapper.findAll('.arrow-style-menu-item')[1]
-    await optionBtn.trigger('click')
+    const optionBtns = wrapper.findAll('.arrow-style-menu-item')
+    await optionBtns[1]!.trigger('click')
 
     // second option is 'stroke'
     expect(store.arrowStartStyle).toBe('stroke')
@@ -30,20 +30,20 @@ describe('ArrowStyleSelector.vue', () => {
     const wrapper = mount(ArrowStyleSelector)
     const store = useShapeStore()
 
-    const caretBtnEnd = wrapper.findAll('.arrow-style-caret-button')[1]
-    await caretBtnEnd.trigger('click')
+    const [, caretBtnEnd] = wrapper.findAll('.arrow-style-caret-button')
+    await caretBtnEnd!.trigger('click')
     expect(wrapper.findAll('.arrow-style-menu').length).toBeGreaterThanOrEqual(1)
 
-    const optionBtn = wrapper.findAll('.arrow-style-menu-item')[2]
-    await optionBtn.trigger('click')
+    const optionBtns = wrapper.findAll('.arrow-style-menu-item')
+    await optionBtns[2]!.trigger('click')
 
     expect(store.arrowEndStyle).toBe('open')
   })
 
   it('closes menus on outside click', async () => {
     const wrapper = mount(ArrowStyleSelector, { attachTo: document.body })
-    const caretBtn = wrapper.findAll('.arrow-style-caret-button')[0]
-    await caretBtn.trigger('click')
+    const [caretBtn] = wrapper.findAll('.arrow-style-caret-button')
+    await caretBtn!.trigger('click')
     expect(wrapper.find('.arrow-style-menu').exists()).toBe(true)
 
     // click outside

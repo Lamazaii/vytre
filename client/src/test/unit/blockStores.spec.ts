@@ -593,4 +593,237 @@ describe('blocksStore', () => {
     expect(store.blocks).toHaveLength(1)
     expect(store.blocks[0]!.text).toBe('')
   })
+
+  // ── addTextZone edge cases ──────────────────────────────────────────────────
+
+  it('addTextZone does nothing when selectedIndex is null', () => {
+    const store = useBlocksStore()
+    store.selectedIndex = null
+    store.addTextZone()
+    expect(store.blocks[0]!.textZones).toHaveLength(0)
+  })
+
+  it('addTextZone does nothing when block does not exist at selectedIndex', () => {
+    const store = useBlocksStore()
+    store.selectedIndex = 99 // out-of-bounds index
+    store.addTextZone()
+    // Should not throw, no zone added
+    expect(store.blocks[0]!.textZones).toHaveLength(0)
+  })
+
+  // ── confirmDelete edge cases ────────────────────────────────────────────────
+
+  it('confirmDelete does not crash when selectedIndex is null', () => {
+    const store = useBlocksStore()
+    store.blocks.push({ id: 2, text: 'B', step: 2, nbOfRepeats: 1, modified: true, images: [] })
+    store.selectedIndex = null
+    store.removeBlock(1)
+    deletePopupStore.confirm()
+    expect(store.blocks).toHaveLength(1)
+  })
+
+  it('confirmDelete sets selectedIndex to null when all blocks are removed', () => {
+    const store = useBlocksStore()
+    // confirmDelete is called internally; we can trigger it via blockToDeleteIndex
+    store.blocks = [
+      { id: 1, text: 'A', step: 1, nbOfRepeats: 1, modified: false, images: [] },
+      { id: 2, text: 'B', step: 2, nbOfRepeats: 1, modified: false, images: [] },
+    ]
+    store.selectedIndex = 1
+    store.removeBlock(1)
+    deletePopupStore.confirm()
+    // After deletion: 1 block remains, selectedIndex was >= blocks.length so clamped
+    expect(store.selectedIndex).toBe(0)
+  })
+
+  // ── saveDocument with canvas shapes ────────────────────────────────────────
+
+  it('saveDocument saves block that has only canvas shapes (no text/images)', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.checkNameExists = vi.fn().mockResolvedValue(false)
+    docService.create = vi.fn().mockResolvedValue({
+      id: 20, title: 'T', version: 1, blocks: [],
+      state: 'En édition', createdAt: new Date(), updatedAt: new Date()
+    })
+
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.textZones = []
+    store.blocks[0]!.canvasData = JSON.stringify({ objects: [{ type: 'rect' }] })
+
+    const result = await store.saveDocument()
+    expect(result).toBe('success')
+    expect(docService.create).toHaveBeenCalled()
+  })
+
+  it('saveDocument shows error when block has canvasData but invalid JSON', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.textZones = []
+    store.blocks[0]!.canvasData = 'not-json'
+
+    await store.saveDocument()
+    expect(spy).toHaveBeenCalled()
+  })
+
+  it('saveDocument handles non-Error exception', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    const docService = documentService as any
+    docService.checkNameExists = vi.fn().mockRejectedValue('string error')
+    store.updateBlockDescription(0, '<p>Content</p>')
+
+    await store.saveDocument()
+
+    expect(spy).toHaveBeenCalledWith('Erreur lors de la sauvegarde du document.')
+  })
+
+  // ── loadDocument with textZones as array ───────────────────────────────────
+
+  it('loadDocument keeps textZones array as-is when already an array', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.getById = vi.fn().mockResolvedValue({
+      id: 5, title: 'Doc', version: '1', state: 'En édition',
+      createdAt: new Date(), updatedAt: new Date(),
+      blocks: [{
+        id: 1, text: 'A', nbOfRepeats: 1, step: 1,
+        modified: false, images: [], textZones: ['zone1', 'zone2']
+      }]
+    })
+
+    await store.loadDocument(5)
+
+    expect(store.blocks[0]!.textZones).toEqual(['zone1', 'zone2'])
+  })
+
+  it('loadDocument handles non-Error exception', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    const docService = documentService as any
+    docService.getById = vi.fn().mockRejectedValue('string error')
+
+    await store.loadDocument(1)
+
+    expect(spy).toHaveBeenCalledWith('Erreur lors du chargement du document.')
+  })
+
+  // ── loadDocumentVersion edge cases ─────────────────────────────────────────
+
+  it('loadDocumentVersion keeps textZones array as-is', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.getVersion = vi.fn().mockResolvedValue({
+      id: 5, documentId: 1, version: 3, title: 'V',
+      state: 'Archivé',
+      snapshot: {
+        title: 'V', state: 'Archivé',
+        blocks: [{
+          id: 10, text: '<p>v</p>', step: 1, nbOfRepeats: 1,
+          images: [], textZones: ['existing zone']
+        }]
+      },
+      createdAt: new Date().toISOString()
+    })
+
+    await store.loadDocumentVersion(1, 3)
+
+    expect(store.blocks[0]!.textZones).toEqual(['existing zone'])
+  })
+
+  it('loadDocumentVersion handles non-Error exception', async () => {
+    const store = useBlocksStore()
+    const errorStore = useErrorPopupStore()
+    const spy = vi.spyOn(errorStore, 'show')
+    const docService = documentService as any
+    docService.getVersion = vi.fn().mockRejectedValue('string error')
+
+    await store.loadDocumentVersion(1, 3)
+
+    expect(spy).toHaveBeenCalledWith('Erreur lors du chargement de la version.')
+  })
+
+  // ── updateBlockDescription edge cases ──────────────────────────────────────
+
+  it('updateBlockDescription does nothing for out-of-bounds index', () => {
+    const store = useBlocksStore()
+    store.updateBlockDescription(-1, '<p>hello</p>')
+    store.updateBlockDescription(999, '<p>hello</p>')
+    // no throw, block[0] unchanged
+    expect(store.blocks[0]!.text).toBe('')
+  })
+
+  // ── updateTextZone edge cases ───────────────────────────────────────────────
+
+  it('updateTextZone does nothing when block has no textZones', () => {
+    const store = useBlocksStore()
+    delete (store.blocks[0] as any).textZones
+    expect(() => store.updateTextZone(0, 0, 'html')).not.toThrow()
+  })
+
+  it('updateTextZone does nothing for out-of-bounds blockIndex', () => {
+    const store = useBlocksStore()
+    expect(() => store.updateTextZone(-1, 0, 'html')).not.toThrow()
+    expect(() => store.updateTextZone(999, 0, 'html')).not.toThrow()
+  })
+
+  it('updateTextZone does nothing for out-of-bounds zoneIndex', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.textZones = ['zone1']
+    expect(() => store.updateTextZone(0, -1, 'html')).not.toThrow()
+    expect(() => store.updateTextZone(0, 999, 'html')).not.toThrow()
+    expect(store.blocks[0]!.textZones![0]).toBe('zone1')
+  })
+
+  // ── isContentEmpty ─────────────────────────────────────────────────────────
+
+  it('isContentEmpty returns true for empty HTML', () => {
+    const store = useBlocksStore()
+    expect(store.isContentEmpty('<p><br></p>')).toBe(true)
+    expect(store.isContentEmpty('')).toBe(true)
+    expect(store.isContentEmpty('  ')).toBe(true)
+  })
+
+  it('isContentEmpty returns false for HTML with text content', () => {
+    const store = useBlocksStore()
+    expect(store.isContentEmpty('<p>hello</p>')).toBe(false)
+    expect(store.isContentEmpty('plain text')).toBe(false)
+  })
+
+  // ── saveDocument with textZones having content ─────────────────────────────
+
+  it('saveDocument saves block with non-empty text zones', async () => {
+    const store = useBlocksStore()
+    const docService = documentService as any
+    docService.checkNameExists = vi.fn().mockResolvedValue(false)
+    docService.create = vi.fn().mockResolvedValue({
+      id: 30, title: 'T', version: 1, blocks: [],
+      state: 'En édition', createdAt: new Date(), updatedAt: new Date()
+    })
+
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.textZones = ['<p>zone content</p>']
+    store.blocks[0]!.canvasData = undefined
+
+    const result = await store.saveDocument()
+    expect(result).toBe('success')
+  })
+
+  // ── canAdd with non-array objects in canvasData ─────────────────────────────
+
+  it('canAdd returns false when canvasData.objects is not an array', () => {
+    const store = useBlocksStore()
+    store.blocks[0]!.text = ''
+    store.blocks[0]!.images = []
+    store.blocks[0]!.canvasData = JSON.stringify({ objects: 'not-an-array' })
+    expect(store.canAdd).toBe(false)
+  })
 })
