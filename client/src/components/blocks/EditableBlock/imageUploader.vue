@@ -16,11 +16,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 
 // Emits a data URL payload when a valid image is selected.
 const emit = defineEmits(['upload']);
 // Hidden native file input reference.
 const fileInput = ref<HTMLInputElement | null>(null);
+// Error popup store for displaying size limit messages.
+const errorPopupStore = useErrorPopupStore();
 
 // Opens the file picker from the custom upload area.
 const triggerFileInput = () => fileInput.value?.click();
@@ -30,6 +33,15 @@ const handleImageSelect = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input?.files?.[0];
   if (!file || !file.type.startsWith('image/')) return;
+
+  // Check file size
+  const maxSizeInBytes = 5 * 1024 * 1024;
+  if (file.size > maxSizeInBytes) {
+    const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+    errorPopupStore.show(`L'image est trop volumineuse (${sizeInMB} MB). La taille maximale autorisée est de 5 MB.`);
+    input.value = '';
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = (e) => {
