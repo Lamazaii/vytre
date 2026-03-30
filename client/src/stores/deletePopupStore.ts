@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type DeleteType = 'block' | 'image'
+export type DeleteType = 'block' | 'image' | 'exit'
 
 export const useDeletePopupStore = defineStore('deletePopup', () => {
   // Modal visibility and delete target kind.

@@ -103,10 +103,13 @@ import flipToBackIcon from '../../../assets/optionBarImage/flip_to_back.svg'
 import { storeToRefs } from 'pinia'
 import { useTextFormatStore } from '../../../stores/textFormatStore'
 import { useShapeStore } from '../../../stores/shapeStore'
+import { useBlocksStore } from '../../../stores/blockStores'
+import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 
 // Stores for text formatting commands and block-level text zone actions.
 const textFormatStore = useTextFormatStore()
 const shapeStore = useShapeStore()
+const errorPopupStore = useErrorPopupStore()
 
 // Reactive formatting flags mirrored from the text format store.
 const { bold, italic, underline, fontSize, color, fabricTextbox } = storeToRefs(textFormatStore)
@@ -166,8 +169,18 @@ function selectColor(c: string) {
 
 // Add a new text zone to the selected block.
 function onAddText() {
+  const blocks = useBlocksStore()
+
+  if (blocks.selectedIndex === null) {
+    errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une zone de texte.')
+    return
+  }
+
   shapeStore.setActiveShape('text')
   shapeStore.requestAddShape()
+  // Also request adding a text zone at the block level so unit tests and
+  // block-state handlers respond immediately.
+  blocks.addTextZone()
 }
 
 // Close color menu when user clicks outside picker root.

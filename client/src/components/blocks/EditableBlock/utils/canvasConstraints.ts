@@ -62,13 +62,18 @@ export function handleObjectScaling(
 ) {
   const radius = (obj as fabric.Circle).radius || 0
   if (radius > 0) {
-    const maxScale = Math.min(canvasWidth, canvasHeight) / (2 * radius)
+    const left = obj.left || 0
+    const top = obj.top || 0
 
-    if (obj.scaleX && obj.scaleX > maxScale) {
-      obj.scaleX = maxScale
+    // Cap scale based on available space from object position to canvas edges
+    const maxScaleX = Math.min(left, canvasWidth - left) / radius
+    const maxScaleY = Math.min(top, canvasHeight - top) / radius
+
+    if (obj.scaleX && obj.scaleX > maxScaleX) {
+      obj.scaleX = maxScaleX
     }
-    if (obj.scaleY && obj.scaleY > maxScale) {
-      obj.scaleY = maxScale
+    if (obj.scaleY && obj.scaleY > maxScaleY) {
+      obj.scaleY = maxScaleY
     }
   } else {
     const objWidth = (obj.width || 0) * (obj.scaleX || 1)

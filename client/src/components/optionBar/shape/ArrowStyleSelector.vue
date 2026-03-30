@@ -25,7 +25,7 @@
           role="menuitem"
           @click="selectArrowStyle(option.value, 'start')"
         >
-          <div class="arrow-preview" :class="`preview-${option.value}`"></div>
+          <div class="arrow-preview start-preview" :class="`preview-${option.value}`"></div>
           <span class="arrow-style-menu-label">{{ option.label }}</span>
         </button>
       </div>
@@ -188,17 +188,13 @@ onBeforeUnmount(() => {
   background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='10' x2='16' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='22,10 16,6 16,14' fill='%231f2937'/%3E%3C/svg%3E") no-repeat center;
 }
 
-/* End direction arrows (pointing left) */
-.arrow-head-preview.end.head-preview-stroke {
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='12' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='8' y1='10' x2='12' y2='6' stroke='%231f2937' stroke-width='1.5'/%3E%3Cline x1='8' y1='10' x2='12' y2='14' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
+/* Start arrows point left (flipped) */
+.arrow-head-preview.start {
+  transform: scaleX(-1);
 }
 
-.arrow-head-preview.end.head-preview-open {
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='14' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='8,10 14,6 14,14' fill='none' stroke='%231f2937' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center;
-}
-
-.arrow-head-preview.end.head-preview-filled {
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='29' y1='10' x2='14' y2='10' stroke='%231f2937' stroke-width='1.5'/%3E%3Cpolygon points='8,10 14,6 14,14' fill='%231f2937'/%3E%3C/svg%3E") no-repeat center;
+.arrow-preview.start-preview {
+  transform: scaleX(-1);
 }
 
 .arrow-style-caret-button {

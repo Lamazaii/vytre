@@ -63,18 +63,63 @@ describe('DeletePopup.vue', () => {
   // Test multiple show/hide cycles
   it('handles multiple show/hide cycles', () => {
     const store = useDeletePopupStore()
-    const wrapper = mount(DeletePopup)
-    
+    mount(DeletePopup)
+
     store.show('block', () => {})
     expect(store.isVisible).toBe(true)
-    
+
     store.cancel()
     expect(store.isVisible).toBe(false)
-    
+
     store.show('image', () => {})
     expect(store.isVisible).toBe(true)
-    
+
     store.confirm()
+    expect(store.isVisible).toBe(false)
+  })
+
+  it('shows block title when deleteType is block', async () => {
+    const store = useDeletePopupStore()
+    store.show('block', () => {})
+    const wrapper = mount(DeletePopup)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('h2').text()).toContain('BLOC')
+  })
+
+  it('shows image title when deleteType is image', async () => {
+    const store = useDeletePopupStore()
+    store.show('image', () => {})
+    const wrapper = mount(DeletePopup)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('h2').text()).toContain("IMAGE")
+  })
+
+  it('clicking cancel button calls store.cancel', async () => {
+    const store = useDeletePopupStore()
+    store.show('block', () => {})
+    const wrapper = mount(DeletePopup)
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.btn-cancel').trigger('click')
+    expect(store.isVisible).toBe(false)
+  })
+
+  it('clicking confirm button calls store.confirm', async () => {
+    const store = useDeletePopupStore()
+    let confirmed = false
+    store.show('block', () => { confirmed = true })
+    const wrapper = mount(DeletePopup)
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.btn-confirm').trigger('click')
+    expect(confirmed).toBe(true)
+    expect(store.isVisible).toBe(false)
+  })
+
+  it('clicking close button calls store.cancel', async () => {
+    const store = useDeletePopupStore()
+    store.show('block', () => {})
+    const wrapper = mount(DeletePopup)
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.close-btn').trigger('click')
     expect(store.isVisible).toBe(false)
   })
 })
