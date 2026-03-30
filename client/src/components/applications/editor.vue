@@ -109,7 +109,9 @@ function handleClipboardCancel() {
 }
 
 function handleHome() {
-  emit('selectMode', 'menu')
+  deletePopupStore.show('exit', () => {
+    emit('selectMode', 'menu')
+  })
 }
 
 function handleCropComplete(croppedImageData: string) {
