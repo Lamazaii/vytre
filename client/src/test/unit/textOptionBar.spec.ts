@@ -121,14 +121,17 @@ describe('TextOptionBar.vue', () => {
   it('clicking add text button calls addTextZone from blocks store', async () => {
     const { useBlocksStore } = await import('../../stores/blockStores')
     const store = useBlocksStore()
-    const spy = vi.spyOn(store, 'addTextZone')
+    // Set up state so addTextZone can actually run (non-null selectedIndex + non-empty text)
+    store.selectedIndex = 0
+    store.blocks[0]!.text = '<p>content</p>'
 
     const wrapper = mount(TextOptionBar)
     // addText button is the 4th format button (index 3)
     const addTextBtn = wrapper.findAll('.formatButton')[3]!
     await addTextBtn.trigger('click')
 
-    expect(spy).toHaveBeenCalled()
+    // addTextZone was called — a new text zone was appended
+    expect(store.blocks[0]!.textZones?.length).toBeGreaterThan(0)
   })
 
   it('clicking outside the color picker closes it', async () => {
@@ -156,5 +159,105 @@ describe('TextOptionBar.vue', () => {
     // Menu should still be open (click was inside)
     expect(wrapper.find('.colorMenu').exists()).toBe(true)
     wrapper.unmount()
+  })
+
+  it('toggleLayerMenu does nothing when no textbox is selected', async () => {
+    const wrapper = mount(TextOptionBar)
+    // fabricTextbox is null → hasSelectedTextbox is false
+    ;(wrapper.vm as any).toggleLayerMenu()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
+  })
+
+  it('toggleLayerMenu opens and closes the layer menu when textbox is selected', async () => {
+    const { useTextFormatStore } = await import('../../stores/textFormatStore')
+    const store = useTextFormatStore()
+    const mockTextbox: any = {
+      isEditing: false, fontWeight: 'normal', fontStyle: 'normal',
+      underline: false, fill: '#000', fontSize: 16,
+    }
+    store.setFabricTextbox(mockTextbox as any, null)
+
+    const wrapper = mount(TextOptionBar)
+    await wrapper.vm.$nextTick()
+
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(true)
+
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
+  })
+
+  it('onBringForwardMenuClick calls requestBringTextForward and closes menu', async () => {
+    const { useTextFormatStore } = await import('../../stores/textFormatStore')
+    const store = useTextFormatStore()
+    const mockTextbox: any = {
+      isEditing: false, fontWeight: 'normal', fontStyle: 'normal',
+      underline: false, fill: '#000', fontSize: 16,
+    }
+    store.setFabricTextbox(mockTextbox as any, null)
+
+    // Spy must be set up before mounting so the component picks it up on destructuring
+    const spy = vi.spyOn(store, 'requestBringTextForward')
+
+    const wrapper = mount(TextOptionBar)
+    await wrapper.vm.$nextTick()
+
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(true)
+
+    await wrapper.find('.layerMenuItem').trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
+  })
+
+  it('onSendToBackMenuClick calls requestSendTextToBack and closes menu', async () => {
+    const { useTextFormatStore } = await import('../../stores/textFormatStore')
+    const store = useTextFormatStore()
+    const mockTextbox: any = {
+      isEditing: false, fontWeight: 'normal', fontStyle: 'normal',
+      underline: false, fill: '#000', fontSize: 16,
+    }
+    store.setFabricTextbox(mockTextbox as any, null)
+
+    // Spy must be set up before mounting so the component picks it up on destructuring
+    const spy = vi.spyOn(store, 'requestSendTextToBack')
+
+    const wrapper = mount(TextOptionBar)
+    await wrapper.vm.$nextTick()
+
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+
+    const menuItems = wrapper.findAll('.layerMenuItem')
+    await menuItems[1]?.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
+  })
+
+  it('watch hasSelectedTextbox closes layer menu when deselected', async () => {
+    const { useTextFormatStore } = await import('../../stores/textFormatStore')
+    const store = useTextFormatStore()
+    const mockTextbox: any = {
+      isEditing: false, fontWeight: 'normal', fontStyle: 'normal',
+      underline: false, fill: '#000', fontSize: 16,
+    }
+    store.setFabricTextbox(mockTextbox as any, null)
+
+    const wrapper = mount(TextOptionBar)
+    await wrapper.vm.$nextTick()
+
+    ;(wrapper.vm as any).toggleLayerMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(true)
+
+    // Clear textbox → hasSelectedTextbox becomes false → watch closes menu
+    store.setFabricTextbox(null, null)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.layerDropdown').exists()).toBe(false)
   })
 })
