@@ -41,8 +41,8 @@ const specs = swaggerJsdoc(swaggerOptions);
 
 // view engine setup
 app.use(logger('dev'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: false, limit: '5mb' }));
 app.use(cookieParser());
 
 // Swagger documentation route
