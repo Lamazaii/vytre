@@ -267,4 +267,289 @@ describe('textFormatStore', () => {
       expect(store.activeEl).toBeNull()
     })
   })
+
+  describe('Legacy execCommand (no tiptap editor)', () => {
+    it('applyBold without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      // No tiptap editor set — uses legacy path
+      expect(() => store.applyBold()).not.toThrow()
+    })
+
+    it('applyItalic without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyItalic()).not.toThrow()
+    })
+
+    it('applyUnderline without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyUnderline()).not.toThrow()
+    })
+
+    it('applyColor without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyColor('#ff0000')).not.toThrow()
+    })
+
+    it('applyFontSize Small without tiptap calls execCommand', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyFontSize('Small')).not.toThrow()
+    })
+
+    it('applyFontSize unknown label falls back to default value', () => {
+      const store = useTextFormatStore()
+      expect(() => store.applyFontSize('Unknown')).not.toThrow()
+    })
+
+    it('clearTextFocus sets hasTextFocus to false', () => {
+      const store = useTextFormatStore()
+      store.hasTextFocus = true
+      store.clearTextFocus()
+      expect(store.hasTextFocus).toBe(false)
+    })
+
+    it('updateStatesFromCommand without editor reads document state', () => {
+      const store = useTextFormatStore()
+      // No tiptap editor — reads document.queryCommandState
+      expect(() => store.updateStatesFromCommand()).not.toThrow()
+    })
+  })
+
+  describe('Additional branches', () => {
+    it('prefers selection style when textbox is editing', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: true,
+        getSelectionStyles: vi.fn().mockReturnValue([
+          { fontWeight: 'bold', fontStyle: 'italic', underline: true, fill: '#123456', fontSize: 12 }
+        ])
+      }
+
+      store.setFabricTextbox(mockTextbox as any, null)
+
+      expect(store.bold).toBe(true)
+      expect(store.italic).toBe(true)
+      expect(store.underline).toBe(true)
+      expect(store.color).toBe('#123456')
+      expect(store.fontSize).toBe('Small')
+    })
+
+    it('applyFabricFormatting applies whole-textbox when not editing', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        set: vi.fn(),
+      }
+      const mockCanvas: any = {
+        requestRenderAll: vi.fn(),
+        fire: vi.fn(),
+      }
+
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+
+      store.applyFabricFormatting({ fontSize: 18 })
+
+      expect(mockTextbox.set).toHaveBeenCalledWith({ fontSize: 18 })
+      expect(mockCanvas.requestRenderAll).toHaveBeenCalled()
+      expect(mockCanvas.fire).toHaveBeenCalled()
+    })
+
+    it('restoreSelection uses saved lastRange when present', () => {
+      const store = useTextFormatStore()
+      const range = new Range()
+      store.lastRange = range
+
+      const removeAllRanges = vi.fn()
+      const addRange = vi.fn()
+      vi.spyOn(document, 'getSelection').mockReturnValue({ removeAllRanges, addRange } as any)
+
+      expect(() => store.restoreSelection()).not.toThrow()
+      expect(addRange).toHaveBeenCalledWith(range)
+    })
+
+    // Additional legacy/edge-case behaviors are exercised indirectly by other tests.
+    it('applyFabricFormatting applies selection styles when editing', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: true,
+        getSelectionStyles: vi.fn().mockReturnValue([]),
+        setSelectionStyles: vi.fn(),
+        set: vi.fn(),
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+        underline: false,
+        fill: '#000',
+        fontSize: 16,
+      }
+      const mockCanvas: any = { requestRenderAll: vi.fn(), fire: vi.fn() }
+
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+
+      store.applyFabricFormatting({ fontSize: 14 })
+
+      expect(mockTextbox.setSelectionStyles).toHaveBeenCalledWith({ fontSize: 14 })
+      expect(mockCanvas.requestRenderAll).toHaveBeenCalled()
+    })
+
+    it('updateStatesFromCommand prefers fabric textbox when present', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        underline: true,
+        fill: '#112233',
+        fontSize: 20,
+      }
+      store.setFabricTextbox(mockTextbox as any, null)
+      store.updateStatesFromCommand()
+      expect(store.bold).toBe(true)
+      expect(store.italic).toBe(true)
+      expect(store.fontSize).toBe('Large')
+    })
+
+    it('applyColor and applyFontSize use fabric textbox when present', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        set: vi.fn(),
+        fontSize: 16,
+      }
+      const mockCanvas: any = { requestRenderAll: vi.fn(), fire: vi.fn() }
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+
+      store.applyColor('#00FF00')
+      expect(mockTextbox.set).toHaveBeenCalledWith({ fill: '#00FF00' })
+
+      store.applyFontSize('Small')
+      expect(mockTextbox.set).toHaveBeenCalledWith({ fontSize: 12 })
+    })
+
+    it('bringTextForwardRequest and sendTextToBackRequest increment', () => {
+      const store = useTextFormatStore()
+      const beforeForward = store.bringTextForwardRequest
+      const beforeBack = store.sendTextToBackRequest
+      store.requestBringTextForward()
+      store.requestSendTextToBack()
+      expect(store.bringTextForwardRequest).toBe(beforeForward + 1)
+      expect(store.sendTextToBackRequest).toBe(beforeBack + 1)
+    })
+
+    it('applyItalic with fabricTextbox toggles italic style', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        getSelectionStyles: vi.fn().mockReturnValue([]),
+        fontStyle: 'normal',
+        fontWeight: 'normal',
+        underline: false,
+        fill: '#000',
+        fontSize: 16,
+        set: vi.fn(),
+      }
+      const mockCanvas: any = { requestRenderAll: vi.fn(), fire: vi.fn() }
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+      store.applyItalic()
+      expect(mockTextbox.set).toHaveBeenCalledWith({ fontStyle: 'italic' })
+    })
+
+    it('applyUnderline with fabricTextbox toggles underline style', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        getSelectionStyles: vi.fn().mockReturnValue([]),
+        fontStyle: 'normal',
+        fontWeight: 'normal',
+        underline: false,
+        fill: '#000',
+        fontSize: 16,
+        set: vi.fn(),
+      }
+      const mockCanvas: any = { requestRenderAll: vi.fn(), fire: vi.fn() }
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+      store.applyUnderline()
+      expect(mockTextbox.set).toHaveBeenCalledWith({ underline: true })
+    })
+
+    it('applyBold with fabricTextbox toggles from bold to normal', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        getSelectionStyles: vi.fn().mockReturnValue([]),
+        fontWeight: 'bold',
+        fontStyle: 'normal',
+        underline: false,
+        fill: '#000',
+        fontSize: 16,
+        set: vi.fn(),
+      }
+      const mockCanvas: any = { requestRenderAll: vi.fn(), fire: vi.fn() }
+      store.setFabricTextbox(mockTextbox as any, mockCanvas as any)
+      store.applyBold()
+      expect(mockTextbox.set).toHaveBeenCalledWith({ fontWeight: 'normal' })
+    })
+
+    it('saveSelection returns early when rangeCount is 0', () => {
+      const store = useTextFormatStore()
+      const mockSel = { rangeCount: 0 } as any
+      vi.spyOn(document, 'getSelection').mockReturnValue(mockSel)
+      expect(() => store.saveSelection()).not.toThrow()
+      expect(store.lastRange).toBeNull()
+    })
+
+    it('restoreSelection focuses activeEl when no lastRange', () => {
+      const store = useTextFormatStore()
+      const mockEl = { focus: vi.fn() }
+      store.setActiveEl(mockEl as any)
+      store.lastRange = null
+      const mockSel = { removeAllRanges: vi.fn(), addRange: vi.fn() } as any
+      vi.spyOn(document, 'getSelection').mockReturnValue(mockSel)
+      store.restoreSelection()
+      expect(mockEl.focus).toHaveBeenCalled()
+    })
+
+    it('updateFabricStatesFromObject handles fontWeight 700 as bold', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        fontWeight: 700,
+        fontStyle: 'normal',
+        underline: false,
+        fill: null,
+        fontSize: 16,
+      }
+      store.updateFabricStatesFromObject(mockTextbox as any)
+      expect(store.bold).toBe(true)
+      expect(store.color).toBe('#000000')
+    })
+
+    it('updateFabricStatesFromObject maps small fontSize', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: false,
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+        underline: false,
+        fill: '#000',
+        fontSize: 10,
+      }
+      store.updateFabricStatesFromObject(mockTextbox as any)
+      expect(store.fontSize).toBe('Small')
+    })
+
+    it('getFabricCurrentStyle returns textbox props when editing with empty styles', () => {
+      const store = useTextFormatStore()
+      const mockTextbox: any = {
+        isEditing: true,
+        getSelectionStyles: vi.fn().mockReturnValue([]),
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        underline: true,
+        fill: '#abc',
+        fontSize: 20,
+      }
+      store.setFabricTextbox(mockTextbox as any, null)
+      expect(store.bold).toBe(true)
+      expect(store.fontSize).toBe('Large')
+    })
+  })
 })

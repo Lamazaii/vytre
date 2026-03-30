@@ -56,7 +56,19 @@ describe('AddBlockZone.vue', () => {
         disabled: false,
       },
     })
-    
+
     expect(wrapper.props('disabled')).toBe(false)
+  })
+
+  it('defaults to enabled when disabled prop is not provided', async () => {
+    const wrapper = mount(AddBlockZone)
+    await wrapper.trigger('click')
+    expect(wrapper.emitted('add')).toBeTruthy()
+  })
+
+  it('handles null disabled prop as not disabled', async () => {
+    const wrapper = mount(AddBlockZone, { props: { disabled: null as any } })
+    await wrapper.trigger('click')
+    expect(wrapper.emitted('add')).toBeTruthy()
   })
 })

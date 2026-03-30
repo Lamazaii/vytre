@@ -53,7 +53,16 @@ export const useBlocksStore = defineStore('blocks', () => {
     const last = blocks.value[blocks.value.length - 1]
     const hasText = last?.text ? !isContentEmpty(last.text) : false // true if non-empty text after stripping HTML
     const hasImages = (last?.images?.length ?? 0) > 0 // use 0 when images is undefined/null
-    return hasText || hasImages // can add if last block has content
+    let hasShapes = false
+    if (last?.canvasData) {
+      try {
+        const json = JSON.parse(last.canvasData)
+        hasShapes = Array.isArray(json.objects) && json.objects.length > 0
+      } catch (e) {
+        hasShapes = false
+      }
+    }
+    return hasText || hasImages || hasShapes
   })
 
   const currentDocument = ref<{
@@ -81,20 +90,44 @@ export const useBlocksStore = defineStore('blocks', () => {
     }
 
     try {
+      // Detect empty blocks and prepare filtered blocks for saving
+      const emptyBlocks = blocks.value.filter((b) => {
+        const hasText = b.text && !isContentEmpty(b.text);
+        const hasImages = b.images && b.images.length > 0;
+        const hasNonEmptyZone = b.textZones && b.textZones.some((z) => z && !isContentEmpty(z));
+        let hasShapes = false
+        if (b.canvasData) {
+          try {
+            const json = JSON.parse(b.canvasData)
+            hasShapes = Array.isArray(json.objects) && json.objects.length > 0
+          } catch (e) {
+            hasShapes = false
+          }
+        }
+        return !(hasText || hasImages || hasNonEmptyZone || hasShapes)
+      })
+
+      if (emptyBlocks.length > 0) {
+        errorPopup.show('Impossible de sauvegarder : un ou plusieurs blocs sont vides. Remplissez-les ou supprimez-les.');
+        return;
+      }
+
       isSaving.value = true
-      // Filter out empty blocks before saving
       const filteredBlocks = blocks.value.filter((b) => {
         const hasText = b.text && !isContentEmpty(b.text); // keep blocks with actual text
         const hasImages = b.images && b.images.length > 0; // keep blocks with at least one image
         const hasNonEmptyZone = b.textZones && b.textZones.some((z) => z && !isContentEmpty(z)); // any filled extra zone
-        return hasText || hasImages || hasNonEmptyZone;
-      });
-
-      // Block save if document is empty
-      if (filteredBlocks.length === 0) {
-        errorPopup.show('Impossible de sauvegarder un document vide.');
-        return;
-      }
+        let hasShapes = false
+        if (b.canvasData) {
+          try {
+            const json = JSON.parse(b.canvasData)
+            hasShapes = Array.isArray(json.objects) && json.objects.length > 0
+          } catch (e) {
+            hasShapes = false
+          }
+        }
+        return hasText || hasImages || hasNonEmptyZone || hasShapes
+      })
 
       const nameExists = await documentService.checkNameExists(
         currentDocument.value.title,
