@@ -512,6 +512,7 @@ router.post('/', DocumentController.createDocument);
 router.get('/', DocumentController.getAllDocuments);
 router.get('/:id/versions', DocumentController.getDocumentVersions);
 router.get('/:id/versions/:version', DocumentController.getDocumentVersion);
+router.patch('/:id/versions/:versionId/state', DocumentController.updateDocumentVersionState);
 router.get('/:id', DocumentController.getDocumentById);
 router.put('/:id', DocumentController.updateDocument);
 

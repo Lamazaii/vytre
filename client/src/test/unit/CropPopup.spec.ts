@@ -184,9 +184,52 @@ describe('CropPopup.vue', () => {
         },
       },
     })
-    
+
     const footer = wrapper.find('.cropper-footer')
     expect(footer.exists()).toBe(true)
     expect(footer.findAll('button')).toHaveLength(2)
+  })
+
+  it('does not render when open but imageToCropSrc is empty (falsy)', () => {
+    const store = useImageCropStore()
+    store.isCropperOpen = true
+    store.imageToCropSrc = ''
+
+    const wrapper = mount(CropPopup, {
+      global: { stubs: { Cropper: { template: '<div></div>' } } },
+    })
+    expect(wrapper.find('.cropper-modal-overlay').exists()).toBe(false)
+  })
+
+  it('handleConfirm does nothing when cropperRef is null', async () => {
+    const store = useImageCropStore()
+    store.isCropperOpen = true
+    store.imageToCropSrc = 'test.jpg'
+
+    const wrapper = mount(CropPopup, {
+      global: { stubs: { Cropper: { template: '<div></div>' } } },
+    })
+
+    // cropperRef not set (remains null from ref initialization)
+    ;(wrapper.vm as any).cropperRef = null
+    await wrapper.find('.cropper-primary-button').trigger('click')
+
+    expect(wrapper.emitted('crop')).toBeFalsy()
+    expect(store.isCropperOpen).toBe(true)
+  })
+
+  it('handleConfirm does nothing when canvas is null', async () => {
+    const store = useImageCropStore()
+    store.isCropperOpen = true
+    store.imageToCropSrc = 'test.jpg'
+
+    const wrapper = mount(CropPopup, {
+      global: { stubs: { Cropper: { template: '<div></div>' } } },
+    })
+
+    ;(wrapper.vm as any).cropperRef = { getResult: () => ({ canvas: null }) }
+    await wrapper.find('.cropper-primary-button').trigger('click')
+
+    expect(wrapper.emitted('crop')).toBeFalsy()
   })
 })

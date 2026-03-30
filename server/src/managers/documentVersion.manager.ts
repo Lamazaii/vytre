@@ -140,3 +140,23 @@ export const getDocumentVersion = async (
         snapshot: parsedSnapshot.success ? parsedSnapshot.data : null,
     };
 };
+
+export const updateVersionState = async (
+    versionId: number,
+    newState: string,
+) => {
+    const updatedVersion = await prisma.documentVersion.update({
+        where: { id: versionId },
+        data: { state: newState },
+        select: {
+            id: true,
+            documentId: true,
+            version: true,
+            title: true,
+            state: true,
+            createdAt: true,
+        },
+    });
+
+    return updatedVersion;
+};
