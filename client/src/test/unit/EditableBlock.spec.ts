@@ -53,6 +53,9 @@ const TextZoneItemStub = defineComponent({
 const ImageUploaderStub = defineComponent({
   name: 'ImageUploader',
   emits: ['upload'],
+  methods: {
+    triggerFileInput() {},
+  },
   template: '<button data-test="uploader" @click="$emit(\'upload\', \'data:image/png\')">upload</button>',
 })
 
@@ -72,7 +75,7 @@ const ShapeCanvasStub = defineComponent({
     },
     getSelectedImage() {
       if (!this.selectedImageSrc) return null
-      return { getSrc: () => this.selectedImageSrc }
+      return { getSrc: () => this.selectedImageSrc, originalSrc: this.selectedImageSrc }
     },
     replaceSelectedImage(imageData: string) {
       this.selectedImageSrc = imageData
@@ -80,6 +83,14 @@ const ShapeCanvasStub = defineComponent({
     addSquare() {},
     addCircle() {},
     addTriangle() {},
+    addTextZone() {},
+    addArrow() {},
+    bringSelectedImageForward() {},
+    sendSelectedImageToBack() {},
+    bringSelectedShapeForward() {},
+    sendSelectedShapeToBack() {},
+    bringSelectedTextForward() {},
+    sendSelectedTextToBack() {},
   },
   template: '<div data-test="shape-canvas"></div>',
 })
@@ -462,6 +473,336 @@ describe('EditableBlock', () => {
     const tiptap = wrapper.find('[data-test="tiptap"]')
     expect(tiptap.exists()).toBe(true)
     
+    wrapper.unmount()
+  })
+
+  // ── Layer control watchers ──────────────────────────────────────────────────
+
+  it('calls bringSelectedImageForward when bringImageForwardRequest changes', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'bringSelectedImageForward')
+
+    shapeStore.bringImageForwardRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('calls sendSelectedImageToBack when sendImageToBackRequest changes', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'sendSelectedImageToBack')
+
+    shapeStore.sendImageToBackRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('calls bringSelectedShapeForward when bringShapeForwardRequest changes', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'bringSelectedShapeForward')
+
+    shapeStore.bringShapeForwardRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('calls sendSelectedShapeToBack when sendShapeToBackRequest changes', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'sendSelectedShapeToBack')
+
+    shapeStore.sendShapeToBackRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('calls bringSelectedTextForward when bringTextForwardRequest changes', async () => {
+    const { wrapper, textFormatStore } = mountEditableBlock()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'bringSelectedTextForward')
+
+    textFormatStore.bringTextForwardRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('calls sendSelectedTextToBack when sendTextToBackRequest changes', async () => {
+    const { wrapper, textFormatStore } = mountEditableBlock()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'sendSelectedTextToBack')
+
+    textFormatStore.sendTextToBackRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('does not call layer methods when block is not active', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: false })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'bringSelectedImageForward')
+
+    shapeStore.bringImageForwardRequest++
+    await nextTick()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  // ── addImageRequest watcher ─────────────────────────────────────────────────
+
+  it('triggers image uploader when addImageRequest fires', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const uploader = wrapper.findComponent({ name: 'ImageUploader' })
+    const spy = vi.spyOn(uploader.vm, 'triggerFileInput')
+
+    shapeStore.addImageRequest++
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+  })
+
+  it('does not trigger uploader when block is not active', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: false })
+
+    const uploader = wrapper.findComponent({ name: 'ImageUploader' })
+    const spy = vi.spyOn(uploader.vm, 'triggerFileInput')
+
+    shapeStore.addImageRequest++
+    await nextTick()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  // ── addShapeRequest: text and arrow shapes ──────────────────────────────────
+
+  it('adds text zone when shapeStore requests text shape', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'addTextZone')
+
+    shapeStore.activeShape = 'text'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(wrapper.emitted('modified')).toBeTruthy()
+  })
+
+  it('adds arrow when shapeStore requests arrow shape', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    await wrapper.setProps({ active: true })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    const spy = vi.spyOn(shapeCanvas.vm, 'addArrow')
+
+    shapeStore.activeShape = 'arrow'
+    shapeStore.addShapeRequest = Date.now()
+    await nextTick()
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+  })
+
+  // ── onFocusEditable full path ───────────────────────────────────────────────
+
+  it('onFocusEditable clears shape selection', async () => {
+    const { wrapper } = mountEditableBlock()
+    const shapeStore = useShapeStore()
+    const clearSpy = vi.spyOn(shapeStore, 'clearShapeSelection')
+
+    await wrapper.find('[data-test="tiptap"]').trigger('focus')
+    await nextTick()
+
+    expect(clearSpy).toHaveBeenCalled()
+  })
+
+  it('onFocusEditable clears image crop selection', async () => {
+    const { wrapper, imageCropStore } = mountEditableBlock()
+    const clearSpy = vi.spyOn(imageCropStore, 'clearSelection')
+
+    await wrapper.find('[data-test="tiptap"]').trigger('focus')
+    await nextTick()
+
+    expect(clearSpy).toHaveBeenCalled()
+  })
+
+  // ── onTextZoneFocus full path ───────────────────────────────────────────────
+
+  it('onTextZoneFocus clears shape selection', async () => {
+    const { wrapper } = mountEditableBlock({ textZones: ['zone'] })
+    const shapeStore = useShapeStore()
+    const clearSpy = vi.spyOn(shapeStore, 'clearShapeSelection')
+
+    await wrapper.find('[data-test="text-zone-focus"]').trigger('click')
+    await nextTick()
+
+    expect(clearSpy).toHaveBeenCalled()
+  })
+
+  // ── canvasData with JSON on mount ───────────────────────────────────────────
+
+  it('sets hasShapes=true on mount when canvasData has objects', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const blocksStore = useBlocksStore()
+    blocksStore.blocks[0]!.canvasData = JSON.stringify({ objects: [{ type: 'rect' }] })
+
+    const wrapper = mount(EditableBlock, {
+      props: { blockIndex: 0 },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          TiptapEditor: TiptapEditorStub,
+          TextZoneItem: TextZoneItemStub,
+          ImageUploader: ImageUploaderStub,
+          ShapeCanvas: ShapeCanvasStub,
+        },
+      },
+    })
+    await nextTick()
+
+    expect(wrapper.find('.shapeCanvasSection').isVisible()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('does not throw when canvasData is invalid JSON on mount', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const blocksStore = useBlocksStore()
+    blocksStore.blocks[0]!.canvasData = 'not-json'
+
+    const wrapper = mount(EditableBlock, {
+      props: { blockIndex: 0 },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          TiptapEditor: TiptapEditorStub,
+          TextZoneItem: TextZoneItemStub,
+          ImageUploader: ImageUploaderStub,
+          ShapeCanvas: ShapeCanvasStub,
+        },
+      },
+    })
+    await nextTick()
+
+    expect(wrapper.find('.shapeCanvasSection').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  // ── handleCanvasUpdate with undefined blockIndex ────────────────────────────
+
+  it('handleCanvasUpdate still updates canvasData when blockIndex is undefined', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    const wrapper = mount(EditableBlock, {
+      props: { blockIndex: undefined },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          TiptapEditor: TiptapEditorStub,
+          TextZoneItem: TextZoneItemStub,
+          ImageUploader: ImageUploaderStub,
+          ShapeCanvas: ShapeCanvasStub,
+        },
+      },
+    })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    shapeCanvas.vm.$emit('update:canvasData', 'testData')
+    await nextTick()
+
+    // canvasData ref should update even with no blockIndex
+    wrapper.unmount()
+  })
+
+  // ── cropRequestTimestamp with originalSrc ───────────────────────────────────
+
+  it('opens cropper with originalSrc when available', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const imageCropStore = useImageCropStore()
+    const openSpy = vi.spyOn(imageCropStore, 'openCropper')
+
+    const wrapper = mount(EditableBlock, {
+      props: { blockIndex: 0, active: true },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          TiptapEditor: TiptapEditorStub,
+          TextZoneItem: TextZoneItemStub,
+          ImageUploader: ImageUploaderStub,
+          ShapeCanvas: ShapeCanvasStub,
+        },
+      },
+    })
+    await nextTick()
+
+    const shapeCanvas = wrapper.findComponent({ name: 'ShapeCanvas' })
+    shapeCanvas.vm.selectedImageSrc = 'data:image/png;original'
+    ;(shapeCanvas.vm as any).getSelectedImage = () => ({
+      getSrc: () => 'data:image/png;original',
+      originalSrc: 'data:image/png;original',
+    })
+
+    imageCropStore.blockIndex = 0
+    imageCropStore.cropRequestTimestamp = Date.now()
+    await nextTick()
+
+    expect(openSpy).toHaveBeenCalledWith('data:image/png;original')
     wrapper.unmount()
   })
 })

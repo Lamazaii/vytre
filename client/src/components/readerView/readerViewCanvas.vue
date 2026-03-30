@@ -116,7 +116,7 @@ onMounted(() => {
   }
 })
 
-// Dispose Fabric canvas when component unmounts.
+//
 onBeforeUnmount(() => {
   if (fabricCanvas.value) {
     fabricCanvas.value.dispose()

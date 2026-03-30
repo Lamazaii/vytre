@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import TitleBar from '../../components/optionBar/titleBar.vue'
+import TitleBar from '../../components/optionBar/shared/titleBar.vue'
 import { useBlocksStore } from '../../stores/blockStores'
 
 describe('TitleBar.vue', () => {
@@ -130,5 +130,40 @@ describe('TitleBar.vue', () => {
     })
     const input = wrapper.find('#documentTitleInput')
     expect(input.attributes('type')).toBe('text')
+  })
+
+  it('renders home button when isMenu is false', () => {
+    const wrapper = mount(TitleBar, {
+      props: { isMenu: false },
+      global: { plugins: [pinia] },
+    })
+    expect(wrapper.find('.homeButton').exists()).toBe(true)
+  })
+
+  it('hides home button when isMenu is true', () => {
+    const wrapper = mount(TitleBar, {
+      props: { isMenu: true },
+      global: { plugins: [pinia] },
+    })
+    expect(wrapper.find('.homeButton').exists()).toBe(false)
+  })
+
+  it('emits home event when home button clicked', async () => {
+    const wrapper = mount(TitleBar, {
+      props: { isMenu: false },
+      global: { plugins: [pinia] },
+    })
+    await wrapper.find('.homeButton').trigger('click')
+    expect(wrapper.emitted('home')).toBeTruthy()
+  })
+
+  it('shows custom title when customTitle prop is provided', () => {
+    const wrapper = mount(TitleBar, {
+      props: { customTitle: 'Mon Titre Custom' },
+      global: { plugins: [pinia] },
+    })
+    expect(wrapper.find('.customTitle').exists()).toBe(true)
+    expect(wrapper.find('.customTitle').text()).toBe('Mon Titre Custom')
+    expect(wrapper.find('#documentTitleInput').exists()).toBe(false)
   })
 })

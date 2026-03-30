@@ -5,465 +5,287 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { fabric } from 'fabric'
-import { useImageCropStore } from '../../../stores/imageCropStore'
-import { useShapeStore } from '../../../stores/shapeStore'
-import { useTextFormatStore } from '../../../stores/textFormatStore'
-import { objectDefaults } from './utils/canvasConfig'
-import { createDeleteControl, deleteSelectedObjects } from './utils/canvasControls'
-import { handleObjectMoving, handleObjectScaling } from './utils/canvasConstraints'
+import { ref, shallowRef, onMounted, onBeforeUnmount, watch } from "vue";
+import { fabric } from "fabric";
+import { useImageCropStore } from "../../../stores/imageCropStore";
+import { objectDefaults } from "./utils/canvasConfig";
+import {
+  createDeleteControl,
+  deleteSelectedObjects,
+} from "./utils/canvasControls";
+import {
+  handleObjectMoving,
+  handleObjectScaling,
+} from "./utils/canvasConstraints";
+
+import { useArrows } from "./composables/useArrows";
+import { useShapes } from "./composables/useShapes";
+import { useText } from "./composables/useText";
+import { useImages } from "./composables/useImages";
+import { useLayers } from "./composables/useLayers";
+import { useSelection } from "./composables/useSelection";
+
+// Configure Fabric.js to serialize custom arrow properties
+const originalPathToObject = fabric.Path.prototype.toObject;
+fabric.Path.prototype.toObject = function (propertiesToInclude?: string[]) {
+  const obj = originalPathToObject.call(this, propertiesToInclude);
+  if ((this as any).isArrow) {
+    obj.isArrow = (this as any).isArrow;
+    obj.arrowStart = (this as any).arrowStart;
+    obj.arrowEnd = (this as any).arrowEnd;
+    obj.arrowStartStyle = (this as any).arrowStartStyle;
+    obj.arrowEndStyle = (this as any).arrowEndStyle;
+  }
+  return obj;
+};
 
 interface Props {
-  width?: number
-  height?: number
-  blockIndex?: number
-  canvasData?: string
-  active?: boolean
+  width?: number;
+  height?: number;
+  blockIndex?: number;
+  canvasData?: string;
+  active?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   width: 700,
   height: 400,
-  active: false
-})
+  active: false,
+});
 
 const emit = defineEmits<{
-  'update:canvasData': [data: string]
-  'modified': [value: boolean]
-  'update:hasObjects': [value: boolean]
-}>()
+  "update:canvasData": [data: string];
+  modified: [value: boolean];
+  "update:hasObjects": [value: boolean];
+}>();
 
-// Canvas DOM reference and Fabric instance.
-const canvasElement = ref<HTMLCanvasElement | null>(null)
-let canvas: fabric.Canvas | null = null
-// Shared stores for cross-toolbar selection and formatting sync.
-const imageCropStore = useImageCropStore()
-const shapeStore = useShapeStore()
-const textFormatStore = useTextFormatStore()
+const imageCropStore = useImageCropStore();
+const canvasElement = ref<HTMLCanvasElement | null>(null);
+const canvasRef = shallowRef<fabric.Canvas | null>(null);
 
-// Handle delete/backspace shortcuts when canvas is active.
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key !== 'Delete' && event.key !== 'Backspace') return
-  if (!props.active) return
-
-  const target = event.target as HTMLElement | null
-  if (target) {
-    const tagName = target.tagName
-    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
-      return
-    }
-  }
-
-  deleteSelectedObjects(canvas)
-}
-
-// Persist canvas JSON and notify parent state.
 function saveCanvas() {
-  if (!canvas) return
-  const json = JSON.stringify(canvas.toJSON())
-  emit('update:canvasData', json)
-  emit('modified', true)
-  checkHasObjects()
+  if (!canvasRef.value) return;
+  const json = JSON.stringify(canvasRef.value.toJSON());
+  emit("update:canvasData", json);
+  emit("modified", true);
+  checkHasObjects();
 }
 
-// Notify parent whether canvas contains at least one object.
 function checkHasObjects() {
-  if (!canvas) return
-  const objectCount = canvas.getObjects().length
-  emit('update:hasObjects', objectCount > 0)
+  if (!canvasRef.value) return;
+  const objectCount = canvasRef.value.getObjects().length;
+  emit("update:hasObjects", objectCount > 0);
 }
 
-// Factory for shape creation using current toolbar style values.
-function createShape(type: 'rect' | 'circle' | 'triangle') {
-  if (!canvas) return
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (!props.active) return;
 
-  const canvasWidth = canvas.width || props.width
-  const canvasHeight = canvas.height || props.height
-  let shape: fabric.Object
-
-  if (type === 'rect') {
-    const size = 100
-    shape = new fabric.Rect({
-      left: (canvasWidth - size) / 2,
-      top: (canvasHeight - size) / 2,
-      width: size,
-      height: size,
-      fill: shapeStore.fillColor,
-      stroke: shapeStore.strokeColor,
-      strokeWidth: shapeStore.strokeWidth,
-      ...objectDefaults
-    })
-  } else if (type === 'circle') {
-    const radius = 50
-    shape = new fabric.Circle({
-      left: canvasWidth / 2,
-      top: canvasHeight / 2,
-      radius: radius,
-      fill: shapeStore.fillColor,
-      stroke: shapeStore.strokeColor,
-      strokeWidth: shapeStore.strokeWidth,
-      originX: 'center',
-      originY: 'center',
-      ...objectDefaults
-    })
-  } else {
-    const size = 100
-    shape = new fabric.Triangle({
-      left: (canvasWidth - size) / 2,
-      top: (canvasHeight - size) / 2,
-      width: size,
-      height: size,
-      fill: shapeStore.fillColor,
-      stroke: shapeStore.strokeColor,
-      strokeWidth: shapeStore.strokeWidth,
-      ...objectDefaults
-    })
-  }
-
-  canvas.add(shape)
-  canvas.setActiveObject(shape)
-  canvas.renderAll()
-}
-
-// Public helpers exposed to parent component.
-function addSquare() {
-  createShape('rect')
-}
-
-function addCircle() {
-  createShape('circle')
-}
-
-function addTriangle() {
-  createShape('triangle')
-}
-
-// Insert image object and fit it inside the canvas bounds.
-function addImage(imageSrc: string) {
-  if (!canvas) return
-
-  fabric.Image.fromURL(imageSrc, (img) => {
-    if (!canvas) return
-
-    const canvasWidth = canvas.width || props.width
-    const canvasHeight = canvas.height || props.height
-
-    const maxSize = 300
-    const scale = Math.min(
-      maxSize / (img.width || 1),
-      maxSize / (img.height || 1),
-      1 
-    )
-
-    const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
-    img.set({
-      left: (canvasWidth - (img.width || 0) * scale) / 2,
-      top: (canvasHeight - (img.height || 0) * scale) / 2,
-      scaleX: scale,
-      scaleY: scale,
-      crossOrigin: 'anonymous',
-      ...objectDefaults
-    })
-
-    ;(img as any).imageId = imageId
-    ;(img as any).originalSrc = imageSrc
-
-    canvas.add(img)
-    canvas.setActiveObject(img)
-    canvas.renderAll()
-  })
-}
-
-// Return active image object when selection is an image.
-function getSelectedImage() {
-  if (!canvas) return null
-  const activeObject = canvas.getActiveObject()
-  if (activeObject && activeObject.type === 'image') {
-    return activeObject as fabric.Image
-  }
-  return null
-}
-
-// Return active shape object when selection is a shape.
-function getSelectedShape() {
-  if (!canvas) return null
-  const activeObject = canvas.getActiveObject()
-  if (activeObject && (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle')) {
-    return activeObject as fabric.Object
-  }
-  return null
-}
-
-// Replace selected image while preserving transform values.
-function replaceSelectedImage(newImageSrc: string) {
-  const selectedImage = getSelectedImage()
-  if (!selectedImage || !canvas) return
-
-  const imageId = (selectedImage as any).imageId
-  const currentProps = {
-    left: selectedImage.left,
-    top: selectedImage.top,
-    scaleX: selectedImage.scaleX,
-    scaleY: selectedImage.scaleY,
-    angle: selectedImage.angle
-  }
-
-  fabric.Image.fromURL(newImageSrc, (newImg) => {
-    if (!canvas) return
-
-    newImg.set({
-      ...currentProps,
-      crossOrigin: 'anonymous',
-      ...objectDefaults
-    })
-
-    ;(newImg as any).imageId = imageId
-    ;(newImg as any).originalSrc = newImageSrc
-
-    canvas.remove(selectedImage)
-    canvas.add(newImg)
-    canvas.setActiveObject(newImg)
-    canvas.renderAll()
-  })
-}
-
-// Move selected image one step forward in object stack.
-function bringSelectedImageForward() {
-  if (!canvas) return false
-  const selectedImage = getSelectedImage()
-  if (!selectedImage) return false
-
-  canvas.bringForward(selectedImage)
-  canvas.renderAll()
-  saveCanvas()
-  return true
-}
-
-// Move selected image one step backward in object stack.
-function sendSelectedImageToBack() {
-  if (!canvas) return false
-  const selectedImage = getSelectedImage()
-  if (!selectedImage) return false
-
-  canvas.sendBackwards(selectedImage)
-  canvas.renderAll()
-  saveCanvas()
-  return true
-}
-
-// Move selected shape one step forward in object stack.
-function bringSelectedShapeForward() {
-  if (!canvas) return false
-  const selectedShape = getSelectedShape()
-  if (!selectedShape) return false
-
-  canvas.bringForward(selectedShape)
-  canvas.renderAll()
-  saveCanvas()
-  return true
-}
-
-// Move selected shape one step backward in object stack.
-function sendSelectedShapeToBack() {
-  if (!canvas) return false
-  const selectedShape = getSelectedShape()
-  if (!selectedShape) return false
-
-  canvas.sendBackwards(selectedShape)
-  canvas.renderAll()
-  saveCanvas()
-  return true
-}
-
-// Sync selection context (image vs shape) with corresponding stores.
-function handleSelection(e: any) {
-  const selected = e.selected?.[0]
-  if (selected && selected.type === 'image') {
-    const imageId = (selected as any).imageId || selected.cacheKey
-    if (imageId && props.blockIndex !== undefined) {
-      imageCropStore.selectImage(imageId, props.blockIndex)
+  const target = event.target as HTMLElement | null;
+  if (target) {
+    const tagName = target.tagName;
+    if (tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable) {
+      return;
     }
-    textFormatStore.clearTextFocus()
-  } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
-    // Keep toolbar controls in sync with selected shape style.
-    const fill = selected.fill || '#000000'
-    const stroke = selected.stroke || '#1F2937'
-    const strokeWidth = selected.strokeWidth || 2
-    shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number)
-    imageCropStore.clearSelection()
-    textFormatStore.clearTextFocus()
-  } else {
-    imageCropStore.clearSelection()
   }
+
+  deleteSelectedObjects(canvasRef.value);
 }
 
-// Clear shape/image selection state when selection is removed.
-function handleSelectionCleared() {
-  imageCropStore.clearSelection()
-  shapeStore.clearShapeSelection()
-}
+const {
+  addArrow,
+  isDrawingArrow,
+  handleArrowMouseDown,
+  handleArrowMouseMove,
+  handleArrowMouseUp,
+  handleArrowRender,
+  handleArrowMoving,
+  handleArrowModified,
+  resetArrowDrawingState,
+} = useArrows(canvasRef, props, saveCanvas);
 
-// Initialize Fabric canvas, events, and optional JSON restore.
+const { addSquare, addCircle, addTriangle, getSelectedShape } = useShapes(
+  canvasRef,
+  props,
+  saveCanvas
+);
+
+const { getSelectedText, addTextZone, normalizeTextboxScale, handleTextboxStateUpdate } =
+  useText(canvasRef, props);
+
+const { getSelectedImage, addImage, replaceSelectedImage } = useImages(
+  canvasRef,
+  props
+);
+
+const {
+  bringSelectedImageForward,
+  sendSelectedImageToBack,
+  bringSelectedShapeForward,
+  sendSelectedShapeToBack,
+  bringSelectedTextForward,
+  sendSelectedTextToBack,
+} = useLayers(
+  canvasRef,
+  saveCanvas,
+  getSelectedImage,
+  getSelectedShape,
+  getSelectedText
+);
+
+const { handleSelection, handleSelectionCleared } = useSelection(canvasRef, props);
+
 onMounted(() => {
-  if (!canvasElement.value) return
+  if (!canvasElement.value) return;
 
-  canvas = new fabric.Canvas(canvasElement.value, {
+  canvasRef.value = new fabric.Canvas(canvasElement.value, {
     width: props.width,
     height: props.height,
-    selection: props.active,
+    selection: true,
     preserveObjectStacking: true,
     renderOnAddRemove: true,
-  })
+  });
 
-  fabric.Object.prototype.controls.deleteControl = createDeleteControl()
-  fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl()
+  const canvas = canvasRef.value;
 
-  canvas.on('object:added', saveCanvas)
-  canvas.on('object:modified', saveCanvas)
-  canvas.on('object:removed', saveCanvas)
+  fabric.Object.prototype.controls.deleteControl = createDeleteControl();
+  fabric.ActiveSelection.prototype.controls.deleteControl = createDeleteControl();
+  fabric.Textbox.prototype.controls.deleteControl = createDeleteControl();
 
-  canvas.on('object:moving', (e) => {
-    const obj = e.target
-    if (!obj || !canvas) return
+  canvas.on("object:added", saveCanvas);
+  canvas.on("object:removed", saveCanvas);
+  
+  canvas.on("object:modified", (e) => {
+    handleArrowModified(e);
+    saveCanvas();
+  });
 
-    const canvasWidth = canvas.width || props.width
-    const canvasHeight = canvas.height || props.height
+  canvas.on("object:moving", (e) => {
+    if (handleArrowMoving(e)) return;
 
-    handleObjectMoving(obj, canvasWidth, canvasHeight)
-  })
+    const obj = e.target;
+    if (!obj || !canvas) return;
 
-  canvas.on('object:scaling', (e) => {
-    const obj = e.target
-    if (!obj || !canvas) return
+    const canvasWidth = canvas.width || props.width;
+    const canvasHeight = canvas.height || props.height;
+    handleObjectMoving(obj, canvasWidth, canvasHeight);
+  });
 
-    const canvasWidth = canvas.width || props.width
-    const canvasHeight = canvas.height || props.height
+  canvas.on("object:scaling", (e) => {
+    const obj = e.target;
+    if (!obj || !canvas) return;
 
-    handleObjectScaling(obj, canvasWidth, canvasHeight)
-  })
+    const canvasWidth = canvas.width || props.width;
+    const canvasHeight = canvas.height || props.height;
 
-  canvas.on('selection:created', handleSelection)
-  canvas.on('selection:updated', handleSelection)
-  canvas.on('selection:cleared', handleSelectionCleared)
+    if (obj.type === "textbox") {
+      normalizeTextboxScale(obj as fabric.Textbox);
+    }
+    handleObjectScaling(obj, canvasWidth, canvasHeight);
+  });
 
-  globalThis.addEventListener('keydown', handleKeyDown)
+  canvas.on("selection:created", handleSelection);
+  canvas.on("selection:updated", handleSelection);
+  canvas.on("selection:cleared", handleSelectionCleared);
+  canvas.on("text:selection:changed", handleTextboxStateUpdate);
+  canvas.on("text:editing:entered", handleTextboxStateUpdate);
+  canvas.on("text:editing:exited", handleTextboxStateUpdate);
+  canvas.on("text:changed", handleTextboxStateUpdate);
+
+  canvas.on("mouse:down", handleArrowMouseDown);
+  canvas.on("mouse:move", handleArrowMouseMove);
+  canvas.on("after:render", () => handleArrowRender(canvas.getContext()));
+  canvas.on("mouse:up", handleArrowMouseUp);
+
+  globalThis.addEventListener("keydown", handleKeyDown);
 
   if (props.canvasData) {
+    const jsonData = JSON.parse(props.canvasData);
     canvas.loadFromJSON(props.canvasData, () => {
-      canvas?.getObjects().forEach((obj) => {
-        Object.assign(obj, objectDefaults)
-        obj.setCoords()
-      })
-      canvas?.renderAll()
-      checkHasObjects()
-    })
+      const objects = canvas?.getObjects() || [];
+      objects.forEach((obj, index) => {
+        Object.assign(obj, objectDefaults);
+        if (obj.type === "textbox") {
+          (obj as fabric.Textbox).set({ lockScalingY: true });
+          normalizeTextboxScale(obj as fabric.Textbox);
+        }
+        obj.setCoords();
+
+        if (jsonData.objects && jsonData.objects[index]) {
+          const jsonObj = jsonData.objects[index];
+          if (jsonObj.isArrow) {
+            (obj as any).isArrow = jsonObj.isArrow;
+            (obj as any).arrowStart = jsonObj.arrowStart;
+            (obj as any).arrowEnd = jsonObj.arrowEnd;
+            (obj as any).arrowStartStyle = jsonObj.arrowStartStyle;
+            (obj as any).arrowEndStyle = jsonObj.arrowEndStyle;
+          }
+        }
+      });
+      canvas?.renderAll();
+      checkHasObjects();
+    });
   } else {
-    checkHasObjects()
+    checkHasObjects();
   }
-})
+});
 
-// Dispose canvas instance and global listeners.
 onBeforeUnmount(() => {
-  if (canvas) {
-    canvas.dispose()
-    canvas = null
+  if (canvasRef.value) {
+    canvasRef.value.dispose();
+    canvasRef.value = null;
   }
-  globalThis.removeEventListener('keydown', handleKeyDown)
-})
+  globalThis.removeEventListener("keydown", handleKeyDown);
+});
 
-// Toggle object interactivity when block active state changes.
-watch(() => props.active, (isActive) => {
-  if (canvas) {
-    canvas.selection = isActive
-    canvas.forEachObject((obj: fabric.Object) => {
-      obj.selectable = isActive
-      obj.evented = isActive
-    })
-    
+watch(
+  () => props.active,
+  (isActive) => {
     if (!isActive) {
-      canvas.discardActiveObject()
-      imageCropStore.clearSelection()
+      resetArrowDrawingState();
+      if (canvasRef.value) {
+        canvasRef.value.defaultCursor = "default";
+        canvasRef.value.hoverCursor = "move";
+      }
     }
-    
-    canvas.renderAll()
-  }
-})
+    if (canvasRef.value) {
+      canvasRef.value.forEachObject((obj: fabric.Object) => {
+        obj.hasControls = isActive;
+        obj.hasBorders = isActive;
+      });
 
-// Apply fill updates from toolbar to selected shape.
-watch(() => shapeStore.fillColor, (newColor) => {
-  if (!canvas || !props.active) return
-  
-  const activeObject = canvas.getActiveObject()
-  if (!activeObject) return
-  
-  // Ignore images; styles apply only to geometric shapes.
-  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Avoid unnecessary render/save cycles.
-    if (activeObject.fill !== newColor) {
-      activeObject.set({ fill: newColor })
-      canvas.renderAll()
-      saveCanvas()
+      if (!isActive) {
+        canvasRef.value.discardActiveObject();
+        imageCropStore.clearSelection();
+      }
     }
   }
-})
-
-// Apply stroke color updates from toolbar to selected shape.
-watch(() => shapeStore.strokeColor, (newColor) => {
-  if (!canvas || !props.active) return
-  
-  const activeObject = canvas.getActiveObject()
-  if (!activeObject) return
-  
-  // Ignore images; styles apply only to geometric shapes.
-  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Avoid unnecessary render/save cycles.
-    if (activeObject.stroke !== newColor) {
-      activeObject.set({ stroke: newColor })
-      canvas.renderAll()
-      saveCanvas()
-    }
-  }
-})
-
-// Apply stroke width updates from toolbar to selected shape.
-watch(() => shapeStore.strokeWidth, (newWidth) => {
-  if (!canvas || !props.active) return
-  
-  const activeObject = canvas.getActiveObject()
-  if (!activeObject) return
-  
-  // Ignore images; styles apply only to geometric shapes.
-  if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
-    // Avoid unnecessary render/save cycles.
-    if (activeObject.strokeWidth !== newWidth) {
-      activeObject.set({ strokeWidth: newWidth })
-      canvas.renderAll()
-      saveCanvas()
-    }
-  }
-})
+);
 
 defineExpose({
   addSquare,
   addCircle,
   addTriangle,
+  addTextZone,
+  addArrow,
   addImage,
   getSelectedImage,
   getSelectedShape,
+  getSelectedText,
   replaceSelectedImage,
   bringSelectedImageForward,
   sendSelectedImageToBack,
   bringSelectedShapeForward,
   sendSelectedShapeToBack,
-})
+  bringSelectedTextForward,
+  sendSelectedTextToBack,
+});
 </script>
 
 <style scoped>
 .shapeCanvasWrapper {
   width: 700px;
-  border: 2px dashed #C6C6C6;
+  border: 2px dashed #c6c6c6;
   border-radius: 4px;
   padding: 8px;
   background-color: #fafafa;
@@ -473,7 +295,7 @@ defineExpose({
 }
 
 canvas {
-  border: 1px solid #E0E0E0;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   background-color: #ffffff;
 }

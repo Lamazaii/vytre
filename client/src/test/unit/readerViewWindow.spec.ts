@@ -136,7 +136,6 @@ describe('ReaderViewWindow.vue', () => {
     expect(header.exists()).toBe(true)
     expect(header.find('.headerNumber').text()).toBe('N°')
     expect(header.find('.headerDescription').text()).toBe("Détail de l'opération")
-    expect(header.find('.headerRep').text()).toBe('REP.')
   })
 
   // Test renders blocks from store

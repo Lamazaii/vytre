@@ -26,7 +26,7 @@ describe('documentService', () => {
       })
 
       const result = await documentService.create(newDocument)
-      
+
       expect(result).toEqual(createdDocument)
       expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents', {
         method: 'POST',
@@ -61,7 +61,7 @@ describe('documentService', () => {
       })
 
       const result = await documentService.getById(123)
-      
+
       expect(result).toEqual(mockDocument)
       expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/123', {
         method: 'GET',
@@ -96,7 +96,7 @@ describe('documentService', () => {
       })
 
       const result = await documentService.update(123, { title: 'Updated Doc' })
-      
+
       expect(result).toEqual(updatedDocument)
       expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/123', {
         method: 'PUT',
@@ -122,7 +122,7 @@ describe('documentService', () => {
       })
 
       await documentService.delete(123)
-      
+
       expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/123', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -152,7 +152,7 @@ describe('documentService', () => {
       })
 
       const result = await documentService.getAll()
-      
+
       expect(result).toEqual(mockDocuments)
       expect(result).toHaveLength(2)
       expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents', {
@@ -177,9 +177,171 @@ describe('documentService', () => {
       })
 
       const result = await documentService.getAll()
-      
+
       expect(result).toEqual([])
       expect(result).toHaveLength(0)
+    })
+  })
+
+  describe('getVersions', () => {
+    it('fetches versions for a document successfully', async () => {
+      const mockVersions = [
+        { id: 1, documentId: 5, version: 1, title: 'Doc', state: 'En édition', snapshot: '{}', createdAt: new Date() },
+        { id: 2, documentId: 5, version: 2, title: 'Doc', state: 'Actif', snapshot: '{}', createdAt: new Date() },
+      ]
+
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockVersions,
+      })
+
+      const result = await documentService.getVersions(5)
+
+      expect(result).toEqual(mockVersions)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/5/versions', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+
+    it('throws error when fetching versions fails', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({ ok: false, status: 500 })
+
+      await expect(documentService.getVersions(5)).rejects.toThrow('Erreur lors de la récupération des versions')
+    })
+  })
+
+  describe('getVersion', () => {
+    it('fetches a specific version successfully', async () => {
+      const mockVersion = {
+        id: 1, documentId: 5, version: 2, title: 'Doc', state: 'Actif', snapshot: '{}', createdAt: new Date(),
+      }
+
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockVersion,
+      })
+
+      const result = await documentService.getVersion(5, 2)
+
+      expect(result).toEqual(mockVersion)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/5/versions/2', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+
+    it('throws error when fetching a specific version fails', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({ ok: false, status: 404 })
+
+      await expect(documentService.getVersion(5, 99)).rejects.toThrow('Erreur lors de la récupération de la version')
+    })
+  })
+
+  describe('checkNameExists', () => {
+    it('returns true when title already exists', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 1, title: 'Existing Doc', version: 1, blocks: [] },
+          { id: 2, title: 'Another Doc', version: 1, blocks: [] },
+        ],
+      })
+
+      const result = await documentService.checkNameExists('Existing Doc')
+      expect(result).toBe(true)
+    })
+
+    it('returns false when title does not exist', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 1, title: 'Other Doc', version: 1, blocks: [] },
+        ],
+      })
+
+      const result = await documentService.checkNameExists('New Doc')
+      expect(result).toBe(false)
+    })
+
+    it('excludes document by id when excludeId is provided', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 3, title: 'My Doc', version: 1, blocks: [] },
+        ],
+      })
+
+      // Same title but excluded by id=3
+      const result = await documentService.checkNameExists('My Doc', 3)
+      expect(result).toBe(false)
+    })
+
+    it('returns true when same title exists for a different document id', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { id: 7, title: 'My Doc', version: 1, blocks: [] },
+        ],
+      })
+
+      // excludeId=3 but the matching doc has id=7
+      const result = await documentService.checkNameExists('My Doc', 3)
+      expect(result).toBe(true)
+    })
+  })
+
+  describe('updateState', () => {
+    it('updates document state successfully', async () => {
+      const updatedDoc = { id: 1, title: 'Doc', version: 1, blocks: [], state: 'Actif' }
+
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => updatedDoc,
+      })
+
+      const result = await documentService.updateState(1, 'Actif')
+
+      expect(result).toEqual(updatedDoc)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/1/state', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Actif' }),
+      })
+    })
+
+    it('throws error when updateState fails', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({ ok: false, status: 500 })
+
+      await expect(documentService.updateState(1, 'Actif')).rejects.toThrow()
+    })
+  })
+
+  describe('updateVersionState', () => {
+    it('updates a version state successfully', async () => {
+      const updatedVersion = {
+        id: 10, documentId: 1, version: 2, title: 'Doc', state: 'Archivé', snapshot: '{}', createdAt: new Date(),
+      }
+
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => updatedVersion,
+      })
+
+      const result = await documentService.updateVersionState(1, 10, 'Archivé')
+
+      expect(result).toEqual(updatedVersion)
+      expect(fetch).toHaveBeenCalledWith('http://localhost:3000/documents/1/versions/10/state', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Archivé' }),
+      })
+    })
+
+    it('throws error when updateVersionState fails', async () => {
+      ;(global.fetch as any).mockResolvedValueOnce({ ok: false, status: 500 })
+
+      await expect(documentService.updateVersionState(1, 10, 'Archivé')).rejects.toThrow()
     })
   })
 

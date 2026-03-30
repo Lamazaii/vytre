@@ -3,9 +3,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import cors from 'cors';
-// eslint-disable-next-line n/no-extraneous-import
 import swaggerUi from 'swagger-ui-express';
-// eslint-disable-next-line n/no-extraneous-import
 import swaggerJsdoc from 'swagger-jsdoc';
 
 import documentsRouter from './src/routes/documents.router';
@@ -14,35 +12,35 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173', // URL de votre client Vite
-  credentials: true
+    origin: 'http://localhost:5173', // URL de votre client Vite
+    credentials: true,
 }));
 
 // Swagger configuration
 const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Vytre API',
-      version: '1.0.0',
-      description: 'API documentation for Vytre project',
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Vytre API',
+            version: '1.0.0',
+            description: 'API documentation for Vytre project',
+        },
+        servers: [
+            {
+                url: 'http://localhost:3000',
+                description: 'Development server',
+            },
+        ],
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-        description: 'Development server',
-      },
-    ],
-  },
-  apis: ['./src/routes/*.ts'],
+    apis: ['./src/routes/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 
 // view engine setup
 app.use(logger('dev'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: false, limit: '5mb' }));
 app.use(cookieParser());
 
 // Swagger documentation route
