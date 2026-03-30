@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, shallowRef, onMounted, onBeforeUnmount, watch } from "vue";
 import { fabric } from "fabric";
 import { useImageCropStore } from "../../../stores/imageCropStore";
 import { objectDefaults } from "./utils/canvasConfig";
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 
 const imageCropStore = useImageCropStore();
 const canvasElement = ref<HTMLCanvasElement | null>(null);
-const canvasRef = ref<fabric.Canvas | null>(null);
+const canvasRef = shallowRef<fabric.Canvas | null>(null);
 
 function saveCanvas() {
   if (!canvasRef.value) return;

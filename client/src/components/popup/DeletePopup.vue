@@ -15,7 +15,8 @@
       <div class="popup-footer">
         <button class="btn btn-cancel" @click="onCancel">Annuler</button>
         <button class="btn btn-confirm" @click="onConfirm">
-          <img :src="trashWhite" alt="Trash" class="delete-icon" /> SUPPRIMER
+          <img v-if="store.deleteType !== 'exit'" :src="trashWhite" alt="Trash" class="delete-icon" /> 
+          {{ store.deleteType === 'exit' ? 'QUITTER' : 'SUPPRIMER' }}
         </button>
       </div>
     </div>
@@ -36,14 +37,16 @@ const isVisible = computed(() => store.isVisible)
 
 // Header title depends on current delete target type.
 const title = computed(() => {
-  return store.deleteType === 'block' ? 'SUPPRIMER LE BLOC ?' : "SUPPRIMER L'IMAGE ?"
+  if (store.deleteType === 'block') return 'SUPPRIMER LE BLOC ?'
+  if (store.deleteType === 'image') return "SUPPRIMER L'IMAGE ?"
+  return 'QUITTER SANS SAUVEGARDER ?'
 })
 
 // Body message depends on current delete target type.
 const message = computed(() => {
-  return store.deleteType === 'block' 
-    ? 'Êtes-vous sûr de vouloir supprimer ce bloc ?'
-    : 'Êtes-vous sûr de vouloir supprimer cette image ?'
+  if (store.deleteType === 'block') return 'Êtes-vous sûr de vouloir supprimer ce bloc ?'
+  if (store.deleteType === 'image') return 'Êtes-vous sûr de vouloir supprimer cette image ?'
+  return 'Êtes-vous sûr de vouloir retourner au menu ?'
 })
 
 // Close modal without deleting.
