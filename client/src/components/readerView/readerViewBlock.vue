@@ -9,9 +9,10 @@
                 x{{ modelValue }}
             </div>
             <div class="contentWrapper">
-              <div class="description" v-html="description"></div>
+              <div class="description">{{ description }}</div>
               <div v-if="textZones && textZones.length > 0" class="textZonesContainer">
-                <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
+                <div v-for="(zone, index) in textZones" :key="index" class="textZone">
+                  {{ zone }}
                 </div>
               </div>
               <ReaderViewCanvas 

@@ -35,7 +35,9 @@ export const createDocument = async (req: Request, res: Response) => {
         debug('Erreur controller :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -49,7 +51,9 @@ export const getAllDocuments = async (req: Request, res: Response) => {
         debug('Erreur lors de la récupération des documents :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -78,7 +82,9 @@ export const getDocumentById = async (req: Request, res: Response) => {
         debug('Erreur lors de la récupération du document :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -123,7 +129,9 @@ export const updateDocument = async (req: Request, res: Response) => {
         debug('Erreur lors de la mise à jour :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -143,7 +151,9 @@ export const getDocumentVersions = async (req: Request, res: Response) => {
         debug('Erreur lors de la récupération des versions :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -171,7 +181,9 @@ export const getDocumentVersion = async (req: Request, res: Response) => {
         debug('Erreur lors de la récupération de la version :', error);
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error ? error.message : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error ? error.message : String(error),
+            }),
         });
     }
 };
@@ -193,7 +205,7 @@ export const updateDocumentVersionState = async (
             return;
         }
 
-        const { state } = req.body as { state?: string };
+        const { state } = req.body as { state?: string, };
 
         if (!state || typeof state !== 'string') {
             res.status(400).json({
@@ -234,9 +246,11 @@ export const updateDocumentVersionState = async (
         );
         res.status(500).json({
             message: 'Erreur interne du serveur',
-            error: error instanceof Error
-                ? error.message
-                : String(error),
+            ...(process.env.NODE_ENV === 'development' && {
+                error: error instanceof Error
+                    ? error.message
+                    : String(error),
+            }),
         });
     }
 };
