@@ -20,6 +20,12 @@ export const objectDefaults = {
   strokeUniform: true,
 }
 
+export const arrowDefaults = {
+  ...objectDefaults,
+  lockScalingX: true,
+  lockScalingY: true,
+}
+
 export const canvasConfig = {
   backgroundColor: '#ffffff',
   preserveObjectStacking: true,
