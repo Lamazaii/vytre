@@ -52,7 +52,7 @@ export function useArrows(
     const arrowPath = generateArrowPath(start, end, shapeStore.arrowStartStyle, shapeStore.arrowEndStyle, shapeStore.strokeWidth)
 
     const arrow = new fabric.Path(arrowPath, {
-      stroke: shapeStore.fillColor,
+      stroke: 'rgba(0,0,0,0)',
       strokeWidth: shapeStore.strokeWidth,
       fill: 'transparent',
       left: start.x,
@@ -68,6 +68,8 @@ export function useArrows(
     ;(arrow as any).arrowEnd = end
     ;(arrow as any).arrowStartStyle = shapeStore.arrowStartStyle
     ;(arrow as any).arrowEndStyle = shapeStore.arrowEndStyle
+    const requestedColor = shapeStore.fillColor
+    ;(arrow as any).arrowColor = (!requestedColor || requestedColor === 'transparent' || requestedColor === 'rgba(0,0,0,0)') ? '#000000' : requestedColor
 
     canvasRef.value.add(arrow)
     canvasRef.value.setActiveObject(arrow)
@@ -254,44 +256,37 @@ export function useArrows(
         const end = (arrow as any).arrowEnd as { x: number; y: number }
         const startStyle = (arrow as any).arrowStartStyle || 'stroke'
         const endStyle = (arrow as any).arrowEndStyle || 'stroke'
-        const color = arrow.stroke as string || shapeStore.fillColor
+        const color = (arrow as any).arrowColor || '#000000'
         const strokeWidth = arrow.strokeWidth || 2
         
         const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
         const dx = end.x - start.x
         const dy = end.y - start.y
         const distance = Math.sqrt(dx * dx + dy * dy)
-        
+
         if (distance < 5) continue
-        
+
         const angle = Math.atan2(dy, dx)
-        
-        // Calculate offsets to avoid line overlapping with arrowheads
-        let startOffset = startStyle === 'none' ? 0 : (startStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
-        let endOffset = endStyle === 'none' ? 0 : (endStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
-        
-        // Scale down offsets if the arrow is too small
-        const maxOffset = Math.max(0, distance / 3)
-        startOffset = Math.min(startOffset, maxOffset)
-        endOffset = Math.min(endOffset, maxOffset)
-        
-        // Calculate shortened line endpoints
+
+        // Shorten line to stop at the base of each arrowhead
+        const startOffset = startStyle !== 'none' ? arrowHeadSize : 0
+        const endOffset = endStyle !== 'none' ? arrowHeadSize : 0
         const lineStartX = start.x + Math.cos(angle) * startOffset
         const lineStartY = start.y + Math.sin(angle) * startOffset
         const lineEndX = end.x - Math.cos(angle) * endOffset
         const lineEndY = end.y - Math.sin(angle) * endOffset
-        
-        // Draw the main arrow line (shortened to not overlap with heads)
+
+        // Draw the main line (ensures visibility regardless of Fabric path rendering limits)
         ctx.save()
         ctx.strokeStyle = color
         ctx.lineWidth = strokeWidth
-        ctx.lineCap = 'round'
+        ctx.lineCap = 'butt'
         ctx.beginPath()
         ctx.moveTo(lineStartX, lineStartY)
         ctx.lineTo(lineEndX, lineEndY)
         ctx.stroke()
         ctx.restore()
-        
+
         // Draw END arrow head (all styles)
         ctx.save()
         ctx.translate(end.x, end.y)
@@ -502,6 +497,16 @@ export function useArrows(
     arrow.set({ left: start.x, top: start.y, angle: angle })
     arrow.dirty = true
     arrow.setCoords()
+    canvasRef.value.renderAll()
+    saveCanvas()
+  })
+
+  watch(() => shapeStore.fillColor, (newColor) => {
+    if (!canvasRef.value || !props.active) return
+    const activeObject = canvasRef.value.getActiveObject()
+    if (!activeObject || !isArrowObject(activeObject)) return
+
+    ;(activeObject as any).arrowColor = (!newColor || newColor === 'transparent' || newColor === 'rgba(0,0,0,0)') ? '#000000' : newColor
     canvasRef.value.renderAll()
     saveCanvas()
   })

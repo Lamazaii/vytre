@@ -35,6 +35,7 @@ fabric.Path.prototype.toObject = function (propertiesToInclude?: string[]) {
     obj.arrowEnd = (this as any).arrowEnd;
     obj.arrowStartStyle = (this as any).arrowStartStyle;
     obj.arrowEndStyle = (this as any).arrowEndStyle;
+    obj.arrowColor = (this as any).arrowColor;
   }
   return obj;
 };
@@ -219,6 +220,9 @@ onMounted(() => {
             (obj as any).arrowEnd = jsonObj.arrowEnd;
             (obj as any).arrowStartStyle = jsonObj.arrowStartStyle;
             (obj as any).arrowEndStyle = jsonObj.arrowEndStyle;
+            (obj as any).arrowColor = jsonObj.arrowColor || jsonObj.stroke || '#000000';
+            // Ensure Fabric path stroke is invisible (drawn manually in handleArrowRender)
+            (obj as fabric.Path).set({ stroke: 'rgba(0,0,0,0)' });
           }
         }
       });
