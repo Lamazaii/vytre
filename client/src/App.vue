@@ -4,8 +4,10 @@ import Menu from './components/applications/menu.vue'
 import Editor from './components/applications/editor.vue'
 import Lector from './components/applications/lector.vue'
 
+// Current application view: menu, editor, or reader
 const currentMode = ref<'menu' | 'editor' | 'reader'>('menu')
 
+// Switch active view based on navigation events from child components
 function selectMode(mode: 'editor' | 'reader' | 'menu') {
   currentMode.value = mode
 }

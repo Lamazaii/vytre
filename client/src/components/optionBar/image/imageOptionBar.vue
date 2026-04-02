@@ -100,6 +100,7 @@ function toggleLayerMenu() {
   isLayerMenuOpen.value = !isLayerMenuOpen.value
 }
 
+// Close layer dropdown
 function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }

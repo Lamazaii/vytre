@@ -124,26 +124,31 @@ const colorRoot = ref<HTMLElement | null>(null)
 const isLayerMenuOpen = ref(false)
 const hasSelectedTextbox = computed(() => !!fabricTextbox.value)
 
+// Toggle layer dropdown (only when a textbox is selected)
 function toggleLayerMenu() {
   if (!hasSelectedTextbox.value) return
   isLayerMenuOpen.value = !isLayerMenuOpen.value
 }
 
+// Close layer dropdown
 function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }
 
+// Auto-close layer menu when textbox is deselected
 watch(hasSelectedTextbox, (isSelected) => {
   if (!isSelected) {
     closeLayerMenu()
   }
 })
 
+// Bring text forward and close menu
 function onBringForwardMenuClick() {
   requestBringTextForward()
   closeLayerMenu()
 }
 
+// Send text backward and close menu
 function onSendToBackMenuClick() {
   requestSendTextToBack()
   closeLayerMenu()
