@@ -1,4 +1,5 @@
 <template>
+  <!-- Button zone to add new block -->
   <div class="addBlockZone" :class="{ disabled }" @click="onClick">
     <div class="plusIcon">
       <img src="../../assets/blockImage/plusDisable.png" alt="Add" />
@@ -11,16 +12,16 @@
 <script setup lang="ts">
   import {computed } from 'vue'
 
-  // Optional disabled prop (defaults to false).
-  const props = defineProps<{ disabled?: boolean }>()
+  // Optional disabled prop (defaults to false)
+  const props = defineProps<{ disabled?: boolean }>()  
   const disabled = computed(() => props.disabled ?? false)
 
-  // Emitted when user requests a new block creation.
+  // Emitted when user requests a new block creation
   const emit = defineEmits<{
     add: []
   }>()
 
-  // Guard click action when the zone is disabled.
+  // Guard click action when the zone is disabled
   function onClick() {
     if (disabled.value) return
     emit('add')

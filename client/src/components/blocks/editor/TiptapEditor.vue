@@ -1,4 +1,5 @@
 <template>
+  <!-- Tiptap rich text editor -->
   <div class="tiptap-editor-wrapper">
     <editor-content 
       :editor="(editor as any)" 
@@ -16,9 +17,9 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 // Underline: text underlining (not in StarterKit)
 import Underline from '@tiptap/extension-underline'
-// TextStyle: enables custom inline styles
+// Enable custom inline styles
 import { TextStyle } from '@tiptap/extension-text-style'
-// Color: text color support
+// Enable text color support
 import { Color } from '@tiptap/extension-color'
 import { Extension } from '@tiptap/core'
 
@@ -39,8 +40,9 @@ const emit = defineEmits<{
   (e: 'selectionUpdate'): void
 }>()
 
+// Editor instance ref
 const editor = ref<Editor | undefined>(undefined)
-
+support
 // Custom extension for font size (e.g., 12px, 16px, 20px)
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -57,10 +59,10 @@ const FontSize = Extension.create({
         types: this.options.types,
         attributes: {
           fontSize: {
-            default: null,
+            default: null, element
             // Parse font-size from HTML
             parseHTML: element => element.style.fontSize.replace(/['"`´`]/g, ''),
-            // Render as inline CSS
+            // Render as inline CSS style
             renderHTML: attributes => {
               if (!attributes.fontSize) {
                 return {}
@@ -77,7 +79,7 @@ const FontSize = Extension.create({
 
   addCommands() {
     return {
-      // Apply font size to selection
+      // Set font size on selection
       setFontSize: (fontSize: string) => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize })
@@ -94,15 +96,17 @@ const FontSize = Extension.create({
   },
 })
 
+// Check if editor is empty
 const isEmpty = computed(() => {
   if (!editor.value) return true
   const text = editor.value.getText()
   return text.trim().length === 0
 })
-
+// Initialize editor with extensions and event handlers
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
+      // Core formatting
       // StarterKit: bold, italic, strike, lists
       StarterKit.configure({
         heading: false,
@@ -138,22 +142,26 @@ onMounted(() => {
       emit('selectionUpdate')
     },
   })
+// Cleanup editor on component unmount
 })
 
 onBeforeUnmount(() => {
   if (editor.value) {
     editor.value.destroy()
   }
+// Sync external model changes to editor content
 })
 
 watch(() => props.modelValue, (next) => {
   if (!editor.value) return
-
+// Skip update if content hasn't changed
+  
   if (editor.value.isFocused) return
   
   const current = editor.value.getHTML()
   if (current === next) return
 
+// Expose editor instance and getter method
   editor.value.commands.setContent(next, { emitUpdate: false })
 })
 

@@ -1,4 +1,5 @@
 <template>
+  <!-- Image display with selection and delete -->
   <div 
     class="imageItem" 
     :class="{ 'selected-image': isSelected }"
@@ -14,13 +15,13 @@
 <script setup lang="ts">
 import trashRed from '../../../assets/blockImage/trashRed.svg'
 
-// Input props for rendering and visual selection state.
+// Image path and selection state
 defineProps<{
   imagePath: string;
   isSelected: boolean;
 }>();
 
-// Selection/removal events sent to the parent canvas container.
+// Forward select and remove events to parent
 const emit = defineEmits(['select', 'remove']);
 </script>
 

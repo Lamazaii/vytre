@@ -1,6 +1,7 @@
 <template>
   <div class="repetitionCountWrapper">
     <span class="label">RÉP.</span>
+    <!-- Dynamic width input for repetition count -->
     <div class="repetitionCount">
       <div class="repetitionBox" :style="{ width: boxWidth + 'px' }">
         <div class="repetitionInner" :style="{ width: innerWidth + 'px' }">
@@ -37,11 +38,11 @@
     'update:modelValue': [value: number];
   }>();
 
-  // Local input model (supports temporary string state while typing).
+  // Local input model supporting temporary string state during typing
   const inputValue = ref<number | string>(props.modelValue);
   const inputRef = ref<HTMLInputElement | null>(null);
 
-  // Dynamically resize input and wrappers based on current content length.
+  // Dynamic width calculation based on content length
   const inputWidth = computed(() => {
     const valueStr = String(inputValue.value);
     const length = valueStr.length;
@@ -51,12 +52,12 @@
   const innerWidth = computed(() => inputWidth.value + 4);
   const boxWidth = computed(() => innerWidth.value + 20);
 
-  // Keep local value aligned when parent model changes externally.
+  // Sync local value with parent model changes
   watch(() => props.modelValue, (newVal) => {
     inputValue.value = newVal;
   });
 
-  // Emit rounded values on input when current text is numeric.
+  // Emit rounded values on input (numeric only)
   const handleInput = () => {
     const val = Number(inputValue.value);
     if (inputValue.value !== '' && !isNaN(val)) {
@@ -65,7 +66,7 @@
     }
   };
 
-  // Enforce bounds and precision when leaving the input.
+  // Validate bounds and precision on blur
   const handleBlur = () => {
     const numericValue = Number(inputValue.value);
 
