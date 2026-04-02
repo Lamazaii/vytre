@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import ImageUploader from '../../components/blocks/EditableBlock/imageUploader.vue'
 
 describe('imageUploader.vue', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('renders addImage container', () => {
     const wrapper = mount(ImageUploader)
     expect(wrapper.find('.addImage').exists()).toBe(true)
