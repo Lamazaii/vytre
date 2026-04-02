@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-// Emits a data URL payload when a valid image is selected.
+// Emits a data URL payload when a valid image is selected. 
 const emit = defineEmits(['upload']);
 // Hidden native file input reference.
 const fileInput = ref<HTMLInputElement | null>(null);
