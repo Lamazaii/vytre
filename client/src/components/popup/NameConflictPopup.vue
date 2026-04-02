@@ -23,8 +23,16 @@
                 <p class="submessage">
                     Souhaitez-vous valider le nom du document existant ou changer le nom ?
                 </p>
-                
-            <!-- Separator -->
+
+                <!-- Separator -->
+                <div class="separator" aria-hidden="true"></div>
+
+                <!-- Action buttons -->
+                <footer class="footer">
+                    <button class="ghostButton" type="button" @click="handleCancel">Changer le nom</button>
+                    <button class="primaryButton" type="button" @click="handleRename">Valider</button>
+                </footer>
+            </div>
         </div>
     </div>
 </template>

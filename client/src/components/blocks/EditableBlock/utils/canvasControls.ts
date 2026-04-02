@@ -1,5 +1,6 @@
 import { fabric } from 'fabric'
 
+// Create custom delete button control
 export function createDeleteControl() {
   return new fabric.Control({
     x: 0.5,
@@ -12,11 +13,13 @@ export function createDeleteControl() {
   })
 }
 
+// Remove object(s) when delete control clicked
 function deleteObject(_eventData: MouseEvent, _transform: any) {
   const target = _transform.target
   const canvas = target.canvas
 
   if (target.type === 'activeSelection') {
+    // Delete all objects in selection
     const activeSelection = target as fabric.ActiveSelection
     
     activeSelection.forEachObject((obj: fabric.Object) => {
@@ -25,12 +28,14 @@ function deleteObject(_eventData: MouseEvent, _transform: any) {
     
     canvas.discardActiveObject()
   } else {
+    // Delete single object
     canvas.remove(target)
   }
   
   canvas.requestRenderAll()
   return true
 }
+// Render delete icon on control
 
 function renderDeleteIcon(
   ctx: CanvasRenderingContext2D,
@@ -40,11 +45,15 @@ function renderDeleteIcon(
   fabricObject: fabric.Object
 ) {
   const size = 20
+  // Rotate button with object
   ctx.save()
+  
+  // Draw red circle background
   ctx.translate(left, top)
   ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle || 0))
   
   ctx.beginPath()
+  // Draw white X cross
   ctx.arc(0, 0, size / 2, 0, 2 * Math.PI)
   ctx.fillStyle = '#DC2626'
   ctx.fill()
@@ -57,6 +66,7 @@ function renderDeleteIcon(
   ctx.lineTo(crossSize / 2, crossSize / 2)
   ctx.moveTo(crossSize / 2, -crossSize / 2)
   ctx.lineTo(-crossSize / 2, crossSize / 2)
+// Delete currently selected object(s)
   ctx.stroke()
   
   ctx.restore()
@@ -65,6 +75,7 @@ function renderDeleteIcon(
 export function deleteSelectedObjects(canvas: fabric.Canvas | null) {
   if (!canvas) return
   const activeObject = canvas.getActiveObject()
+  // Delete each object in the selection
   if (!activeObject) return
 
   if (activeObject.type === 'activeSelection') {

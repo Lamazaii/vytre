@@ -1,5 +1,4 @@
 <template>
-  <!-- Tiptap rich text editor -->
   <div class="tiptap-editor-wrapper">
     <editor-content 
       :editor="(editor as any)" 
@@ -17,9 +16,9 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 // Underline: text underlining (not in StarterKit)
 import Underline from '@tiptap/extension-underline'
-// Enable custom inline styles
+// TextStyle: enables custom inline styles
 import { TextStyle } from '@tiptap/extension-text-style'
-// Enable text color support
+// Color: text color support
 import { Color } from '@tiptap/extension-color'
 import { Extension } from '@tiptap/core'
 
@@ -40,9 +39,8 @@ const emit = defineEmits<{
   (e: 'selectionUpdate'): void
 }>()
 
-// Editor instance ref
 const editor = ref<Editor | undefined>(undefined)
-support
+
 // Custom extension for font size (e.g., 12px, 16px, 20px)
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -59,7 +57,7 @@ const FontSize = Extension.create({
         types: this.options.types,
         attributes: {
           fontSize: {
-            default: null, element
+            default: null,
             // Parse font-size from HTML
             parseHTML: element => element.style.fontSize.replace(/['"`´`]/g, ''),
             // Render as inline CSS style
@@ -79,7 +77,7 @@ const FontSize = Extension.create({
 
   addCommands() {
     return {
-      // Set font size on selection
+      // Apply font size to selection
       setFontSize: (fontSize: string) => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize })
