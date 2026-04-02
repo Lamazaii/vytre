@@ -1,5 +1,6 @@
 <template>
-  <!-- Image upload area with file picker -->\n  <div class="addImage" @click="triggerFileInput">
+  <!-- Image upload area with file picker -->
+  <div class="addImage" @click="triggerFileInput">
     <input 
       ref="fileInput" 
       type="file" 

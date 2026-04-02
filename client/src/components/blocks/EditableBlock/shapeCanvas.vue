@@ -66,9 +66,12 @@ const imageCropStore = useImageCropStore();
 const canvasElement = ref<HTMLCanvasElement | null>(null);
 const canvasRef = shallowRef<fabric.Canvas | null>(null);
 
+// Prevent saveCanvas from firing during initial loadFromJSON
+let isLoading = false;
+
 // Save canvas state to JSON
 function saveCanvas() {
-  if (!canvasRef.value) return;
+  if (!canvasRef.value || isLoading) return;
   const json = JSON.stringify(canvasRef.value.toJSON());
   emit("update:canvasData", json);
   emit("modified", true);
@@ -206,6 +209,7 @@ onMounted(() => {
 
   if (props.canvasData) {
     const jsonData = JSON.parse(props.canvasData);
+    isLoading = true;
     canvas.loadFromJSON(props.canvasData, () => {
       const objects = canvas?.getObjects() || [];
       objects.forEach((obj, index) => {
@@ -232,6 +236,7 @@ onMounted(() => {
       });
       canvas?.renderAll();
       checkHasObjects();
+      isLoading = false;
     });
   } else {
     checkHasObjects();

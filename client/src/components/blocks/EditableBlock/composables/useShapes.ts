@@ -42,6 +42,13 @@ export function useShapes(
     return null
   }
 
+  function getShapeCount() {
+    if (!canvasRef.value) return 0
+    return canvasRef.value.getObjects().filter((o) =>
+      o.type === 'rect' || o.type === 'circle' || o.type === 'triangle' || isArrowObject(o)
+    ).length
+  }
+
   // Creates a shape of the given type centered on the canvas
   function createShape(type: 'rect' | 'circle' | 'triangle') {
     if (!canvasRef.value) return
