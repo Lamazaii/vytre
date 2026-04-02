@@ -193,11 +193,18 @@ function handleNewDocument() {
 
 async function handleStateUpdate(doc: Document, versionId: number, newState: string) {
   if (!doc.id) return
-  
+  const docId = doc.id
+
   try {
-    await documentService.updateVersionState(doc.id, versionId, newState)
-    // Recharger la liste des documents pour refléter le changement
+    await documentService.updateVersionState(docId, versionId, newState)
     await store.loadAllDocuments()
+    // Recharger les versions pour garder le menu ouvert avec le contenu à jour
+    if (openVersionMenu.value === docId) {
+      const updatedDoc = store.allDocuments.find(d => d.id === docId)
+      if (updatedDoc) {
+        await loadVersions(updatedDoc)
+      }
+    }
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'état de la version:', error)
   }

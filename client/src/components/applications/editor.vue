@@ -137,6 +137,13 @@ function handleClipboardCancel() {
 }
 
 function handleHome() {
+  // Si le document n'a pas de modifications, retourner directement au menu
+  if (!hasUnsavedChanges.value) {
+    emit('selectMode', 'menu')
+    return
+  }
+  
+  // Sinon, afficher le popup de confirmation
   deletePopupStore.show('exit', () => {
     emit('selectMode', 'menu')
   })
