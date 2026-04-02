@@ -1,4 +1,5 @@
 <template>
+  <!-- Fabric.js canvas for shapes and images -->
   <div class="shapeCanvasWrapper">
     <canvas ref="canvasElement"></canvas>
   </div>
@@ -61,9 +62,11 @@ const emit = defineEmits<{
 }>();
 
 const imageCropStore = useImageCropStore();
+// Canvas DOM and Fabric instance
 const canvasElement = ref<HTMLCanvasElement | null>(null);
 const canvasRef = shallowRef<fabric.Canvas | null>(null);
 
+// Save canvas state to JSON
 function saveCanvas() {
   if (!canvasRef.value) return;
   const json = JSON.stringify(canvasRef.value.toJSON());
@@ -71,6 +74,7 @@ function saveCanvas() {
   emit("modified", true);
   checkHasObjects();
 }
+// Check if canvas has any objects
 
 function checkHasObjects() {
   if (!canvasRef.value) return;

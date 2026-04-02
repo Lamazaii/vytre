@@ -1,4 +1,5 @@
 <template>
+  <!-- Extra text zone editor -->
   <div class="textZone">
     <div class="textZoneEditorWrapper">
       <TiptapEditor
@@ -20,9 +21,9 @@
 import TiptapEditor from '../../blocks/editor/TiptapEditor.vue'
 import trashRed from '../../../assets/blockImage/trashRed.svg'
 
-// Text content passed from the parent block.
+// Text content from parent block
 defineProps<{ modelValue: string }>();
-// Forward editor and removal events to parent container.
+// Forward editor and removal events
 const emit = defineEmits(['update:modelValue', 'focus', 'selectionUpdate', 'remove', 'setRef']);
 </script>
 

@@ -1,5 +1,6 @@
 <template>
   <div ref="shapeMenuRef" class="shape-button-group">
+    <!-- Shape selector button -->
     <button
       class="shape-select-button"
       type="button"
@@ -20,6 +21,7 @@
       <span class="shape-select-caret-outside" aria-hidden="true"></span>
     </button>
 
+    <!-- Shape dropdown menu -->
     <div v-if="isShapeMenuOpen" class="shape-menu" role="menu" aria-label="Choisir une forme">
       <button v-if="selectedShape !== 'arrow'" class="shape-menu-item" type="button" role="menuitem" @click="selectShape('arrow')">
         <img class="shape-menu-icon" :src="arrowIcon" alt="Flèche" />
@@ -53,27 +55,30 @@ import arrowIcon from '../../../assets/imageOptionBar/arrow.svg'
 
 type ShapeType = 'square' | 'circle' | 'triangle' | 'arrow'
 
-// Stores for shape commands, block selection, and validation feedback.
+// Shape stores and state
 const shapeStore = useShapeStore()
 const blocksStore = useBlocksStore()
 const errorPopupStore = useErrorPopupStore()
-// Dropdown state and currently selected shape preset.
+
+// Dropdown state
 const isShapeMenuOpen = ref(false)
 const shapeMenuRef = ref<HTMLElement | null>(null)
 
 const validShapes = ['square', 'circle', 'triangle', 'arrow']
+// Initialize with current shape or default
 const initialShape = validShapes.includes(shapeStore.toolbarShapeType as string) 
   ? (shapeStore.toolbarShapeType as ShapeType) 
   : 'square'
 const selectedShape = ref<ShapeType>(initialShape)
 
+// Sync with store changes
 watch(() => shapeStore.toolbarShapeType, (newType) => {
   if (validShapes.includes(newType as string)) {
     selectedShape.value = newType as ShapeType
   }
 })
 
-// Resolve icon for currently selected shape.
+// Get icon for selected shape
 const selectedShapeIcon = computed(() => {
   if (selectedShape.value === 'arrow') return arrowIcon
   if (selectedShape.value === 'circle') return circleIcon
@@ -90,7 +95,7 @@ const selectedShapeLabel = computed(() => {
 })
 
 function addShape(shape: ShapeType) {
-  // Shape insertion requires an active block.
+  // Require active block selection before adding shape
   if (blocksStore.selectedIndex === null) {
     errorPopupStore.show('Veuillez sélectionner un bloc avant d\'ajouter une forme.')
     isShapeMenuOpen.value = false
@@ -100,6 +105,7 @@ function addShape(shape: ShapeType) {
   shapeStore.setActiveShape(shape)
   shapeStore.requestAddShape()
 
+  // Reset active shape after render cycle
   setTimeout(() => {
     shapeStore.clearActiveShape()
   }, 150)
@@ -107,7 +113,7 @@ function addShape(shape: ShapeType) {
   isShapeMenuOpen.value = false
 }
 
-// Update dropdown selection without creating object yet.
+// Update toolbar selection and close menu
 function selectShape(shape: ShapeType) {
   selectedShape.value = shape
   shapeStore.setToolbarShape(shape)
@@ -115,11 +121,13 @@ function selectShape(shape: ShapeType) {
 }
 
 // Toggle shape picker menu visibility.
+// Toggle shape dropdown menu
 function toggleShapeMenu() {
   isShapeMenuOpen.value = !isShapeMenuOpen.value
 }
 
 // Close the menu when clicking outside selector container.
+// Close menu when clicking outside
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
   

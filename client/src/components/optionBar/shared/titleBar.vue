@@ -1,14 +1,16 @@
 <template>
   <div class="titleBar" :class="{ 'titleBar--readonly': isReadOnly, 'titleBar--menu': isMenu }">
-
+    <!-- Home button -->
     <button v-if="!isMenu" class="homeButton" @click="$emit('home')" aria-label="Retour au menu">
       <img :src="homeIcon" alt="Home" class="homeIcon" />
     </button>
 
+    <!-- Document title input -->
     <div class = "SimpleBar"></div>
 
     <div class="inputZone">
       <div v-if="customTitle" class="customTitle">{{ customTitle }}</div>
+      <!-- Editable title input -->
       <input
       v-else
       maxlength="80"
@@ -42,10 +44,10 @@ defineEmits<{
   (e: 'home'): void
 }>()
 
-// Store containing the editable document title.
+// Document title store
 const blocksStore = useBlocksStore()
 
-// Blur title input on Enter to validate edition.
+// Blur input on Enter
 function handleEnter(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target) {
@@ -53,7 +55,7 @@ function handleEnter(event: Event) {
   }
 }
 
-// Select full title text when input receives focus.
+// Select all text on focus
 function handleFocus(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target) {

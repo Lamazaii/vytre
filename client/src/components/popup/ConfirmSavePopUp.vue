@@ -1,7 +1,9 @@
 <template>
+  <!-- Success confirmation modal -->
   <div v-if="isOpen" class="popup-overlay" role="dialog" aria-modal="true">
     <div class="popup-container">
       <div class="popup-header">
+        <!-- Success header with icon -->
         <div class="header-content">
           <img :src="tickicon" alt="Tick icon" class="tick-icon" />
           <h2>{{ store.title }}</h2>
@@ -9,9 +11,11 @@
         <button class="close-btn" @click="close" aria-label="Fermer">✕</button>
       </div>
       <div class="popup-body">
+        <!-- Success message -->
         <p class="message">{{ message }}</p>
       </div>
       <div class="popup-footer">
+        <!-- Confirm button -->
         <button class="btn btn-confirm" @click="close">OK</button>
       </div>
     </div>
@@ -23,12 +27,11 @@ import { computed } from 'vue'
 import { useConfirmSavePopupStore } from '../../stores/confirmSavePopupStore'
 import tickicon from '../../assets/savePopUp/tickIcon.svg'
 
-// Central store for the success confirmation popup.
+// Success popup store
 const store = useConfirmSavePopupStore()
-// Reactive bindings for popup visibility and message.
+// Reactive popup state
 const isOpen = computed(() => store.isOpen)
 const message = computed(() => store.message)
-// Close helper forwarding action to the store.
 const close = () => store.close()
 </script>
 

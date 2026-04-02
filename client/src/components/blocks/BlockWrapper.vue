@@ -2,9 +2,11 @@
   <div class="wrapper">
     <div class="element-container">
       <div class="element-content">
+        <!-- Block step number/index display -->
         <div class="drag-handle" title="Déplacer le bloc">
           <StepNumber :numero="block.step" :active="active"/>
         </div>
+        <!-- Main editable block content -->
         <EditableBlock
           :description="block.text"
           :images="block.images"
@@ -17,10 +19,12 @@
           @update:description="(v) => handleUpdateDescription(v)"
           @update:images="(v) => handleUpdateImages(v)"
         />
+        <!-- Repetition count input -->
         <RepetitionCount v-model="nbOfRepeats" />
 
     </div>
     </div>
+    <!-- Zone to add new blocks after current one -->
     <div v-if="showAddBlockZone" class="addBlock">
       <AddBlockZone @add="emit('addBlock')" :disabled="!canAddBlock" />
     </div>
@@ -56,17 +60,17 @@ const emit = defineEmits<{
 }>()
 
 const blocksStore = useBlocksStore()
-// Local repeat value synced with block data and child v-model.
+// Local repeat value synced with block data and child v-model
 const nbOfRepeats = ref(props.block.nbOfRepeats)
 
-// Persist repeat updates into the current block object.
+// Sync repeat value with block data
 watch(nbOfRepeats, (newVal) => {
   if (props.block) {
     props.block.nbOfRepeats = newVal
   }
 })
 
-// Keep local repeat input synced when block payload changes.
+// Sync local repeat when block payload changes
 watch(
   () => props.block,
   (newBlock) => {
@@ -77,7 +81,7 @@ watch(
   { deep: true }
 )
 
-// Sync description changes to both local block prop and Pinia store.
+// Update description in both block and store
 function handleUpdateDescription(newDescription: string) {
   if (props.block) {
     props.block.text = newDescription
@@ -85,7 +89,7 @@ function handleUpdateDescription(newDescription: string) {
   }
 }
 
-// Receive migrated/updated images emitted by the editable block.
+// Sync updated images to block data
 function handleUpdateImages(newImages: any[]) {
   if (props.block) {
     props.block.images = newImages

@@ -1,5 +1,7 @@
 <template>
+  <!-- Main editable block container -->
   <div class="editableBlock" :class="{ active: props.active }" @click="emit('select')">
+    <!-- Main text editor area -->
     <div class="editableText">
       <TiptapEditor
         ref="welcomeEditorRef"
@@ -10,6 +12,7 @@
       />
     </div>
 
+    <!-- Extra text zones within block -->
     <div class="textZonesSection" v-if="textZones.length > 0">
       <TextZoneItem 
         v-for="(zone, index) in textZones" 
@@ -23,6 +26,7 @@
       />
     </div>
 
+    <!-- Delete block button -->
     <div v-if="props.canDelete !== false" 
          class="trashIcon" 
          :class="{ hovering: isTrashHover, active: isTrashActive }" 
@@ -34,6 +38,7 @@
 
     <div class="dottedSeparator"></div>
 
+    <!-- Shape canvas or image uploader depending on content -->
     <div class="shapeCanvasSection" v-show="hasShapes">
       <ShapeCanvas 
         ref="shapeCanvasRef"
@@ -82,24 +87,25 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['modified', 'select', 'delete', 'update:description', 'update:images']);
 
-// Local UI state for delete affordance and content mode.
+// UI state for delete button and content mode
 const isTrashHover = ref(false)
 const isTrashActive = ref(false)
 const welcomeText = ref(props.description || '')
 const hasShapes = ref(false)
 
-// Shared stores used to sync text, canvas, and image crop state.
+// Stores for text formatting, blocks, shapes, and image cropping
 const textFormatStore = useTextFormatStore()
 const blocksStore = useBlocksStore()
 const shapeStore = useShapeStore()
 const imageCropStore = useImageCropStore()
 const { addShapeRequest } = storeToRefs(shapeStore)
+// Editor and canvas refs
 const welcomeEditorRef = ref<InstanceType<typeof TiptapEditor> | null>(null)
 const textZoneEditorRefs = ref<Array<any>>([])
 const shapeCanvasRef = ref<InstanceType<typeof ShapeCanvas> | null>(null)
 const imageUploaderRef = ref<InstanceType<typeof ImageUploader> | null>(null)
 
-// Read initial canvas JSON for current block.
+// Get initial canvas JSON for current block
 function getInitialCanvasData(): string {
   if (props.blockIndex === undefined) return ''
   return blocksStore.blocks[props.blockIndex]?.canvasData || ''
@@ -120,14 +126,14 @@ onMounted(() => {
   }
 })
 
-// Computed list of extra text zones linked to the active block.
+// Get extra text zones for current block
 const textZones = computed(() => {
   if (props.blockIndex === undefined) return []
   const block = blocksStore.blocks[props.blockIndex]
   return block?.textZones || []
 })
 
-// Ensure the canvas section is visible before injecting a new image.
+// Add new image and reveal canvas section
 const handleNewImage = async (imageData: string) => {
   if (!shapeCanvasRef.value) return
   
@@ -140,7 +146,7 @@ const handleNewImage = async (imageData: string) => {
   emit('modified', true)
 }
 
-// Set text focus context to the main editor area.
+// Set text focus context to main editor
 function onFocusEditable() {
   emit('select')
   if (welcomeEditorRef.value) {

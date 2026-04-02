@@ -1,5 +1,6 @@
 <template>
   <div class="iconGroupComponent">
+    <!-- Edit/left mode button -->
     <button
       class="iconButton"
       :class="{ active: leftActiveLocal }"
@@ -41,15 +42,15 @@ const emit = defineEmits<{
   "change": [value: { left: boolean; right: boolean }]
 }>()
 
-// Internal controlled states mirrored from parent props.
+// Internal state mirrored from parent props
 const leftActiveLocal = ref(props.leftActive)
 const rightActiveLocal = ref(props.rightActive)
 
-// Sync local state when parent updates props externally.
+// Sync when parent props change
 watch(() => props.leftActive, (v) => (leftActiveLocal.value = !!v))
 watch(() => props.rightActive, (v) => (rightActiveLocal.value = !!v))
 
-// Emit new state to parent through both model and aggregated event.
+// Update both states and emit
 function setStates(left: boolean, right: boolean) {
   leftActiveLocal.value = left
   rightActiveLocal.value = right
@@ -58,7 +59,7 @@ function setStates(left: boolean, right: boolean) {
   emit("change", { left, right })
 }
 
-// Force left mode as active state.
+// Activate left mode
 function toggleLeft() {
   if (!leftActiveLocal.value && !rightActiveLocal.value) {
     setStates(true, false)
@@ -71,7 +72,7 @@ function toggleLeft() {
   }
 }
 
-// Force right mode as active state.
+// Activate right mode
 function toggleRight() {
   if (!leftActiveLocal.value && !rightActiveLocal.value) {
     setStates(false, true)

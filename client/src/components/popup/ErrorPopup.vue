@@ -1,7 +1,9 @@
 <template>
+  <!-- Error notification modal -->
   <div v-if="isOpen" class="popup-overlay" role="dialog" aria-modal="true">
     <div class="popup-container">
       <div class="popup-header">
+        <!-- Error header -->
         <div class="header-content">
           <img :src="warningIcon" alt="Warning" class="warning-icon" />
           <h2>ATTENTION</h2>
@@ -9,6 +11,7 @@
         <button class="close-btn" @click="close" aria-label="Fermer">✕</button>
       </div>
       <div class="popup-body">
+        <!-- Error message -->
         <p class="message">{{ message }}</p>
       </div>
       <div class="popup-footer">
@@ -23,12 +26,13 @@ import { computed } from 'vue'
 import { useErrorPopupStore } from '../../stores/errorPopupStore'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 
-// Store controlling generic error popup state.
+// Error popup store
 const store = useErrorPopupStore()
-// Reactive bindings for visibility and displayed message.
+
+// Reactive state
 const isOpen = computed(() => store.isOpen)
 const message = computed(() => store.message)
-// Close helper forwarding action to store.
+
 const close = () => store.close()
 </script>
 

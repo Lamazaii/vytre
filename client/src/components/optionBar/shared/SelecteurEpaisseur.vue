@@ -1,5 +1,6 @@
 <template>
   <div ref="strokeWidthMenuRef" class="stroke-width-group">
+    <!-- Stroke width button -->
     <button class="stroke-width-button" type="button" title="Épaisseur du contour">
       <div class="stroke-width-preview" :style="{ height: modelValue + 'px' }"></div>
       <span class="stroke-width-label">{{ modelValue }}px</span>
@@ -15,6 +16,7 @@
       <span class="stroke-width-caret" aria-hidden="true"></span>
     </button>
 
+    <!-- Width selector dropdown -->
     <div v-if="isStrokeWidthMenuOpen" class="stroke-width-menu" role="menu" aria-label="Choisir l'épaisseur">
       <button 
         v-for="width in availableStrokeWidths" 
@@ -47,27 +49,27 @@ const emit = defineEmits<{
   'update:modelValue': [width: number]
 }>()
 
-// Dropdown state and root ref for outside click detection.
+// Dropdown state and root reference
 const isStrokeWidthMenuOpen = ref(false)
 const strokeWidthMenuRef = ref<HTMLElement | null>(null)
 
-// List selectable widths excluding currently active one.
+// Available width options (excluding current)
 const availableStrokeWidths = computed(() => {
   return props.strokeWidthOptions.filter(w => w !== props.modelValue)
 })
 
-// Toggle width menu visibility.
+// Toggle dropdown menu
 function toggleStrokeWidthMenu() {
   isStrokeWidthMenuOpen.value = !isStrokeWidthMenuOpen.value
 }
 
-// Emit selected width and close dropdown.
+// Select width and close menu
 function selectStrokeWidth(width: number) {
   emit('update:modelValue', width)
   isStrokeWidthMenuOpen.value = false
 }
 
-// Close menu when clicking outside the component.
+// Close menu on outside click
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
   

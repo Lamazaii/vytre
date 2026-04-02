@@ -6,6 +6,7 @@
         aria-modal="true"
         aria-labelledby="save-popup-title"
     >
+        <!-- Save document dialog -->
         <div class="popUp">
             <header class="popUp-header">
                 <div class="titleGroup">
@@ -18,6 +19,7 @@
             <div class="popUp-body">
                 <p class="message">{{ resolvedMessage }}</p>
 
+                <!-- Title input field -->
                 <div class="inputGroup">
                     <label class="label" for="save-popup-input">{{ resolvedLabel }}</label>
                     <div class="inputWrapper">
@@ -32,8 +34,10 @@
                     </div>
                 </div>
                 
+                <!-- Separator between fields and actions -->
                 <div class="separator" aria-hidden="true"></div>
 
+                <!-- Action buttons -->
                 <footer class="footer">
                     <button class="ghostButton" type="button" @click="handleCancel">{{ resolvedCancel }}</button>
                     <button class="primaryButton" type="button" @click="handleConfirm">{{ resolvedConfirm }}</button>
@@ -65,13 +69,13 @@ const emit = defineEmits<{
     (e: 'confirm', value: string): void
 }>()
 
-// Local proxy to support v-model from parent.
+// Two-way binding for title input
 const localValue = computed({
     get: () => props.modelValue ?? '',
     set: (value: string) => emit('update:modelValue', value),
 })
 
-// Computed fallbacks for optional labels and texts.
+// Computed defaults for optional fields
 const resolvedTitle = computed(() => props.title ?? 'Enregistrer')
 const resolvedLabel = computed(() => props.label ?? 'Titre du document')
 const resolvedMessage = computed(
@@ -85,12 +89,11 @@ const resolvedPlaceholder = computed(
 const resolvedConfirm = computed(() => props.confirmText ?? 'CONFIRMER')
 const resolvedCancel = computed(() => props.cancelText ?? 'Annuler')
 
-// Cancel action.
 function handleCancel() {
     emit('cancel')
 }
 
-// Confirm action with trimmed title value.
+// Confirm with trimmed input
 function handleConfirm() {
     emit('confirm', localValue.value.trim())
 }
