@@ -1,8 +1,10 @@
 <template>
+	<!-- Clipboard import dialog overlay -->
 	<div v-if="popupStore.isOpen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="clipboard-title">
 		<div class="popup">
 			<div class="header-bar">
 				<div class="headerContent">
+				<!-- Clipboard header -->
 				<div class="titleGroup">
 					<img class="clipboardIcon" :src="clipboardIcon" alt="Presse-papier" />
 					<h1 class="documentTitle">Presse-papier</h1>
@@ -14,10 +16,12 @@
 			</div>
 
 			<div class="content">
+				<!-- Textarea for pasting blocks -->
 				<textarea id="clipboard-textarea" v-model="localValue" class="textarea" rows="9" :placeholder="placeholder"></textarea>
 			</div>
 
 			<div class="actions">
+				<!-- Form actions -->
 				<button type="button" class="ghostButton" @click="handleCancel">Annuler</button>
 				<button type="button" class="primaryButton" @click="handleSubmit">Générer les blocs</button>
 			</div>
@@ -31,9 +35,8 @@ import clipboardIcon from "../../assets/optionBarImage/contentPasteRed.svg";
 
 import { usePopupStore } from '../../stores/popupStore'
 
-// Store controlling clipboard popup visibility.
+// Clipboard popup store
 const popupStore = usePopupStore()
-
 
 const props = defineProps<{
 	modelValue?: string;
@@ -46,25 +49,25 @@ const emit = defineEmits<{
 	(e: "submit", value: string): void;
 }>();
 
-// Two-way local model proxy for textarea content.
+// Two-way model binding for textarea
 const localValue = computed({
 	get: () => props.modelValue ?? "",
 	set: (value: string) => emit("update:modelValue", value),
 });
 
-// Cancel closes popup and notifies parent.
+// Cancel and close popup
 function handleCancel() {
 	popupStore.closePopup();
 	emit("cancel");
 }
 
-// Submit closes popup and returns trimmed content.
+// Submit and close popup
 function handleSubmit() {
 	popupStore.closePopup();
 	emit("submit", localValue.value.trim());
 }
 
-// Default placeholder when parent does not provide one.
+// Default placeholder text
 const placeholder = computed(
 	() => props.placeholder ?? "Insérer votre texte:"
 );
