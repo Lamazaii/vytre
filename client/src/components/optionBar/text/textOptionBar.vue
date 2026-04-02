@@ -184,9 +184,6 @@ function onAddText() {
 
   shapeStore.setActiveShape('text')
   shapeStore.requestAddShape()
-  // Also request adding a text zone at the block level so unit tests and
-  // block-state handlers respond immediately.
-  blocks.addTextZone()
 }
 
 // Close color menu when user clicks outside picker root.

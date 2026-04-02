@@ -417,50 +417,80 @@ export function useArrows(
     ctx.restore()
   }
 
+  function applyArrowDelta(arrow: fabric.Path, deltaX: number, deltaY: number) {
+    const start = (arrow as any).arrowStart as { x: number; y: number }
+    const end = (arrow as any).arrowEnd as { x: number; y: number }
+    if (start) (arrow as any).arrowStart = { x: start.x + deltaX, y: start.y + deltaY }
+    if (end) (arrow as any).arrowEnd = { x: end.x + deltaX, y: end.y + deltaY }
+  }
+
   function handleArrowMoving(e: any) {
     if (!canvasRef.value) return false
     if (isModifyingEndpoint.value) return true // Prevent normal movement during endpoint modification
+
+    // Multi-selection containing arrows
+    if (e.target && e.target.type === 'activeSelection') {
+      const selection = e.target as fabric.ActiveSelection
+      const arrows = selection.getObjects().filter(isArrowObject) as fabric.Path[]
+      if (arrows.length === 0) return false
+
+      const currentLeft = selection.left || 0
+      const currentTop = selection.top || 0
+      if ((selection as any).lastLeft === undefined) {
+        ;(selection as any).lastLeft = currentLeft
+        ;(selection as any).lastTop = currentTop
+      }
+      const deltaX = currentLeft - ((selection as any).lastLeft || 0)
+      const deltaY = currentTop - ((selection as any).lastTop || 0)
+      ;(selection as any).lastLeft = currentLeft
+      ;(selection as any).lastTop = currentTop
+
+      arrows.forEach((arrow) => applyArrowDelta(arrow, deltaX, deltaY))
+      return false // let handleObjectMoving apply boundary constraints
+    }
+
+    // Single arrow
     if (e.target && isArrowObject(e.target)) {
       const arrow = e.target as fabric.Path
       const start = (arrow as any).arrowStart as { x: number; y: number }
       const end = (arrow as any).arrowEnd as { x: number; y: number }
-      
+
       if ((arrow as any).lastLeft === undefined) {
         ;(arrow as any).lastLeft = arrow.left || 0
         ;(arrow as any).lastTop = arrow.top || 0
       }
-      
+
       const currentLeft = arrow.left || 0
       const currentTop = arrow.top || 0
       const lastLeft = (arrow as any).lastLeft || 0
       const lastTop = (arrow as any).lastTop || 0
-      
+
       const deltaX = currentLeft - lastLeft
       const deltaY = currentTop - lastTop
-      
+
       const canvasWidth = canvasRef.value.width || props.width
       const canvasHeight = canvasRef.value.height || props.height
-      
+
       const newStartX = start.x + deltaX
       const newStartY = start.y + deltaY
       const newEndX = end.x + deltaX
       const newEndY = end.y + deltaY
-      
+
       let constrained = false
       if (newStartX < 0 || newStartX > canvasWidth || newStartY < 0 || newStartY > canvasHeight) constrained = true
       if (newEndX < 0 || newEndX > canvasWidth || newEndY < 0 || newEndY > canvasHeight) constrained = true
-      
+
       if (constrained) {
         arrow.left = lastLeft
         arrow.top = lastTop
         return true
       }
-      
+
       ;(arrow as any).arrowStart = { x: newStartX, y: newStartY }
       ;(arrow as any).arrowEnd = { x: newEndX, y: newEndY }
       ;(arrow as any).lastLeft = currentLeft
       ;(arrow as any).lastTop = currentTop
-      
+
       return true
     }
     return false
@@ -468,7 +498,10 @@ export function useArrows(
 
   function handleArrowModified(e: any) {
     if (isModifyingEndpoint.value) return // Skip normal modification handling during endpoint edit
-    if (e.target && isArrowObject(e.target)) {
+    if (e.target && e.target.type === 'activeSelection') {
+      ;(e.target as any).lastLeft = undefined
+      ;(e.target as any).lastTop = undefined
+    } else if (e.target && isArrowObject(e.target)) {
       const arrow = e.target as fabric.Path
       ;(arrow as any).lastLeft = undefined
       ;(arrow as any).lastTop = undefined

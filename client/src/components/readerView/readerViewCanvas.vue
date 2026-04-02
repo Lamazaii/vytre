@@ -26,34 +26,29 @@ const fabricCanvas = ref<fabric.Canvas | null>(null)
 const canvasId = `reader-${Math.random()}`
 const minHeight = 100
 const padding = 5
+const arrowHeadMargin = 25
 
 function calculateRequiredHeight(): number {
   if (!fabricCanvas.value) return minHeight
-  
+
   const objects = fabricCanvas.value.getObjects()
   if (objects.length === 0) return minHeight
-  
-  let minTop = Infinity
+
   let maxBottom = 0
-  
+
   objects.forEach((obj) => {
-    const boundingRect = obj.getBoundingRect()
-    const top = boundingRect.top
-    const bottom = boundingRect.top + boundingRect.height
-    
-    if (top < minTop) {
-      minTop = top
-    }
-    if (bottom > maxBottom) {
-      maxBottom = bottom
+    if ((obj as any).isArrow) {
+      const s = (obj as any).arrowStart
+      const e = (obj as any).arrowEnd
+      if (s) maxBottom = Math.max(maxBottom, s.y)
+      if (e) maxBottom = Math.max(maxBottom, e.y)
+    } else {
+      const boundingRect = obj.getBoundingRect()
+      maxBottom = Math.max(maxBottom, boundingRect.top + boundingRect.height)
     }
   })
-  
-  // Calculate required height: content height + padding
-  const contentHeight = maxBottom - minTop
-  const requiredHeight = contentHeight + (padding * 2)
-  
-  return Math.max(minHeight, requiredHeight)
+
+  return Math.max(minHeight, maxBottom + padding + arrowHeadMargin)
 }
 
 function repositionObjects() {
@@ -65,19 +60,140 @@ function repositionObjects() {
   // Find the highest position
   let minTop = Infinity
   objects.forEach((obj) => {
-    const boundingRect = obj.getBoundingRect()
-    if (boundingRect.top < minTop) {
-      minTop = boundingRect.top
+    if ((obj as any).isArrow) {
+      const s = (obj as any).arrowStart
+      const e = (obj as any).arrowEnd
+      if (s) minTop = Math.min(minTop, s.y)
+      if (e) minTop = Math.min(minTop, e.y)
+    } else {
+      const boundingRect = obj.getBoundingRect()
+      if (boundingRect.top < minTop) minTop = boundingRect.top
     }
   })
   
   // Move all objects up if necessary
-  const offset = minTop - padding
+  const offset = minTop - padding - arrowHeadMargin
   if (offset > 0) {
     objects.forEach((obj) => {
       obj.set({ top: (obj.top || 0) - offset })
       obj.setCoords()
+      if ((obj as any).isArrow) {
+        const s = (obj as any).arrowStart
+        const e = (obj as any).arrowEnd
+        if (s) (obj as any).arrowStart = { x: s.x, y: s.y - offset }
+        if (e) (obj as any).arrowEnd = { x: e.x, y: e.y - offset }
+      }
     })
+  }
+}
+
+function drawArrows(ctx: CanvasRenderingContext2D) {
+  if (!fabricCanvas.value) return
+
+  const allObjects = fabricCanvas.value.getObjects()
+  for (const obj of allObjects) {
+    if (obj.type !== 'path' || !(obj as any).isArrow) continue
+
+    const start = (obj as any).arrowStart as { x: number; y: number }
+    const end = (obj as any).arrowEnd as { x: number; y: number }
+    if (!start || !end) continue
+
+    const startStyle = (obj as any).arrowStartStyle || 'stroke'
+    const endStyle = (obj as any).arrowEndStyle || 'stroke'
+    const color = (obj as any).arrowColor || '#000000'
+    const strokeWidth = (obj as fabric.Path).strokeWidth || 2
+
+    const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    if (distance < 5) continue
+
+    const angle = Math.atan2(dy, dx)
+    const startOffset = startStyle !== 'none' ? arrowHeadSize : 0
+    const endOffset = endStyle !== 'none' ? arrowHeadSize : 0
+    const lineStartX = start.x + Math.cos(angle) * startOffset
+    const lineStartY = start.y + Math.sin(angle) * startOffset
+    const lineEndX = end.x - Math.cos(angle) * endOffset
+    const lineEndY = end.y - Math.sin(angle) * endOffset
+
+    ctx.save()
+    ctx.strokeStyle = color
+    ctx.lineWidth = strokeWidth
+    ctx.lineCap = 'butt'
+    ctx.beginPath()
+    ctx.moveTo(lineStartX, lineStartY)
+    ctx.lineTo(lineEndX, lineEndY)
+    ctx.stroke()
+    ctx.restore()
+
+    // End arrowhead
+    ctx.save()
+    ctx.translate(end.x, end.y)
+    ctx.rotate(angle)
+    if (endStyle === 'filled') {
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.closePath()
+      ctx.fill()
+    } else if (endStyle === 'open') {
+      ctx.fillStyle = '#ffffff'
+      ctx.strokeStyle = color
+      ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+    } else if (endStyle === 'stroke') {
+      ctx.strokeStyle = color
+      ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.stroke()
+    }
+    ctx.restore()
+
+    // Start arrowhead
+    ctx.save()
+    ctx.translate(start.x, start.y)
+    ctx.rotate(angle + Math.PI)
+    if (startStyle === 'filled') {
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.closePath()
+      ctx.fill()
+    } else if (startStyle === 'open') {
+      ctx.fillStyle = '#ffffff'
+      ctx.strokeStyle = color
+      ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+    } else if (startStyle === 'stroke') {
+      ctx.strokeStyle = color
+      ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+      ctx.beginPath()
+      ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+      ctx.stroke()
+    }
+    ctx.restore()
   }
 }
 
@@ -93,22 +209,39 @@ onMounted(() => {
     interactive: false
   })
 
+  const canvas = fabricCanvas.value
+  canvas.on('after:render', () => drawArrows(canvas.getContext()))
+
   try {
-    fabricCanvas.value.loadFromJSON(props.canvasData, () => {
+    const jsonData = JSON.parse(props.canvasData)
+    canvas.loadFromJSON(props.canvasData, () => {
       if (!fabricCanvas.value) return
-      
-      fabricCanvas.value.forEachObject((obj: fabric.Object) => {
+
+      fabricCanvas.value.forEachObject((obj: fabric.Object, index: number) => {
         obj.selectable = false
         obj.evented = false
+
+        if (jsonData.objects && jsonData.objects[index]) {
+          const jsonObj = jsonData.objects[index]
+          if (jsonObj.isArrow) {
+            ;(obj as any).isArrow = jsonObj.isArrow
+            ;(obj as any).arrowStart = jsonObj.arrowStart
+            ;(obj as any).arrowEnd = jsonObj.arrowEnd
+            ;(obj as any).arrowStartStyle = jsonObj.arrowStartStyle
+            ;(obj as any).arrowEndStyle = jsonObj.arrowEndStyle
+            ;(obj as any).arrowColor = jsonObj.arrowColor || jsonObj.stroke || '#000000'
+            ;(obj as fabric.Path).set({ stroke: 'rgba(0,0,0,0)' })
+          }
+        }
       })
-      
+
       // Reposition objects to remove empty space at the top
       repositionObjects()
-      
+
       // Adapt height to content
       const newHeight = calculateRequiredHeight()
       fabricCanvas.value.setHeight(newHeight)
-      
+
       fabricCanvas.value.renderAll()
     })
   } catch (error) {
