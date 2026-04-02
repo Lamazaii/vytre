@@ -58,6 +58,7 @@ function makeCanvas(activeObject: any = null, overrides: Partial<any> = {}) {
     width: 800,
     height: 600,
     getActiveObject: vi.fn().mockReturnValue(activeObject),
+    getObjects: vi.fn().mockReturnValue([]),
     add: vi.fn(),
     remove: vi.fn(),
     setActiveObject: vi.fn(),
