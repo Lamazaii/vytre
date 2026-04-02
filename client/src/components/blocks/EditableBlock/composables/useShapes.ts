@@ -5,6 +5,7 @@ import { useErrorPopupStore } from '../../../../stores/errorPopupStore'
 import { objectDefaults } from '../utils/canvasConfig'
 import { isArrowObject, generateArrowPath } from './useArrows'
 
+// Checks if a color is transparent
 function isTransparentColor(color: any) {
   if (!color) return true
   if (typeof color !== 'string') return false
@@ -16,6 +17,7 @@ function isTransparentColor(color: any) {
   return false
 }
 
+// Composable for managing shapes (rect, circle, triangle) on the canvas
 export function useShapes(
   canvasRef: Ref<fabric.Canvas | null>,
   props: { width: number; height: number; active: boolean },
@@ -24,6 +26,7 @@ export function useShapes(
   const shapeStore = useShapeStore()
   const errorPopup = useErrorPopupStore()
 
+  // Returns the currently selected shape or arrow, or null if none
   function getSelectedShape() {
     if (!canvasRef.value) return null
     const activeObject = canvasRef.value.getActiveObject()
@@ -39,6 +42,7 @@ export function useShapes(
     return null
   }
 
+  // Creates a shape of the given type centered on the canvas
   function createShape(type: 'rect' | 'circle' | 'triangle') {
     if (!canvasRef.value) return
 
@@ -102,6 +106,7 @@ export function useShapes(
     createShape('triangle')
   }
 
+  // Watch fill color changes and apply to selected shape
   watch(
     () => shapeStore.fillColor,
     (newColor) => {
@@ -115,6 +120,7 @@ export function useShapes(
         activeObject.type === 'circle' ||
         activeObject.type === 'triangle'
       ) {
+        // Prevent both fill and stroke from being transparent
         const otherColor = shapeStore.strokeColor
         if (isTransparentColor(newColor) && isTransparentColor(otherColor)) {
           const fallback = (activeObject.fill as string) || '#000000'
@@ -134,6 +140,7 @@ export function useShapes(
     }
   )
 
+  // Watch stroke color changes and apply to selected shape
   watch(
     () => shapeStore.strokeColor,
     (newColor) => {
@@ -147,6 +154,7 @@ export function useShapes(
         activeObject.type === 'circle' ||
         activeObject.type === 'triangle'
       ) {
+        // Prevent both fill and stroke from being transparent
         const otherColor = shapeStore.fillColor
         if (isTransparentColor(newColor) && isTransparentColor(otherColor)) {
           const fallback = (activeObject.stroke as string) || '#1F2937'
@@ -166,11 +174,13 @@ export function useShapes(
     }
   )
 
+  // Watch stroke width changes and apply to selected shape or arrow
   watch(() => shapeStore.strokeWidth, (newWidth) => {
     if (!canvasRef.value || !props.active) return
     const activeObject = canvasRef.value.getActiveObject()
     if (!activeObject) return
 
+    // Handle arrow stroke width change (recreate arrow with new width)
     if (isArrowObject(activeObject)) {
       const arrow = activeObject as fabric.Path
       const start = (arrow as any).arrowStart as { x: number; y: number }
@@ -209,6 +219,7 @@ export function useShapes(
       return
     }
 
+    // Handle regular shape stroke width change
     if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'triangle') {
       if (activeObject.strokeWidth !== newWidth) {
         activeObject.set({ strokeWidth: newWidth })

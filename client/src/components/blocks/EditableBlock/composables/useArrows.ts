@@ -20,10 +20,10 @@ export function generateArrowPath(
   
   if (distance < 5) return ''
   
-  // Draw the complete line from start to end
   return `M 0,0 L ${distance},0`
 }
 
+// Composable for managing arrow drawing and editing on the canvas
 export function useArrows(
   canvasRef: Ref<fabric.Canvas | null>,
   props: { width: number; height: number; active: boolean },
@@ -63,6 +63,7 @@ export function useArrows(
       ...arrowDefaults,
     })
 
+    // Store custom arrow properties
     ;(arrow as any).isArrow = true
     ;(arrow as any).arrowStart = start
     ;(arrow as any).arrowEnd = end
@@ -92,8 +93,9 @@ export function useArrows(
     if (!canvasRef.value) return
     const pointer = canvasRef.value.getPointer(e.e)
     const allObjects = canvasRef.value.getObjects()
-    const tolerance = 15 // Increased tolerance for better endpoint selection
+    const tolerance = 15
     
+    // Check if clicking near an existing arrow endpoint
     for (const obj of allObjects) {
       if (isArrowObject(obj)) {
         const arrow = obj as fabric.Path
@@ -156,7 +158,7 @@ export function useArrows(
   function handleArrowMouseMove(e: any) {
     if (!canvasRef.value) return
     const pointer = canvasRef.value.getPointer(e.e)
-    const tolerance = 15 // Increased tolerance for better endpoint detection
+    const tolerance = 15
 
     let nearEndpoint = false
     const allObjects = canvasRef.value.getObjects()
@@ -208,11 +210,8 @@ export function useArrows(
       if (distance > 5) {
         const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, arrow.strokeWidth || 2)
 
-        // Set path first so _setPositionDimensions recalculates width/height/pathOffset
         arrow.set('path', (fabric.util as any).parsePath(arrowPathStr))
-        // Then override position with the correct values
         arrow.set({ left: start.x, top: start.y, angle: angle })
-        // Force cache regeneration — without this, the object renders in its old (smaller) cached bbox
         arrow.dirty = true
         arrow.setCoords()
         canvasRef.value.renderAll()
@@ -234,7 +233,6 @@ export function useArrows(
 
   function handleArrowMouseUp() {
     if (modifyingArrow.value && modifyingEnd.value) {
-      // Clean up selection to avoid multi-selection
       canvasRef.value?.discardActiveObject()
       canvasRef.value?.setActiveObject(modifyingArrow.value)
       canvasRef.value?.renderAll()
@@ -245,6 +243,7 @@ export function useArrows(
     modifyingEnd.value = null
   }
 
+  // Renders arrow heads and preview line on canvas
   function handleArrowRender(ctx: CanvasRenderingContext2D) {
     if (!canvasRef.value) return
 
@@ -268,7 +267,6 @@ export function useArrows(
 
         const angle = Math.atan2(dy, dx)
 
-        // Shorten line to stop at the base of each arrowhead
         const startOffset = startStyle !== 'none' ? arrowHeadSize : 0
         const endOffset = endStyle !== 'none' ? arrowHeadSize : 0
         const lineStartX = start.x + Math.cos(angle) * startOffset
@@ -276,7 +274,6 @@ export function useArrows(
         const lineEndX = end.x - Math.cos(angle) * endOffset
         const lineEndY = end.y - Math.sin(angle) * endOffset
 
-        // Draw the main line (ensures visibility regardless of Fabric path rendering limits)
         ctx.save()
         ctx.strokeStyle = color
         ctx.lineWidth = strokeWidth
@@ -286,8 +283,8 @@ export function useArrows(
         ctx.lineTo(lineEndX, lineEndY)
         ctx.stroke()
         ctx.restore()
-
-        // Draw END arrow head (all styles)
+        
+        // Draw END arrow head
         ctx.save()
         ctx.translate(end.x, end.y)
         ctx.rotate(angle)
@@ -323,7 +320,7 @@ export function useArrows(
         }
         ctx.restore()
         
-        // Draw START arrow head (all styles)
+        // Draw START arrow head
         ctx.save()
         ctx.translate(start.x, start.y)
         ctx.rotate(angle + Math.PI)
@@ -361,6 +358,7 @@ export function useArrows(
       }
     }
     
+    // Draw selection handles for active arrow
     const activeObj = canvasRef.value.getActiveObject()
     if (activeObj && isArrowObject(activeObj)) {
       const arrow = activeObj as fabric.Path

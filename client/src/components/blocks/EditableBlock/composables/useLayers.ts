@@ -1,6 +1,7 @@
 import { type Ref } from 'vue'
 import { fabric } from 'fabric'
 
+// Composable for managing layer ordering (z-index) of canvas objects
 export function useLayers(
   canvasRef: Ref<fabric.Canvas | null>,
   saveCanvas: () => void,
@@ -8,6 +9,7 @@ export function useLayers(
   getSelectedShape: () => fabric.Object | null,
   getSelectedText: () => fabric.Textbox | null
 ) {
+  // Moves selected image one layer forward
   function bringSelectedImageForward() {
     if (!canvasRef.value) return false
     const selectedImage = getSelectedImage()
@@ -19,6 +21,7 @@ export function useLayers(
     return true
   }
 
+  // Moves selected image one layer backward
   function sendSelectedImageToBack() {
     if (!canvasRef.value) return false
     const selectedImage = getSelectedImage()
@@ -30,6 +33,7 @@ export function useLayers(
     return true
   }
 
+  // Moves selected shape one layer forward
   function bringSelectedShapeForward() {
     if (!canvasRef.value) return false
     const selectedShape = getSelectedShape()
@@ -41,6 +45,7 @@ export function useLayers(
     return true
   }
 
+  // Moves selected shape one layer backward
   function sendSelectedShapeToBack() {
     if (!canvasRef.value) return false
     const selectedShape = getSelectedShape()
@@ -52,6 +57,7 @@ export function useLayers(
     return true
   }
 
+  // Moves selected text one layer forward
   function bringSelectedTextForward() {
     if (!canvasRef.value) return false
     const selectedText = getSelectedText()
@@ -63,6 +69,7 @@ export function useLayers(
     return true
   }
 
+  // Moves selected text one layer backward
   function sendSelectedTextToBack() {
     if (!canvasRef.value) return false
     const selectedText = getSelectedText()

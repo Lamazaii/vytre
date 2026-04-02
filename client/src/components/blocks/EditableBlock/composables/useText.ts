@@ -4,12 +4,14 @@ import { useTextFormatStore } from '../../../../stores/textFormatStore'
 import { objectDefaults } from '../utils/canvasConfig'
 import { handleObjectMoving } from '../utils/canvasConstraints'
 
+// Composable for managing text elements on the canvas
 export function useText(
   canvasRef: Ref<fabric.Canvas | null>,
   props: { width: number; height: number; active: boolean }
 ) {
   const textFormatStore = useTextFormatStore()
 
+  // Returns the currently selected text object, or null if none
   function getSelectedText() {
     if (!canvasRef.value) return null
     const activeObject = canvasRef.value.getActiveObject()
@@ -19,6 +21,7 @@ export function useText(
     return null
   }
 
+  // Resets scale to 1 and adjusts width instead (avoids distorted text)
   function normalizeTextboxScale(textbox: fabric.Textbox) {
     const currentScaleX = textbox.scaleX || 1
     const baseWidth = textbox.width || 0
@@ -36,6 +39,7 @@ export function useText(
     textbox.setCoords()
   }
 
+  // Creates a new text zone centered on the canvas
   function addTextZone() {
     if (!canvasRef.value) return
 
@@ -69,6 +73,7 @@ export function useText(
     canvasRef.value.renderAll()
   }
 
+  // Syncs textbox properties to the format store when modified
   function handleTextboxStateUpdate(e: any) {
     const target = e?.target as fabric.Object | undefined
     if (!target || target.type !== 'textbox') return

@@ -5,6 +5,7 @@ import { useShapeStore } from '../../../../stores/shapeStore'
 import { useTextFormatStore } from '../../../../stores/textFormatStore'
 import { isArrowObject } from './useArrows'
 
+// Composable for handling object selection and syncing with stores
 export function useSelection(
   canvasRef: Ref<fabric.Canvas | null>,
   props: { blockIndex?: number }
@@ -13,8 +14,11 @@ export function useSelection(
   const shapeStore = useShapeStore()
   const textFormatStore = useTextFormatStore()
 
+  // Handles selection events and updates relevant stores based on object type
   function handleSelection(e: any) {
     const selected = e.selected?.[0]
+    
+    // Image selected
     if (selected && selected.type === 'image') {
       const imageId = (selected as any).imageId || selected.cacheKey
       if (imageId && props.blockIndex !== undefined) {
@@ -24,7 +28,9 @@ export function useSelection(
     } else if (selected && selected.type === 'textbox') {
       textFormatStore.setFabricTextbox(selected as fabric.Textbox, canvasRef.value)
       imageCropStore.clearSelection()
+    // Arrow selected
     } else if (selected && isArrowObject(selected)) {
+      // Disable default controls for arrows (custom handles used instead)
       selected.hasControls = false
       selected.hasBorders = false
       
@@ -39,6 +45,7 @@ export function useSelection(
       
       imageCropStore.clearSelection()
       textFormatStore.clearTextFocus()
+    // Shape (rect, circle, triangle) selected
     } else if (selected && (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'triangle')) {
       const fill = selected.fill || '#000000'
       const stroke = selected.stroke || '#1F2937'
@@ -47,12 +54,14 @@ export function useSelection(
       shapeStore.updateStylesFromSelection(fill as string, stroke as string, strokeWidth as number, shapeType)
       imageCropStore.clearSelection()
       textFormatStore.clearTextFocus()
+    // Nothing or unknown object selected
     } else {
       imageCropStore.clearSelection()
       textFormatStore.clearTextFocus()
     }
   }
 
+  // Clears all stores when selection is cleared
   function handleSelectionCleared() {
     imageCropStore.clearSelection()
     shapeStore.clearShapeSelection()
