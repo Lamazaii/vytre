@@ -54,7 +54,6 @@ const handleImageSelect = (event: Event) => {
   };
   reader.readAsDataURL(file);
 };
-file picker trigger
 // Expose picker trigger for toolbar-driven image insertion.
 defineExpose({
   triggerFileInput

@@ -1,6 +1,6 @@
 <template>
-  <!-- Main editable block container -->
   <div class="editableBlock" :class="{ active: props.active }" @click="emit('select')">
+    <!-- Main editable block container -->
     <!-- Main text editor area -->
     <div class="editableText">
       <TiptapEditor

@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AddBlockZone from '../../components/blocks/addBlockZone.vue'
 
 describe('AddBlockZone.vue', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
   // Test rendering
   it('renders the component', () => {
     const wrapper = mount(AddBlockZone, {
@@ -20,8 +24,9 @@ describe('AddBlockZone.vue', () => {
       props: {
         disabled: false,
       },
+      attachTo: document.body,
     })
-    
+
     await wrapper.trigger('click')
     expect(wrapper.emitted('add')).toBeTruthy()
   })
@@ -61,13 +66,13 @@ describe('AddBlockZone.vue', () => {
   })
 
   it('defaults to enabled when disabled prop is not provided', async () => {
-    const wrapper = mount(AddBlockZone)
+    const wrapper = mount(AddBlockZone, { attachTo: document.body })
     await wrapper.trigger('click')
     expect(wrapper.emitted('add')).toBeTruthy()
   })
 
   it('handles null disabled prop as not disabled', async () => {
-    const wrapper = mount(AddBlockZone, { props: { disabled: null as any } })
+    const wrapper = mount(AddBlockZone, { props: { disabled: null as any }, attachTo: document.body })
     await wrapper.trigger('click')
     expect(wrapper.emitted('add')).toBeTruthy()
   })

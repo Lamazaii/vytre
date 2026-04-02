@@ -1,6 +1,6 @@
 <template>
-  <!-- Button zone to add new block -->
   <div class="addBlockZone" :class="{ disabled }" @click="onClick">
+    <!-- Button zone to add new block -->
     <div class="plusIcon">
       <img src="../../assets/blockImage/plusDisable.png" alt="Add" />
     </div>
