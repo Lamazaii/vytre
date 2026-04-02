@@ -1,5 +1,6 @@
 <template>
   <div class="versionButtonWrapper">
+    <!-- Version history button -->
     <button
       class="actionButton versions"
       :class="{ 'is-open': isOpen }"
@@ -9,13 +10,16 @@
       <img :src="versionIcon" alt="Versions" class="buttonIcon" />
     </button>
 
+    <!-- Version history menu dropdown -->
     <div v-if="isOpen" class="versionMenu">
       <div class="versionMenuTitle">HISTORIQUE DES VERSIONS</div>
       
+      <!-- Versions list -->
       <div class="versionList" :class="{ 'is-scrollable': isHistoryExpanded }">
         <div v-if="loading" class="loadingVersions">Chargement...</div>
         <div v-else-if="!doc.versions?.length" class="emptyVersions">Aucune version</div>
 
+        <!-- Version item with state selector -->
         <div
           v-for="(version, index) in visibleVersions"
           :key="version.id"
@@ -67,6 +71,7 @@
         </div>
       </div>
 
+      <!-- Expand/collapse history button -->
       <button
         v-if="displayVersions.length > 3"
         class="versionHistoryButton"
@@ -91,10 +96,10 @@ const openStateMenuFor = ref<number | null>(null)
 const dropdownStyle = reactive({ top: '0px', left: '0px' })
 const availableStates = ['En édition', 'Actif', 'Archivé']
 
-// --- Logique de simplification ---
-
+// Resolve selected or current version
 const effectiveSelectedVersion = computed(() => props.selectedVersion ?? props.doc.version)
 
+// Sort versions by date (newest first), filter invalid entries
 const displayVersions = computed(() => {
   return [...(props.doc.versions || [])]
     .filter(v => v.id && v.createdAt)
@@ -103,15 +108,16 @@ const displayVersions = computed(() => {
     )
 })
 
+// Show max 2 versions unless expanded
 const visibleVersions = computed(() => 
   isHistoryExpanded.value ? displayVersions.value : displayVersions.value.slice(0, 2)
 )
 
-// Reset si on ferme le menu
+// Reset state when menu closes
 watch(() => props.isOpen, (val) => { if (!val) { isHistoryExpanded.value = false; openStateMenuFor.value = null } })
 
-// --- Helpers ---
-
+// Format date label (today, yesterday, or date)
+// Format date as day label (today, yesterday, or formatted date)
 const getDayLabel = (date: string | Date) => {
   const d = new Date(date)
   const today = new Date().toDateString()
@@ -121,16 +127,19 @@ const getDayLabel = (date: string | Date) => {
   return d.toLocaleDateString('fr-FR')
 }
 
+// Format time as HH:MM
 const formatHour = (date: string | Date) => 
   new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
+// Get version state with fallback
 const getVersionState = (v: any) => v.state?.trim() || v.snapshot?.state?.trim() || 'En édition'
 
+// Toggle version state dropdown and position it
 function toggleStateMenu(event: MouseEvent, id: number) {
   if (openStateMenuFor.value === id) {
     openStateMenuFor.value = null
   } else {
-    // On calcule la position pour le Teleport
+    // Calculate position for Teleport
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
     dropdownStyle.top = `${rect.bottom + window.scrollY + 5}px`
     dropdownStyle.left = `${rect.left + window.scrollX}px`
@@ -138,6 +147,7 @@ function toggleStateMenu(event: MouseEvent, id: number) {
   }
 }
 
+// Update version state and close dropdown
 function changeState(version: any, newState: string) {
   openStateMenuFor.value = null
   if (version.id) {

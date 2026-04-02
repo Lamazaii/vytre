@@ -1,9 +1,10 @@
 <template>
   <div id="app" class="app-menu" :class="{ 'app-menu--reader': viewMode === 'reader' }">
+    <!-- Header with title -->
     <TitleBar :isReadOnly="true" :isMenu="true" customTitle="Mes Documents" />
   <div class="menuContainer" :class="{ 'menuContainer--reader': viewMode === 'reader' }">
     <div class="headerContent">
-
+      <!-- Toggle between reader and editor mode -->
       <div class="modeToggle">
         <button 
           class="toggleButton" 
@@ -21,12 +22,14 @@
         </button>
       </div>
       
+      <!-- Search and new document button -->
       <div class="searchSection">
         <input type="text" v-model="searchQuery" placeholder="Rechercher..." class="searchInput" />
         <button v-if="viewMode === 'editor'" class="newButton" @click="handleNewDocument">+ Nouveau</button>
       </div>
     </div>
 
+    <!-- Documents list with actions -->
     <div class="documentsList">
       <div v-if="store.loadingDocuments" class="loadingMessage">Chargement des documents...</div>
       <div v-else-if="store.documentsError" class="errorMessage">{{ store.documentsError }}</div>
@@ -37,15 +40,18 @@
         class="documentCardWrapper"
       >
         <div class="documentCard">
+          <!-- Document icon -->
           <div class="docIcon">
             <img :src="fileIcon" alt="Document Icon" />
           </div>
+          <!-- Document info -->
           <div class="docInfo">
             <h3>{{ doc.title }}</h3>
             <div class="docMeta">
               <span class="docTime"><img :src="timeImage" alt="Time" class="timeIcon" /> {{ formatDate(doc.updatedAt ?? new Date()) }}</span>
             </div>
           </div>
+          <!-- Action buttons -->
           <div class="docActions">
             <button class="actionButton read" @click="openDocument(doc)">
               <img :src="readIcon" alt="Read" class="buttonIcon" /> Lire
@@ -95,6 +101,7 @@ const emit = defineEmits<{
   selectMode: [mode: 'editor' | 'reader']
 }>()
 
+// Initialize store and local state
 const store = useBlocksStore()
 const searchQuery = ref('')
 const viewMode = ref<'editor' | 'reader'>('editor')
@@ -102,6 +109,7 @@ const openVersionMenu = ref<number | null>(null)
 const loadingVersions = ref<number | null>(null)
 const selectedVersionByDoc = ref<Record<number, number>>({})
 
+// Filter documents by search query on title
 const filteredDocuments = computed(() => {
   if (!searchQuery.value.trim()) {
     return store.allDocuments
@@ -112,6 +120,7 @@ const filteredDocuments = computed(() => {
   )
 })
 
+// Format date as relative time (e.g., "5 minutes ago")
 function formatDate(dateString: Date): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -128,15 +137,17 @@ function formatDate(dateString: Date): string {
   return date.toLocaleDateString('fr-FR')
 }
 
+// Get selected version or current document version
 function getSelectedVersion(doc: Document): number | null {
   if (doc.id === undefined) return null
   return selectedVersionByDoc.value[doc.id] ?? doc.version
 }
 
+// Check if selected version is not the latest version
 function isSelectedVersionOlder(doc: Document): boolean {
   if (doc.id === undefined || !doc.versions?.length) return false
   const selected = selectedVersionByDoc.value[doc.id]
-  // Si aucune version n'est sélectionnée explicitement, c'est OK
+  // No explicit version selection = use current
   if (selected === undefined) return false
   
   // Trouver la version la plus récente (comme dans le versionHistoryMenu)
@@ -156,9 +167,9 @@ function handleVersionSelect(doc: Document, version: number) {
   }
 }
 
+// Load document for reading mode
 async function openDocument(doc: Document) {
   if (!doc.id) return
-  console.log('Ouverture en lecture:', doc)
   const selectedVersion = selectedVersionByDoc.value[doc.id]
   if (selectedVersion && selectedVersion !== doc.version) {
     await store.loadDocumentVersion(doc.id, selectedVersion)
@@ -168,15 +179,14 @@ async function openDocument(doc: Document) {
   emit('selectMode', 'reader')
 }
 
+// Load document for editing mode (prevent editing older versions)
 async function editDocument(doc: Document) {
   if (!doc.id) return
   
-  // Bloquer l'accès à l'éditeur pour les versions antérieures
+  // Block edit access for older versions
   if (isSelectedVersionOlder(doc)) {
     return
   }
-  
-  console.log('Édition du document:', doc)
   const selectedVersion = selectedVersionByDoc.value[doc.id]
   if (selectedVersion && selectedVersion !== doc.version) {
     await store.loadDocumentVersion(doc.id, selectedVersion)
@@ -191,6 +201,7 @@ function handleNewDocument() {
   emit('selectMode', 'editor')
 }
 
+// Update version state and refresh document list
 async function handleStateUpdate(doc: Document, versionId: number, newState: string) {
   if (!doc.id) return
   const docId = doc.id
@@ -198,7 +209,7 @@ async function handleStateUpdate(doc: Document, versionId: number, newState: str
   try {
     await documentService.updateVersionState(docId, versionId, newState)
     await store.loadAllDocuments()
-    // Recharger les versions pour garder le menu ouvert avec le contenu à jour
+    // Reload versions to keep menu open with updated content
     if (openVersionMenu.value === docId) {
       const updatedDoc = store.allDocuments.find(d => d.id === docId)
       if (updatedDoc) {
@@ -210,25 +221,27 @@ async function handleStateUpdate(doc: Document, versionId: number, newState: str
   }
 }
 
+// Toggle version history menu and load versions if needed
 function handleVersions(doc: Document) {
   if (openVersionMenu.value === doc.id) {
     openVersionMenu.value = null
   } else {
     openVersionMenu.value = doc.id ?? null
-    // Charger les versions si elles ne sont pas déjà chargées
+    // Load versions if not already cached
     if (!doc.versions || doc.versions.length === 0) {
       loadVersions(doc)
     }
   }
 }
 
+// Fetch and cache document versions
 async function loadVersions(doc: Document) {
   if (!doc.id) return
   
   try {
     loadingVersions.value = doc.id
     const versions = await documentService.getVersions(doc.id)
-    // Mettre à jour les versions du document dans la liste
+    // Update document in list with fetched versions
     const docIndex = store.allDocuments.findIndex(d => d.id === doc.id)
     if (docIndex !== -1) {
       const document = store.allDocuments[docIndex]
@@ -237,12 +250,13 @@ async function loadVersions(doc: Document) {
       }
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des versions:', error)
+    console.error('Error loading versions:', error)
   } finally {
     loadingVersions.value = null
   }
 }
 
+// Load all documents on component initialization
 onMounted(() => {
   store.loadAllDocuments()
 })

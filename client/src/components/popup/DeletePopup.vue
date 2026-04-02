@@ -1,8 +1,10 @@
 <template>
+  <!-- Delete confirmation modal -->
   <div v-if="isVisible" class="popup-overlay">
     <div class="popup-container">
       <div class="popup-header">
         <button class="close-btn" @click="onCancel">✕</button>
+        <!-- Warning icon and title -->
         <div class="header-content">
           <img :src="warningIcon" alt="Warning" class="warning-icon" />
           <h2>{{ title }}</h2>
@@ -10,9 +12,11 @@
       </div>
       <div class="popup-body">
         <p>{{ message }}</p>
+        <!-- Irreversible action warning -->
         <p class="warning">Cette action est irréversible</p>
       </div>
       <div class="popup-footer">
+        <!-- Cancel and confirm buttons -->
         <button class="btn btn-cancel" @click="onCancel">Annuler</button>
         <button class="btn btn-confirm" @click="onConfirm">
           <img v-if="store.deleteType !== 'exit'" :src="trashWhite" alt="Trash" class="delete-icon" /> 
@@ -29,32 +33,30 @@ import { computed } from 'vue'
 import warningIcon from '../../assets/popUpDeleteBlock/warningIcon.svg'
 import trashWhite from '../../assets/popUpDeleteBlock/trashWhite.svg'
 
-// Store handling delete confirmation state and actions.
+// Delete confirmation store
 const store = useDeletePopupStore()
 
-// Reactive visibility of delete modal.
+// Modal visibility
 const isVisible = computed(() => store.isVisible)
 
-// Header title depends on current delete target type.
+// Dynamic title based on delete type
 const title = computed(() => {
   if (store.deleteType === 'block') return 'SUPPRIMER LE BLOC ?'
   if (store.deleteType === 'image') return "SUPPRIMER L'IMAGE ?"
   return 'QUITTER SANS SAUVEGARDER ?'
 })
 
-// Body message depends on current delete target type.
+// Dynamic message based on delete type
 const message = computed(() => {
   if (store.deleteType === 'block') return 'Êtes-vous sûr de vouloir supprimer ce bloc ?'
   if (store.deleteType === 'image') return 'Êtes-vous sûr de vouloir supprimer cette image ?'
   return 'Êtes-vous sûr de vouloir retourner au menu ?'
 })
 
-// Close modal without deleting.
 function onCancel() {
   store.cancel()
 }
 
-// Confirm deletion action.
 function onConfirm() {
   store.confirm()
 }

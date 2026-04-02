@@ -1,5 +1,6 @@
 import { fabric } from 'fabric'
 
+// Keep object within canvas bounds
 export function constrainObjectPosition(
   obj: fabric.Object,
   canvasWidth: number,
@@ -8,6 +9,7 @@ export function constrainObjectPosition(
 ) {
   const scaledWidth = (obj.width || 0) * (obj.scaleX || 1)
   const scaledHeight = (obj.height || 0) * (obj.scaleY || 1)
+  // Calculate scaled radius for circular objects
   const scaledRadius = radius * (obj.scaleX || 1)
 
   if (obj.left !== undefined) {
@@ -26,6 +28,7 @@ export function constrainObjectPosition(
     }
   }
 }
+// Constrain object position during drag
 
 export function handleObjectMoving(
   obj: fabric.Object,
@@ -54,6 +57,7 @@ export function handleObjectMoving(
     }
   }
 }
+// Constrain object scale to stay within canvas
 
 export function handleObjectScaling(
   obj: fabric.Object,

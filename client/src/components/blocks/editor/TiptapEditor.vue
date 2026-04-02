@@ -60,7 +60,7 @@ const FontSize = Extension.create({
             default: null,
             // Parse font-size from HTML
             parseHTML: element => element.style.fontSize.replace(/['"`´`]/g, ''),
-            // Render as inline CSS
+            // Render as inline CSS style
             renderHTML: attributes => {
               if (!attributes.fontSize) {
                 return {}
@@ -94,15 +94,17 @@ const FontSize = Extension.create({
   },
 })
 
+// Check if editor is empty
 const isEmpty = computed(() => {
   if (!editor.value) return true
   const text = editor.value.getText()
   return text.trim().length === 0
 })
-
+// Initialize editor with extensions and event handlers
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
+      // Core formatting
       // StarterKit: bold, italic, strike, lists
       StarterKit.configure({
         heading: false,
@@ -138,22 +140,26 @@ onMounted(() => {
       emit('selectionUpdate')
     },
   })
+// Cleanup editor on component unmount
 })
 
 onBeforeUnmount(() => {
   if (editor.value) {
     editor.value.destroy()
   }
+// Sync external model changes to editor content
 })
 
 watch(() => props.modelValue, (next) => {
   if (!editor.value) return
-
+// Skip update if content hasn't changed
+  
   if (editor.value.isFocused) return
   
   const current = editor.value.getHTML()
   if (current === next) return
 
+// Expose editor instance and getter method
   editor.value.commands.setContent(next, { emitUpdate: false })
 })
 

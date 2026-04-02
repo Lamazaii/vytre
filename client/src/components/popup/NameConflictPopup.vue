@@ -6,6 +6,7 @@
         aria-modal="true"
         aria-labelledby="conflict-popup-title"
     >
+        <!-- Name conflict dialog -->
         <div class="popUp">
             <div class="popUp-header">
                 <div class="titleGroup">
@@ -22,13 +23,15 @@
                 <p class="submessage">
                     Souhaitez-vous valider le nom du document existant ou changer le nom ?
                 </p>
-                
+
+                <!-- Separator -->
                 <div class="separator" aria-hidden="true"></div>
 
-                <div class="footer">
+                <!-- Action buttons -->
+                <footer class="footer">
                     <button class="ghostButton" type="button" @click="handleCancel">Changer le nom</button>
                     <button class="primaryButton" type="button" @click="handleRename">Valider</button>
-                </div>
+                </footer>
             </div>
         </div>
     </div>
@@ -39,17 +42,17 @@ import { storeToRefs } from 'pinia'
 import { useNameConflictPopupStore } from '../../stores/nameConflictPopupStore'
 import warningIcon from '../../assets/savePopUp/floppy-disk.svg'
 
-// Store handling name conflict workflow during save.
+// Name conflict popup store
 const nameConflictStore = useNameConflictPopupStore()
-// Reactive popup state and conflicting document name.
+// Reactive state and document name
 const { isOpen, documentName } = storeToRefs(nameConflictStore)
 
-// Validate using existing name/document.
+// Confirm using existing name
 function handleRename() {
     nameConflictStore.handleValidate()
 }
 
-// Return to rename flow.
+// Back to edit name
 function handleCancel() {
     nameConflictStore.handleRename()
 }

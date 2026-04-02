@@ -1,4 +1,5 @@
 <template>
+  <!-- Image zoom overlay -->
   <Transition name="modal">
     <div v-if="isOpen" class="modal-overlay" @click="close">
       <div class="modal-content" @click.stop>
@@ -26,12 +27,11 @@ interface Props {
   imageAlt?: string;
 }
 
-// Input data for modal visibility and displayed image.
+// Props for modal state and image data
 const props = defineProps<Props>();
-// Emits close event when overlay or close button is clicked.
+// Close event emitter
 const emit = defineEmits<{ close: [] }>();
 
-// Standard close handler used by overlay and button.
 const close = () => {
   emit('close');
 };

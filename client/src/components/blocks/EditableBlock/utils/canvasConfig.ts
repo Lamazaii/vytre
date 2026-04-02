@@ -1,3 +1,4 @@
+// Default Fabric.js object properties (selectable, controls, corners)
 export const objectDefaults = {
   selectable: true,
   evented: true,
@@ -20,12 +21,14 @@ export const objectDefaults = {
   strokeUniform: true,
 }
 
+// Arrow defaults: locked scale (uniform width/height)
 export const arrowDefaults = {
   ...objectDefaults,
   lockScalingX: true,
   lockScalingY: true,
 }
 
+// Fabric.js canvas rendering and stacking options
 export const canvasConfig = {
   backgroundColor: '#ffffff',
   preserveObjectStacking: true,

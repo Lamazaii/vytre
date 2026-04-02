@@ -1,5 +1,6 @@
 <template>
   <div class="imageOptionBar">
+    <!-- Add image button -->
     <div class="formatGroup">
       <button class="formatButton" @click="onAddImageClick" title="Ajouter une image">
         <img :src="imageIcon" alt="Ajouter" />
@@ -19,6 +20,7 @@
       </button>
     </div>
 
+    <!-- Image layer organization -->
     <div class="formatGroup layerGroup">
       <div class="organize-button-group" :class="{ disabled: !hasSelectedImage }">
         <button
@@ -98,6 +100,7 @@ function toggleLayerMenu() {
   isLayerMenuOpen.value = !isLayerMenuOpen.value
 }
 
+// Close layer dropdown
 function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }

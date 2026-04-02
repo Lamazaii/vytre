@@ -97,6 +97,7 @@ const ShapeCanvasStub = defineComponent({
 
 afterEach(() => {
   vi.clearAllMocks()
+  document.body.innerHTML = ''
 })
 
 function mountEditableBlock(options?: {
@@ -120,6 +121,7 @@ function mountEditableBlock(options?: {
       images: options?.images,
       canDelete: options?.canDelete,
     },
+    attachTo: document.body,
     global: {
       plugins: [pinia],
       stubs: {

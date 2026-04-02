@@ -38,8 +38,9 @@ const canvasElement = ref<HTMLCanvasElement | null>(null);
 const fabricCanvas = ref<fabric.Canvas | null>(null);
 const canvasId = `zoom-${Math.random()}`;
 
+// Canvas dimensions and scaling
 const baseWidth = 700;
-const scaleFactor = 1.8; // Agrandissement à 180%
+const scaleFactor = 1.8; // 180% zoom
 const padding = 5;
 const minHeight = 100;
 

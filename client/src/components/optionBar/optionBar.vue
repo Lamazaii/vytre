@@ -4,6 +4,7 @@
   <div class="editor-toolbar">
     <div class="toolbar-main-container">
       
+      <!-- Clipboard and content type navigation -->
       <div class="toolbar-left-group">
         <button class="action-button-minimal" title="Presse-papiers" type="button" @click="popupStore.openPopup()">
           <img class="icon-standard" :src="iconClipboard" alt="Aller au presse papier" />
@@ -11,6 +12,7 @@
 
         <div class="toolbar-vertical-divider"></div>
 
+        <!-- Content type tabs: text, image, shapes -->
         <nav class="content-type-nav" aria-label="Type de contenu">
           <button
             :class="['tab-item', { 'tab-item--active': activeTab === 'text' }]"
@@ -41,6 +43,7 @@
         </nav>
       </div>
 
+      <!-- Edit/view mode toggle and save button -->
       <div class="toolbar-right-group">
         <IconToggleGroup
           :personIcon="iconEditMode"
@@ -58,6 +61,7 @@
 
     </div>
 
+    <!-- Contextual toolbars based on active tab -->
     <div v-if="activeTab === 'text'" class="contextual-toolbar-wrapper">
       <TextOptionBar />
     </div>
@@ -72,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+// Icons for toolbar buttons
 import iconClipboard from "../../assets/optionBarImage/contentPaste.svg";
 import iconSave from "../../assets/optionBarImage/floppyDisk.svg";
 import iconImage from "../../assets/optionBarImage/imageIcon.svg";

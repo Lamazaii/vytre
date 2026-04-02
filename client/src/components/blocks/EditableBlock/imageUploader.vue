@@ -1,4 +1,5 @@
 <template>
+  <!-- Image upload area with file picker -->
   <div class="addImage" @click="triggerFileInput">
     <input 
       ref="fileInput" 
@@ -18,23 +19,23 @@
 import { ref } from 'vue'
 import { useErrorPopupStore } from '../../../stores/errorPopupStore'
 
-// Emits a data URL payload when a valid image is selected.
+// Emit data URL when image selected
 const emit = defineEmits(['upload']);
-// Hidden native file input reference.
+// Hidden file input ref
 const fileInput = ref<HTMLInputElement | null>(null);
-// Error popup store for displaying size limit messages.
+// Error store for size validation messages
 const errorPopupStore = useErrorPopupStore();
 
-// Opens the file picker from the custom upload area.
+// Open native file picker
 const triggerFileInput = () => fileInput.value?.click();
 
-// Reads the selected image and forwards it to the parent component.
+// Read and validate selected image
 const handleImageSelect = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input?.files?.[0];
   if (!file || !file.type.startsWith('image/')) return;
 
-  // Check file size
+  // Validate file size (max 5MB)
   const maxSizeInBytes = 5 * 1024 * 1024;
   if (file.size > maxSizeInBytes) {
     const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -46,6 +47,7 @@ const handleImageSelect = (event: Event) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     const imageData = e.target?.result;
+    // Emit base64 data URL
     if (typeof imageData === 'string') {
       emit('upload', imageData);
       input.value = '';
@@ -53,7 +55,6 @@ const handleImageSelect = (event: Event) => {
   };
   reader.readAsDataURL(file);
 };
-
 // Expose picker trigger for toolbar-driven image insertion.
 defineExpose({
   triggerFileInput
