@@ -4,6 +4,8 @@ import * as documentManager from '../src/managers/document.manager';
 import * as documentVersionManager
     from '../src/managers/documentVersion.manager';
 
+const ORIGINAL_ENV = process.env.NODE_ENV;
+
 interface Image {
     imagePath?: string;
 }
@@ -72,7 +74,8 @@ jest.mock('../src/managers/document.manager', () => {
         ),
     );
 
-    const update = jest.fn<Promise<DocumentShape>, [number, CreateInput]>(
+    const update = jest.fn<Promise<DocumentShape | null>,
+    [number, CreateInput]>(
         (id, data) =>
             Promise.resolve({
                 id,
@@ -128,7 +131,24 @@ jest.mock('../src/managers/documentVersion.manager', () => {
         ),
     );
 
-    return { getDocumentVersions, getDocumentVersion };
+    const updateVersionState =
+    jest.fn<Promise<DocumentVersionShape | null>, [number, string]>(
+        (versionId, state) => Promise.resolve({
+            id: versionId,
+            documentId: 1,
+            version: 2,
+            title: 'Doc',
+            state,
+            createdAt: new Date().toISOString(),
+        }),
+    );
+
+    return { getDocumentVersions, getDocumentVersion, updateVersionState };
+});
+
+afterEach(() => {
+    jest.clearAllMocks();
+    process.env.NODE_ENV = ORIGINAL_ENV;
 });
 
 describe('Documents routes', () => {
@@ -212,6 +232,13 @@ describe('Documents routes', () => {
                 .toBe('ID invalide');
         });
 
+        it('returns 400 when id is not positive', async () => {
+            const res = await request(app).get('/documents/0');
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('ID invalide');
+        });
+
         it('returns 404 when not found', async () => {
             const res = await request(app).get('/documents/9999');
             expect(res.status).toBe(404);
@@ -260,6 +287,95 @@ describe('Documents routes', () => {
             expect(res.status).toBe(400);
             expect((res.body as { message?: string, }).message)
                 .toBe('Paramètres invalides');
+        });
+    });
+
+    describe('PATCH /documents/:id/versions/:versionId/state', () => {
+        it('updates version state when payload is valid', async () => {
+            const res = await request(app)
+                .patch('/documents/1/versions/2/state')
+                .send({ state: 'Actif' })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(200);
+            expect((res.body as DocumentVersionShape).state)
+                .toBe('Actif');
+            expect(documentVersionManager.updateVersionState as jest.Mock)
+                .toHaveBeenCalledWith(2, 'Actif');
+        });
+
+        it('returns 400 when params are invalid', async () => {
+            const res = await request(app)
+                .patch('/documents/abc/versions/2/state')
+                .send({ state: 'Actif' })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Paramètres invalides');
+        });
+
+        it('returns 400 when versionId is not positive', async () => {
+            const res = await request(app)
+                .patch('/documents/1/versions/0/state')
+                .send({ state: 'Actif' })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Paramètres invalides');
+        });
+
+        it('returns 400 when state is missing', async () => {
+            const res = await request(app)
+                .patch('/documents/1/versions/2/state')
+                .send({})
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Le champ "state" est requis et doit être une chaîne');
+        });
+
+        it('returns 400 when state is not a string', async () => {
+            const res = await request(app)
+                .patch('/documents/1/versions/2/state')
+                .send({ state: 123 })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(400);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Le champ "state" est requis et doit être une chaîne');
+        });
+
+        it('returns 404 when version is not found', async () => {
+            (documentVersionManager.updateVersionState as jest.Mock)
+                .mockResolvedValueOnce(null);
+
+            const res = await request(app)
+                .patch('/documents/1/versions/2/state')
+                .send({ state: 'Actif' })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(404);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Version non trouvée');
+        });
+
+        it('returns 500 when updateVersionState throws', async () => {
+            (documentVersionManager.updateVersionState as jest.Mock)
+                .mockImplementationOnce(() => {
+                    throw new Error('fail');
+                });
+
+            const res = await request(app)
+                .patch('/documents/1/versions/2/state')
+                .send({ state: 'Actif' })
+                .set('Content-Type', 'application/json');
+
+            expect(res.status).toBe(500);
+            expect((res.body as { message?: string, }).message)
+                .toBe('Erreur interne du serveur');
         });
     });
 
@@ -360,7 +476,7 @@ describe('Documents routes', () => {
         it('returns 404 on unknown route', async () => {
             const res = await request(app).get('/unknownroute');
             expect(res.status).toBe(404);
-            expect(res.body).toHaveProperty('error');
+            expect(res.body).toHaveProperty('message', 'Not Found');
         });
 
         it('returns 500 if DocumentManager.create throws', async () => {
@@ -442,8 +558,9 @@ describe('Documents routes', () => {
                 .toHaveProperty('message', 'Erreur interne du serveur');
         });
 
-        it('returns 500 with String(error) when create throws string',
-            async () => {
+        describe('Environment specific diagnostics', () => {
+            it('omits error details outside development', async () => {
+                process.env.NODE_ENV = 'test';
                 (documentManager.create as jest.Mock)
                     .mockRejectedValueOnce('string error');
                 const payload = { title: 'err', version: 1, blocks: [] };
@@ -452,47 +569,168 @@ describe('Documents routes', () => {
                     .send(payload)
                     .set('Content-Type', 'application/json');
                 expect(res.status).toBe(500);
-                expect(res.body)
-                    .toHaveProperty('error', 'string error');
-            },
-        );
+                expect(res.body).not.toHaveProperty('error');
+            });
 
-        it('returns 500 with String(error) when getAll throws string',
-            async () => {
+            it('returns 500 with diagnostics when create rejects with string in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.create as jest.Mock)
+                        .mockRejectedValueOnce('string error');
+                    const payload = { title: 'err', version: 1, blocks: [] };
+                    const res = await request(app)
+                        .post('/documents')
+                        .send(payload)
+                        .set('Content-Type', 'application/json');
+                    expect(res.status).toBe(500);
+                    expect(res.body)
+                        .toHaveProperty('error', 'string error');
+                },
+            );
+
+            it('returns 500 with diagnostics when getAll rejects with string in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.getAll as jest.Mock)
+                        .mockRejectedValueOnce('getAll failure');
+                    const res = await request(app).get('/documents');
+                    expect(res.status).toBe(500);
+                    expect(res.body)
+                        .toHaveProperty('error', 'getAll failure');
+                },
+            );
+
+            it('returns 500 with diagnostics when getById rejects with string in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.getById as jest.Mock)
+                        .mockRejectedValueOnce('getById failure');
+                    const res = await request(app).get('/documents/1');
+                    expect(res.status).toBe(500);
+                    expect(res.body)
+                        .toHaveProperty('error', 'getById failure');
+                },
+            );
+
+            it('returns 500 with diagnostics when update rejects with string in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.update as jest.Mock)
+                        .mockRejectedValueOnce('update failure');
+                    const payload = { title: 'err', version: 1, blocks: [] };
+                    const res = await request(app)
+                        .put('/documents/1')
+                        .send(payload)
+                        .set('Content-Type', 'application/json');
+                    expect(res.status).toBe(500);
+                    expect(res.body)
+                        .toHaveProperty('error', 'update failure');
+                },
+            );
+
+            it('surfaces Error details for create failures in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.create as jest.Mock)
+                        .mockImplementationOnce(() => {
+                            throw new Error('create boom');
+                        });
+                    const payload = {
+                        title: 'err',
+                        version: 1,
+                        blocks: [],
+                    };
+                    const res = await request(app)
+                        .post('/documents')
+                        .send(payload)
+                        .set('Content-Type', 'application/json');
+                    expect(res.status).toBe(500);
+                    expect(res.body).toHaveProperty('error', 'create boom');
+                });
+
+            it('surfaces Error details for getAll in development', async () => {
+                process.env.NODE_ENV = 'development';
                 (documentManager.getAll as jest.Mock)
-                    .mockRejectedValueOnce('getAll failure');
+                    .mockImplementationOnce(() => {
+                        throw new Error('getAll boom');
+                    });
                 const res = await request(app).get('/documents');
                 expect(res.status).toBe(500);
-                expect(res.body)
-                    .toHaveProperty('error', 'getAll failure');
-            },
-        );
+                expect(res.body).toHaveProperty('error', 'getAll boom');
+            });
 
-        it('returns 500 with String(error) when getById throws string',
-            async () => {
-                (documentManager.getById as jest.Mock)
-                    .mockRejectedValueOnce('getById failure');
-                const res = await request(app).get('/documents/1');
-                expect(res.status).toBe(500);
-                expect(res.body)
-                    .toHaveProperty('error', 'getById failure');
-            },
-        );
+            it('surfaces Error details for getById in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentManager.getById as jest.Mock)
+                        .mockImplementationOnce(() => {
+                            throw new Error('getById boom');
+                        });
+                    const res = await request(app).get('/documents/1');
+                    expect(res.status).toBe(500);
+                    expect(res.body).toHaveProperty('error', 'getById boom');
+                });
 
-        it('returns 500 with String(error) when update throws string',
-            async () => {
+            it('surfaces Error details for update in development', async () => {
+                process.env.NODE_ENV = 'development';
                 (documentManager.update as jest.Mock)
-                    .mockRejectedValueOnce('update failure');
-                const payload = { title: 'err', version: 1, blocks: [] };
+                    .mockImplementationOnce(() => {
+                        throw new Error('update boom');
+                    });
+                const payload = {
+                    title: 'err',
+                    version: 1,
+                    blocks: [],
+                };
                 const res = await request(app)
                     .put('/documents/1')
                     .send(payload)
                     .set('Content-Type', 'application/json');
                 expect(res.status).toBe(500);
-                expect(res.body)
-                    .toHaveProperty('error', 'update failure');
-            },
-        );
+                expect(res.body).toHaveProperty('error', 'update boom');
+            });
+        });
+
+        describe('Environment diagnostics for version routes', () => {
+            it('surfaces Error details for getDocumentVersions in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentVersionManager.getDocumentVersions as jest.Mock)
+                        .mockImplementationOnce(() => {
+                            throw new Error('versions boom');
+                        });
+                    const res = await request(app).get('/documents/1/versions');
+                    expect(res.status).toBe(500);
+                    expect(res.body).toHaveProperty('error', 'versions boom');
+                });
+
+            it('surfaces Error details for getDocumentVersion in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentVersionManager.getDocumentVersion as jest.Mock)
+                        .mockImplementationOnce(() => {
+                            throw new Error('version boom');
+                        });
+                    const res = await request(app).get('/documents/1/versions/1');
+                    expect(res.status).toBe(500);
+                    expect(res.body).toHaveProperty('error', 'version boom');
+                });
+
+            it('surfaces Error details for updateDocumentVersionState in development',
+                async () => {
+                    process.env.NODE_ENV = 'development';
+                    (documentVersionManager.updateVersionState as jest.Mock)
+                        .mockImplementationOnce(() => {
+                            throw new Error('state boom');
+                        });
+                    const res = await request(app)
+                        .patch('/documents/1/versions/2/state')
+                        .send({ state: 'Actif' })
+                        .set('Content-Type', 'application/json');
+                    expect(res.status).toBe(500);
+                    expect(res.body).toHaveProperty('error', 'state boom');
+                });
+        });
 
         it('creates document with canvasData and returns 201', async () => {
             const payload = {

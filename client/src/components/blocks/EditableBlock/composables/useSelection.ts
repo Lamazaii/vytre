@@ -28,7 +28,7 @@ export function useSelection(
       selected.hasControls = false
       selected.hasBorders = false
       
-      const fill = selected.stroke || '#000000'
+      const fill = (selected as any).arrowColor || (selected.stroke as string) || '#000000'
       const width = selected.strokeWidth || 2
       const startStyle = (selected as any).arrowStartStyle || 'filled'
       const endStyle = (selected as any).arrowEndStyle || 'filled'
