@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Popup components
 import CopyPastePopup from '../popup/CopyPastePopup.vue';
 import SavePopUp from '../popup/SavePopUp.vue';
 import ConfirmSavePopUp from '../popup/ConfirmSavePopUp.vue';
@@ -22,6 +23,7 @@ import { useDeletePopupStore } from '../../stores/deletePopupStore'
 import { useErrorPopupStore } from '../../stores/errorPopupStore'
 import { useConfirmSavePopupStore } from '../../stores/confirmSavePopupStore'
 
+// Initialize all stores
 const blocksStore = useBlocksStore()
 const popupStore = usePopupStore()
 const deletePopupStore = useDeletePopupStore()
@@ -29,6 +31,7 @@ const errorPopupStore = useErrorPopupStore()
 const confirmSavePopupStore = useConfirmSavePopupStore()
 const imageCropStore = useImageCropStore()
 
+// Extract reactive references from store and local state
 const { blocks, selectedIndex, canAdd, documentTitle, hasUnsavedChanges, currentDocument, isSaving } = storeToRefs(blocksStore)
 const saveDialogOpen = ref(false)
 const clipboardText = ref('')
@@ -37,6 +40,7 @@ const emit = defineEmits<{
   (e: 'selectMode', mode: 'menu'): void
 }>()
 
+// Check if any popup is currently open
 const anyPopupOpen = computed(() => {
   return (
     saveDialogOpen.value === true ||
@@ -48,6 +52,7 @@ const anyPopupOpen = computed(() => {
   )
 })
 
+// Disable page scroll when any popup is open
 watch(anyPopupOpen, (open) => {
   const appEl = document.getElementById('app')
   if (appEl) {
@@ -55,6 +60,7 @@ watch(anyPopupOpen, (open) => {
   }
 }, { immediate: true })
 
+// Auto-save every 5 minutes if document has unsaved changes
 const AUTO_SAVE_INTERVAL_MS = 5 * 60 * 1000
 let autoSaveTimer: ReturnType<typeof setInterval> | null = null
 
@@ -66,6 +72,7 @@ async function triggerAutoSave() {
   await blocksStore.saveDocument({ silent: true })
 }
 
+// Setup auto-save interval on component mount
 onMounted(() => {
   if (typeof window === 'undefined') {
     return
@@ -78,6 +85,7 @@ onMounted(() => {
   }, AUTO_SAVE_INTERVAL_MS)
 })
 
+// Cleanup auto-save timer on component unmount
 onUnmounted(() => {
   if (autoSaveTimer !== null) {
     clearInterval(autoSaveTimer)
@@ -85,27 +93,30 @@ onUnmounted(() => {
   }
 })
 
+// Mark block as modified
 function setModified(i: number, value: boolean) {
   blocksStore.setModified(i, value)
 }
 
+// Open save dialog
 function openSaveDialog() {
   saveDialogOpen.value = true
 }
 
+// Close save dialog without saving
 function handleSaveCancel() {
   saveDialogOpen.value = false
 }
 
+// Confirm save with title update
 async function handleSaveConfirm(value: string) {
   blocksStore.currentDocument.title = value || documentTitle.value
   
-
   saveDialogOpen.value = false
   
-
   const result = await blocksStore.saveDocument()
 
+  // If name conflict, reopen dialog
   if (result === 'rename') {
     saveDialogOpen.value = true
   }
@@ -137,18 +148,19 @@ function handleClipboardCancel() {
 }
 
 function handleHome() {
-  // Si le document n'a pas de modifications, retourner directement au menu
+  // Go back to menu directly if no unsaved changes
   if (!hasUnsavedChanges.value) {
     emit('selectMode', 'menu')
     return
   }
   
-  // Sinon, afficher le popup de confirmation
+  // Otherwise show confirmation popup
   deletePopupStore.show('exit', () => {
     emit('selectMode', 'menu')
   })
 }
 
+// Update block image after crop operation
 function handleCropComplete(croppedImageData: string) {
   imageCropStore.setCroppedImage(croppedImageData)
   
@@ -158,6 +170,7 @@ function handleCropComplete(croppedImageData: string) {
     if (block && block.images) {
       const imageIndex = block.images.findIndex(img => img.id === imageCropStore.selectedImageId)
       if (imageIndex !== -1 && block.images[imageIndex]) {
+        // Update image data with cropped version
         block.images[imageIndex].imagePath = croppedImageData
         blocksStore.setModified(blockIndex, true)
       }
@@ -166,6 +179,7 @@ function handleCropComplete(croppedImageData: string) {
 }
 
 watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
+  // Open cropper when crop request is made
   if (timestamp > 0 && imageCropStore.blockIndex !== null) {
     const block = blocks.value[imageCropStore.blockIndex]
     if (block && block.images) {
@@ -180,6 +194,7 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
 
 <template>
   <div id="app" class="app-editor">
+    <!-- Header with title and options -->
     <header>
       <div class="OptionBarFixed">
         <TitleBar @home="handleHome" />
@@ -187,7 +202,9 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
       </div>
     </header>
 
+    <!-- Content blocks section -->
     <div class="block">
+      <!-- Drag and drop blocks reordering -->
       <draggable 
         v-model="blocks" 
         item-key="id"
@@ -211,11 +228,13 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         </template>
       </draggable>
 
+      <!-- Zone to add new blocks -->
       <div class="addBlock"> 
         <AddBlockZone @add="addEmptyBlockIfAllowed" :disabled="!canAdd" />
       </div>
     </div>
 
+       <!-- Clipboard import dialog -->
        <CopyPastePopup
         class="popUp"
         v-model="clipboardText"
@@ -223,8 +242,10 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
         @cancel="handleClipboardCancel"
       />
 
+    <!-- Reading mode view -->
     <ReaderViewWindow @save="openSaveDialog"/>
 
+    <!-- Save document dialog -->
     <SavePopUp
       :isOpen="saveDialogOpen"
       v-model="documentTitle"
@@ -232,10 +253,9 @@ watch(() => imageCropStore.cropRequestTimestamp, (timestamp) => {
       @cancel="handleSaveCancel"
     />
 
+    <!-- Confirm save and handle conflicts -->
     <ConfirmSavePopUp />
-
     <NameConflictPopup />
-
     <DeletePopup/>
     <ErrorPopup/>
     <CropPopup @crop="handleCropComplete" />

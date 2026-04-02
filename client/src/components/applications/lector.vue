@@ -9,6 +9,7 @@ const emit = defineEmits<{
   (e: 'selectMode', mode: 'editor' | 'menu'): void
 }>()
 
+// Return to menu
 function handleHome() {
   emit('selectMode', 'menu')
 }
@@ -17,12 +18,16 @@ function handleHome() {
 
 <template>
   <div id="app" class="app-lector">
+    <!-- Header -->
     <TitleBar :isReadOnly="true" @home="handleHome"/>
+    <!-- Document content in reader mode -->
     <div class="readerWindowContent">
+      <!-- Table header -->
       <div class="blockHeader">
         <div class="headerNumber">N°</div>
         <div class="headerDescription">DÉTAIL DE L'OPÉRATION</div>
       </div>
+      <!-- Display each block in reader view -->
       <ReaderViewBlock
         v-for="block in blocksStore.blocks"
         :key="block.id"
