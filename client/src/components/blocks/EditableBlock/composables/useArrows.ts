@@ -1,6 +1,7 @@
 import { ref, watch, type Ref } from 'vue'
 import { fabric } from 'fabric'
 import { useShapeStore } from '../../../../stores/shapeStore'
+import { useErrorPopupStore } from '../../../../stores/errorPopupStore'
 import { objectDefaults } from '../utils/canvasConfig'
 
 export function isArrowObject(obj: fabric.Object): obj is fabric.Path {
@@ -45,6 +46,14 @@ export function useArrows(
   saveCanvas: () => void
 ) {
   const shapeStore = useShapeStore()
+  const errorPopup = useErrorPopupStore()
+
+  function getShapeCount() {
+    if (!canvasRef.value) return 0
+    return canvasRef.value.getObjects().filter((o) =>
+      o.type === 'rect' || o.type === 'circle' || o.type === 'triangle' || isArrowObject(o)
+    ).length
+  }
   
   const isDrawingArrow = ref(false)
   const arrowStartPoint = ref<{ x: number; y: number } | null>(null)
@@ -86,10 +95,19 @@ export function useArrows(
     canvasRef.value.add(arrow)
     canvasRef.value.setActiveObject(arrow)
     canvasRef.value.renderAll()
+
+    if (getShapeCount() >= 20) {
+      errorPopup.show("Vous avez atteint la limite de 20 formes dans la zone de dessin.")
+    }
   }
 
   function addArrow() {
     if (!canvasRef.value) return
+
+    if (getShapeCount() >= 20) {
+      errorPopup.show("Vous avez atteint la limite de 20 formes dans la zone de dessin.")
+      return
+    }
     
     const canvasWidth = canvasRef.value.width || props.width
     const canvasHeight = canvasRef.value.height || props.height
@@ -130,6 +148,12 @@ export function useArrows(
     }
 
     if (!isDrawingArrow.value || e.e.button !== 0) return false
+
+    if (!arrowStartPoint.value && getShapeCount() >= 20) {
+      errorPopup.show("Vous avez atteint la limite de 20 formes dans la zone de dessin.")
+      isDrawingArrow.value = false
+      return false
+    }
     
     const canvasWidth = canvasRef.value.width || props.width
     const canvasHeight = canvasRef.value.height || props.height

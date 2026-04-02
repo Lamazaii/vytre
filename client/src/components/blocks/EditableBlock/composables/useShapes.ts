@@ -39,8 +39,20 @@ export function useShapes(
     return null
   }
 
+  function getShapeCount() {
+    if (!canvasRef.value) return 0
+    return canvasRef.value.getObjects().filter((o) =>
+      o.type === 'rect' || o.type === 'circle' || o.type === 'triangle' || isArrowObject(o)
+    ).length
+  }
+
   function createShape(type: 'rect' | 'circle' | 'triangle') {
     if (!canvasRef.value) return
+
+    if (getShapeCount() >= 20) {
+      errorPopup.show("Vous avez atteint la limite de 20 formes dans la zone de dessin.")
+      return
+    }
 
     const canvasWidth = canvasRef.value.width || props.width
     const canvasHeight = canvasRef.value.height || props.height
@@ -88,6 +100,10 @@ export function useShapes(
     canvasRef.value.add(shape)
     canvasRef.value.setActiveObject(shape)
     canvasRef.value.renderAll()
+
+    if (getShapeCount() >= 20) {
+      errorPopup.show("Vous avez atteint la limite de 20 formes dans la zone de dessin.")
+    }
   }
 
   function addSquare() {
