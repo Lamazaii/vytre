@@ -150,8 +150,10 @@ export const useTextFormatStore = defineStore('textFormat', () => {
         italic.value = tiptapEditor.value.isActive('italic')
         underline.value = tiptapEditor.value.isActive('underline')
         
-        // Get font size from textStyle
+        // Get color and font size from textStyle
         const attrs = tiptapEditor.value.getAttributes('textStyle')
+        color.value = (attrs.color as string) || '#000000'
+        
         if (attrs.fontSize) {
           const size = attrs.fontSize
           if (size.includes('12px') || size.includes('small')) {
@@ -256,8 +258,11 @@ export const useTextFormatStore = defineStore('textFormat', () => {
 
     if (tiptapEditor.value) {
       tiptapEditor.value.chain().focus().setColor(value).run()
+      color.value = value  // Update state immediately like Fabric does
+      updateStatesFromCommand()  // Verify state is correct
     } else {
       execCommand('foreColor', value)
+      color.value = value
     }
   }
 
