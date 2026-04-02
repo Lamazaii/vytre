@@ -1,6 +1,6 @@
 <template>
   <div class="arrow-style-containers">
-    <!-- Start head style selector -->
+    <!-- Start arrow head style -->
     <div ref="arrowStyleMenuRefStart" class="arrow-style-group start-group">
       <button class="arrow-style-button" type="button" title="Style de début de flèche">
         <div class="arrow-head-preview start" :class="`head-preview-${modelValue}`"></div>
@@ -16,6 +16,7 @@
         <span class="arrow-style-caret" aria-hidden="true"></span>
       </button>
 
+      <!-- Start style menu dropdown -->
       <div v-if="isArrowStyleMenuOpenStart" class="arrow-style-menu" role="menu" aria-label="Choisir le style de début">
         <button
           v-for="option in options"
@@ -31,7 +32,7 @@
       </div>
     </div>
 
-    <!-- End head style selector -->
+    <!-- End arrow head style -->
     <div ref="arrowStyleMenuRefEnd" class="arrow-style-group end-group">
       <button class="arrow-style-button" type="button" title="Style de fin de flèche">
         <div class="arrow-head-preview end" :class="`head-preview-${endValue}`"></div>
@@ -47,6 +48,7 @@
         <span class="arrow-style-caret" aria-hidden="true"></span>
       </button>
 
+      <!-- End style menu dropdown -->
       <div v-if="isArrowStyleMenuOpenEnd" class="arrow-style-menu" role="menu" aria-label="Choisir le style de fin">
         <button
           v-for="option in options"
@@ -68,13 +70,16 @@
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useShapeStore } from '../../../stores/shapeStore'
 
+// Arrow style store
 const shapeStore = useShapeStore()
 
+// Dropdown states for start and end arrows
 const isArrowStyleMenuOpenStart = ref(false)
 const isArrowStyleMenuOpenEnd = ref(false)
 const arrowStyleMenuRefStart = ref<HTMLElement | null>(null)
 const arrowStyleMenuRefEnd = ref<HTMLElement | null>(null)
 
+// Available arrow head options
 const options: Array<{ value: string; label: string }> = [
   { value: 'none', label: 'Aucune' },
   { value: 'stroke', label: 'Trait' },
@@ -85,16 +90,19 @@ const options: Array<{ value: string; label: string }> = [
 const modelValue = computed(() => shapeStore.arrowStartStyle)
 const endValue = computed(() => shapeStore.arrowEndStyle)
 
+// Toggle start arrow style menu
 function toggleArrowStyleMenuStart() {
   isArrowStyleMenuOpenStart.value = !isArrowStyleMenuOpenStart.value
   isArrowStyleMenuOpenEnd.value = false
 }
 
+// Toggle end arrow style menu
 function toggleArrowStyleMenuEnd() {
   isArrowStyleMenuOpenEnd.value = !isArrowStyleMenuOpenEnd.value
   isArrowStyleMenuOpenStart.value = false
 }
 
+// Update arrow head style in store
 function selectArrowStyle(style: string, end: 'start' | 'end') {
   if (end === 'start') {
     shapeStore.arrowStartStyle = style as any
@@ -105,6 +113,7 @@ function selectArrowStyle(style: string, end: 'start' | 'end') {
   }
 }
 
+// Close menus when clicking outside
 function handleOutsideClick(event: MouseEvent) {
   const target = event.target as Node
 

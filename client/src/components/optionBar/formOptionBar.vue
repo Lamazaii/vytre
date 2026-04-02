@@ -1,9 +1,11 @@
 <template>
   <div class="shapeOptionBar">
+    <!-- Shape selector -->
     <ShapeSelector />
 
     <div class="separator"></div>
 
+    <!-- Fill color picker for arrow or shape -->
     <ColorPicker
       v-if="isArrowSelected"
       v-model="shapeStore.fillColor"
@@ -22,6 +24,7 @@
       :allow-transparent="true"
     />
 
+    <!-- Stroke color picker (not for arrow) -->
     <ColorPicker
       v-if="!isArrowSelected"
       v-model="shapeStore.strokeColor" 
@@ -31,6 +34,7 @@
       :allow-transparent="true"
     />
 
+    <!-- Arrow style and thickness -->
     <ArrowStyleSelector
       v-if="isArrowSelected"
     />
@@ -39,7 +43,9 @@
       v-model="shapeStore.strokeWidth" 
     />
 
+    <!-- Layer organization menu -->
     <div class="organize-button-group" :class="{ disabled: !hasSelectedShape }">
+      <!-- Organize button -->
       <button
         class="organize-select-button"
         type="button"

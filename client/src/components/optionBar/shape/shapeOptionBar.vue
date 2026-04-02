@@ -1,5 +1,6 @@
 <template>
   <div class="shapeOptionBar">
+    <!-- Shape type selector -->
     <ShapeSelector />
 
     <div class="separator"></div>
@@ -73,11 +74,10 @@ import organizationIcon from '../../../assets/optionBarImage/organisation.svg'
 import flipToFrontIcon from '../../../assets/optionBarImage/flip_to_front.svg'
 import flipToBackIcon from '../../../assets/optionBarImage/flip_to_back.svg'
 
-// Store driving shape style and layer commands.
+// Shape store and layer menu state
 const shapeStore = useShapeStore()
-// Local layer dropdown state.
 const isLayerMenuOpen = ref(false)
-// True when a shape object is selected.
+// Check if a shape is currently selected
 const hasSelectedShape = computed(() => shapeStore.hasSelectedShape)
 
 // Shared swatches for fill and stroke controls.
@@ -89,7 +89,7 @@ const fillIconPath = "m247-904 57-56 343 343q23 23 23 57t-23 57L457-313q-23 23-5
 // Icon path used by stroke picker.
 const strokeIconPath = "M280-120v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm160 0v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80ZM120-120v-720h720v80H200v640h-80Z"
 
-// Toggle organize menu only when a shape is selected.
+// Toggle layer organization menu
 function toggleLayerMenu() {
   if (!hasSelectedShape.value) {
     return
@@ -98,24 +98,25 @@ function toggleLayerMenu() {
   isLayerMenuOpen.value = !isLayerMenuOpen.value
 }
 
+// Close dropdown menu
 function closeLayerMenu() {
   isLayerMenuOpen.value = false
 }
 
-// Auto-close dropdown when shape selection disappears.
+// Auto-close menu when shape is deselected
 watch(hasSelectedShape, (isSelected) => {
   if (!isSelected) {
     closeLayerMenu()
   }
 })
 
-// Forward layer command for selected shape.
+// Send shape backwards in layer order
 function onBringForwardMenuClick() {
   shapeStore.requestBringShapeForward()
   closeLayerMenu()
 }
 
-// Backward layer command for selected shape.
+// Send shape backwards in layer order
 function onSendToBackMenuClick() {
   shapeStore.requestSendShapeToBack()
   closeLayerMenu()

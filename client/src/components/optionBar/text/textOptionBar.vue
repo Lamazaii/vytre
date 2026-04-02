@@ -1,6 +1,6 @@
 <template>
   <div class="textOptionBar">
-    <!-- Formatting buttons: bold, italic, underline -->
+    <!-- Text formatting buttons -->
     <div class="formatGroup">
       <button class="formatButton" :class="{ active: bold }" @mousedown.prevent @click="applyBold" title="Bold">
         <img :src="bold ? boldIconActive : boldIcon" alt="Bold" />
@@ -21,7 +21,7 @@
       </button>
     </div>
 
-    <!-- Font size and color controls -->
+    <!-- Font size and text color controls -->
     <div class="textControls">
       <select class="fontSize" v-model="fontSize" @change="handleSizeChange" aria-label="Text size">
         <option value="Small">Petit</option>
@@ -29,7 +29,7 @@
         <option value="Large">Grand</option>
       </select>
 
-      <!-- Color picker -->
+      <!-- Color picker dropdown -->
       <div class="colorPicker" ref="colorRoot">
         <button class="colorButton" @click="toggleColorPicker" :aria-expanded="showColor" aria-haspopup="true" title="Color">
           <span class="colorPreview" :style="{ background: color }"></span>
@@ -45,6 +45,7 @@
 
     <div class="divider"></div>
 
+    <!-- Text layer organization -->
     <div class="organize-button-group" :class="{ disabled: !hasSelectedTextbox }">
       <button
         class="organize-select-button"
