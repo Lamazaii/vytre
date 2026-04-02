@@ -9,9 +9,9 @@
                 x{{ modelValue }}
             </div>
             <div class="contentWrapper">
-              <div class="description" v-html="description"></div>
-              <div v-if="textZones && textZones.length > 0" class="textZonesContainer">
-                <div v-for="(zone, index) in textZones" :key="index" class="textZone" v-html="zone">
+              <div class="description" v-html="sanitizedDescription"></div>
+              <div v-if="sanitizedTextZones.length > 0" class="textZonesContainer">
+                <div v-for="(zone, index) in sanitizedTextZones" :key="index" class="textZone" v-html="zone">
                 </div>
               </div>
               <ReaderViewCanvas 
@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import DOMPurify from 'dompurify';
 import type { Image } from '../../types/Image';
 import ImageZoom from '../popup/ImageZoomPopUp.vue';
 import ReaderViewCanvas from './readerViewCanvas.vue';
@@ -70,6 +71,12 @@ interface Props {
 
 // Props describing one block rendered in reader mode.
 const props = defineProps<Props>();
+
+// Sanitize HTML to prevent XSS attacks (OWASP compliance)
+const sanitizedDescription = computed(() => DOMPurify.sanitize(props.description));
+const sanitizedTextZones = computed(() => 
+  (props.textZones || []).map(zone => DOMPurify.sanitize(zone))
+);
 
 // Image zoom modal state.
 const isModalOpen = ref(false);

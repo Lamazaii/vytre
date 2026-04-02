@@ -3,12 +3,44 @@ import express, { NextFunction, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import createDebug from 'debug';
 
 import documentsRouter from './src/routes/documents.router';
 
 const app = express();
+const debug = createDebug('app:server');
+
+// Security headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'blob:'],
+            connectSrc: ["'self'"],
+        },
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+    },
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per IP
+    message: 'Trop de requêtes, réessayez plus tard.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use(limiter);
 
 // CORS configuration
 app.use(cors({
@@ -49,25 +81,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/documents', documentsRouter);
 
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
     next(createError(404));
 });
 
 // error handler
-app.use(
-    function (err: Error, req: Request, res: Response, _next: NextFunction) {
-    // set locals, only providing error in development
-        res.locals.message = err.message;
-        res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+    const isProduction = process.env.NODE_ENV === 'production';
 
-        if ('status' in err) {
-            res.status(err.status as number);
-        } else {
-            res.status(500);
-        }
+    // Log error server-side
+    if (isProduction) {
+        debug('[ERROR] %s: %s', new Date().toISOString(), err.message);
+    }
 
-        // render the error page
-        res.json({ error: err});
+    const statusCode = 'status' in err ? (err.status as number) : 500;
+    res.status(statusCode);
+
+    // Generic error message in production
+    res.json({
+        message: isProduction
+            ? 'Une erreur interne du serveur est survenue'
+            : err.message,
     });
+});
 
 export default app;

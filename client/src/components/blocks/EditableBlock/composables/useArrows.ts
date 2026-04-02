@@ -1,7 +1,7 @@
 import { ref, watch, type Ref } from 'vue'
 import { fabric } from 'fabric'
 import { useShapeStore } from '../../../../stores/shapeStore'
-import { objectDefaults } from '../utils/canvasConfig'
+import { objectDefaults, arrowDefaults } from '../utils/canvasConfig'
 
 export function isArrowObject(obj: fabric.Object): obj is fabric.Path {
   return obj.type === 'path' && (obj as any).isArrow === true
@@ -20,23 +20,8 @@ export function generateArrowPath(
   
   if (distance < 5) return ''
   
-  const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
-  let pathStr = ''
-
-  const startOffset = startStyle === 'none' ? 0 : (startStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
-  const endOffset = endStyle === 'none' ? 0 : (endStyle === 'stroke' ? arrowHeadSize * 0.75 : arrowHeadSize * 0.5)
-
-  pathStr = `M ${startOffset},0 L ${distance - endOffset},0`
-
-  if (endStyle === 'stroke') {
-    pathStr += ` M ${distance - arrowHeadSize},${-arrowHeadSize * 0.6} L ${distance},0 L ${distance - arrowHeadSize},${arrowHeadSize * 0.6}`
-  }
-
-  if (startStyle === 'stroke') {
-    pathStr += ` M ${arrowHeadSize},${-arrowHeadSize * 0.6} L 0,0 L ${arrowHeadSize},${arrowHeadSize * 0.6}`
-  }
-
-  return pathStr
+  // Draw the complete line from start to end
+  return `M 0,0 L ${distance},0`
 }
 
 export function useArrows(
@@ -52,6 +37,7 @@ export function useArrows(
   
   const modifyingArrow = ref<fabric.Path | null>(null)
   const modifyingEnd = ref<'start' | 'end' | null>(null)
+  const isModifyingEndpoint = ref(false)
 
   function createArrowBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }) {
     if (!canvasRef.value) return
@@ -66,7 +52,7 @@ export function useArrows(
     const arrowPath = generateArrowPath(start, end, shapeStore.arrowStartStyle, shapeStore.arrowEndStyle, shapeStore.strokeWidth)
 
     const arrow = new fabric.Path(arrowPath, {
-      stroke: shapeStore.fillColor,
+      stroke: 'rgba(0,0,0,0)',
       strokeWidth: shapeStore.strokeWidth,
       fill: 'transparent',
       left: start.x,
@@ -74,7 +60,7 @@ export function useArrows(
       angle: angle,
       originX: 'left',
       originY: 'center',
-      ...objectDefaults,
+      ...arrowDefaults,
     })
 
     ;(arrow as any).isArrow = true
@@ -82,6 +68,8 @@ export function useArrows(
     ;(arrow as any).arrowEnd = end
     ;(arrow as any).arrowStartStyle = shapeStore.arrowStartStyle
     ;(arrow as any).arrowEndStyle = shapeStore.arrowEndStyle
+    const requestedColor = shapeStore.fillColor
+    ;(arrow as any).arrowColor = (!requestedColor || requestedColor === 'transparent' || requestedColor === 'rgba(0,0,0,0)') ? '#000000' : requestedColor
 
     canvasRef.value.add(arrow)
     canvasRef.value.setActiveObject(arrow)
@@ -104,26 +92,35 @@ export function useArrows(
     if (!canvasRef.value) return
     const pointer = canvasRef.value.getPointer(e.e)
     const allObjects = canvasRef.value.getObjects()
+    const tolerance = 15 // Increased tolerance for better endpoint selection
+    
     for (const obj of allObjects) {
       if (isArrowObject(obj)) {
         const arrow = obj as fabric.Path
         const start = (arrow as any).arrowStart as { x: number; y: number }
         const end = (arrow as any).arrowEnd as { x: number; y: number }
 
+        if (!start || !end) continue // Skip if coordinates are missing
+
         const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
         const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
-        const tolerance = 12
 
         if (distToStart < tolerance) {
           modifyingArrow.value = arrow
           modifyingEnd.value = 'start'
+          isModifyingEndpoint.value = true
+          canvasRef.value.discardActiveObject()
           canvasRef.value.setActiveObject(arrow)
+          canvasRef.value.renderAll()
           return true
         }
         if (distToEnd < tolerance) {
           modifyingArrow.value = arrow
           modifyingEnd.value = 'end'
+          isModifyingEndpoint.value = true
+          canvasRef.value.discardActiveObject()
           canvasRef.value.setActiveObject(arrow)
+          canvasRef.value.renderAll()
           return true
         }
       }
@@ -159,6 +156,7 @@ export function useArrows(
   function handleArrowMouseMove(e: any) {
     if (!canvasRef.value) return
     const pointer = canvasRef.value.getPointer(e.e)
+    const tolerance = 15 // Increased tolerance for better endpoint detection
 
     let nearEndpoint = false
     const allObjects = canvasRef.value.getObjects()
@@ -168,10 +166,12 @@ export function useArrows(
         const start = (arrow as any).arrowStart as { x: number; y: number }
         const end = (arrow as any).arrowEnd as { x: number; y: number }
 
+        if (!start || !end) continue // Skip if coordinates are missing
+
         const distToStart = Math.sqrt((pointer.x - start.x) ** 2 + (pointer.y - start.y) ** 2)
         const distToEnd = Math.sqrt((pointer.x - end.x) ** 2 + (pointer.y - end.y) ** 2)
 
-        if (distToStart < 12 || distToEnd < 12) {
+        if (distToStart < tolerance || distToEnd < tolerance) {
           nearEndpoint = true
           break
         }
@@ -208,29 +208,13 @@ export function useArrows(
       if (distance > 5) {
         const arrowPathStr = generateArrowPath(start, end, startStyle, endStyle, arrow.strokeWidth || 2)
 
-        canvasRef.value.remove(arrow)
-
-        const newArrow = new fabric.Path(arrowPathStr, {
-          stroke: arrow.stroke || shapeStore.fillColor,
-          strokeWidth: arrow.strokeWidth || 2,
-          fill: 'transparent',
-          left: start.x,
-          top: start.y,
-          angle: angle,
-          originX: 'left',
-          originY: 'center',
-          ...objectDefaults,
-        })
-
-        ;(newArrow as any).isArrow = true
-        ;(newArrow as any).arrowStart = start
-        ;(newArrow as any).arrowEnd = end
-        ;(newArrow as any).arrowStartStyle = startStyle
-        ;(newArrow as any).arrowEndStyle = endStyle
-
-        canvasRef.value.add(newArrow)
-        modifyingArrow.value = newArrow
-        canvasRef.value.setActiveObject(newArrow)
+        // Set path first so _setPositionDimensions recalculates width/height/pathOffset
+        arrow.set('path', (fabric.util as any).parsePath(arrowPathStr))
+        // Then override position with the correct values
+        arrow.set({ left: start.x, top: start.y, angle: angle })
+        // Force cache regeneration — without this, the object renders in its old (smaller) cached bbox
+        arrow.dirty = true
+        arrow.setCoords()
         canvasRef.value.renderAll()
       }
       return true
@@ -250,8 +234,13 @@ export function useArrows(
 
   function handleArrowMouseUp() {
     if (modifyingArrow.value && modifyingEnd.value) {
+      // Clean up selection to avoid multi-selection
+      canvasRef.value?.discardActiveObject()
+      canvasRef.value?.setActiveObject(modifyingArrow.value)
+      canvasRef.value?.renderAll()
       saveCanvas()
     }
+    isModifyingEndpoint.value = false
     modifyingArrow.value = null
     modifyingEnd.value = null
   }
@@ -267,75 +256,108 @@ export function useArrows(
         const end = (arrow as any).arrowEnd as { x: number; y: number }
         const startStyle = (arrow as any).arrowStartStyle || 'stroke'
         const endStyle = (arrow as any).arrowEndStyle || 'stroke'
-        const color = arrow.stroke as string || shapeStore.fillColor
+        const color = (arrow as any).arrowColor || '#000000'
         const strokeWidth = arrow.strokeWidth || 2
         
         const arrowHeadSize = Math.max(10, Math.min(20, 8 + strokeWidth * 1.5))
         const dx = end.x - start.x
         const dy = end.y - start.y
         const distance = Math.sqrt(dx * dx + dy * dy)
-        
+
         if (distance < 5) continue
-        
+
         const angle = Math.atan2(dy, dx)
+
+        // Shorten line to stop at the base of each arrowhead
+        const startOffset = startStyle !== 'none' ? arrowHeadSize : 0
+        const endOffset = endStyle !== 'none' ? arrowHeadSize : 0
+        const lineStartX = start.x + Math.cos(angle) * startOffset
+        const lineStartY = start.y + Math.sin(angle) * startOffset
+        const lineEndX = end.x - Math.cos(angle) * endOffset
+        const lineEndY = end.y - Math.sin(angle) * endOffset
+
+        // Draw the main line (ensures visibility regardless of Fabric path rendering limits)
+        ctx.save()
+        ctx.strokeStyle = color
+        ctx.lineWidth = strokeWidth
+        ctx.lineCap = 'butt'
+        ctx.beginPath()
+        ctx.moveTo(lineStartX, lineStartY)
+        ctx.lineTo(lineEndX, lineEndY)
+        ctx.stroke()
+        ctx.restore()
+
+        // Draw END arrow head (all styles)
+        ctx.save()
+        ctx.translate(end.x, end.y)
+        ctx.rotate(angle)
         
-        if (endStyle === 'filled' || endStyle === 'open') {
-          ctx.save()
-          ctx.translate(end.x, end.y)
-          ctx.rotate(angle)
-          
-          if (endStyle === 'filled') {
-            ctx.fillStyle = color
-            ctx.lineWidth = 0
-            ctx.beginPath()
-            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
-            ctx.lineTo(0, 0)
-            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
-            ctx.closePath()
-            ctx.fill()
-          } else if (endStyle === 'open') {
-            ctx.fillStyle = '#ffffff'
-            ctx.strokeStyle = color
-            ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
-            ctx.beginPath()
-            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
-            ctx.lineTo(0, 0)
-            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
-            ctx.closePath()
-            ctx.fill()
-            ctx.stroke()
-          }
-          ctx.restore()
+        if (endStyle === 'filled') {
+          ctx.fillStyle = color
+          ctx.lineWidth = 0
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+        } else if (endStyle === 'open') {
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = color
+          ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+          ctx.stroke()
+        } else if (endStyle === 'stroke') {
+          ctx.strokeStyle = color
+          ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.stroke()
         }
+        ctx.restore()
         
-        if (startStyle === 'filled' || startStyle === 'open') {
-          ctx.save()
-          ctx.translate(start.x, start.y)
-          ctx.rotate(angle + Math.PI)
-          
-          if (startStyle === 'filled') {
-            ctx.fillStyle = color
-            ctx.lineWidth = 0
-            ctx.beginPath()
-            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
-            ctx.lineTo(0, 0)
-            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
-            ctx.closePath()
-            ctx.fill()
-          } else if (startStyle === 'open') {
-            ctx.fillStyle = '#ffffff'
-            ctx.strokeStyle = color
-            ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
-            ctx.beginPath()
-            ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
-            ctx.lineTo(0, 0)
-            ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
-            ctx.closePath()
-            ctx.fill()
-            ctx.stroke()
-          }
-          ctx.restore()
+        // Draw START arrow head (all styles)
+        ctx.save()
+        ctx.translate(start.x, start.y)
+        ctx.rotate(angle + Math.PI)
+        
+        if (startStyle === 'filled') {
+          ctx.fillStyle = color
+          ctx.lineWidth = 0
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+        } else if (startStyle === 'open') {
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = color
+          ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.closePath()
+          ctx.fill()
+          ctx.stroke()
+        } else if (startStyle === 'stroke') {
+          ctx.strokeStyle = color
+          ctx.lineWidth = Math.max(0.5, strokeWidth * 0.5)
+          ctx.beginPath()
+          ctx.moveTo(-arrowHeadSize, -arrowHeadSize * 0.6)
+          ctx.lineTo(0, 0)
+          ctx.lineTo(-arrowHeadSize, arrowHeadSize * 0.6)
+          ctx.stroke()
         }
+        ctx.restore()
       }
     }
     
@@ -375,6 +397,7 @@ export function useArrows(
 
   function handleArrowMoving(e: any) {
     if (!canvasRef.value) return false
+    if (isModifyingEndpoint.value) return true // Prevent normal movement during endpoint modification
     if (e.target && isArrowObject(e.target)) {
       const arrow = e.target as fabric.Path
       const start = (arrow as any).arrowStart as { x: number; y: number }
@@ -422,6 +445,7 @@ export function useArrows(
   }
 
   function handleArrowModified(e: any) {
+    if (isModifyingEndpoint.value) return // Skip normal modification handling during endpoint edit
     if (e.target && isArrowObject(e.target)) {
       const arrow = e.target as fabric.Path
       ;(arrow as any).lastLeft = undefined
@@ -445,27 +469,10 @@ export function useArrows(
     const dy = end.y - start.y
     const angle = Math.atan2(dy, dx) * (180 / Math.PI)
 
-    canvasRef.value.remove(arrow)
-    const newArrow = new fabric.Path(arrowPathStr, {
-      stroke: arrow.stroke || shapeStore.fillColor,
-      strokeWidth: arrow.strokeWidth || 2,
-      fill: 'transparent',
-      left: start.x,
-      top: start.y,
-      angle: angle,
-      originX: 'left',
-      originY: 'center',
-      ...objectDefaults,
-    })
-
-    ;(newArrow as any).isArrow = true
-    ;(newArrow as any).arrowStart = start
-    ;(newArrow as any).arrowEnd = end
-    ;(newArrow as any).arrowStartStyle = newStyle
-    ;(newArrow as any).arrowEndStyle = endStyle
-
-    canvasRef.value.add(newArrow)
-    canvasRef.value.setActiveObject(newArrow)
+    arrow.set('path', (fabric.util as any).parsePath(arrowPathStr))
+    arrow.set({ left: start.x, top: start.y, angle: angle })
+    arrow.dirty = true
+    arrow.setCoords()
     canvasRef.value.renderAll()
     saveCanvas()
   })
@@ -486,27 +493,20 @@ export function useArrows(
     const dy = end.y - start.y
     const angle = Math.atan2(dy, dx) * (180 / Math.PI)
 
-    canvasRef.value.remove(arrow)
-    const newArrow = new fabric.Path(arrowPathStr, {
-      stroke: arrow.stroke || shapeStore.fillColor,
-      strokeWidth: arrow.strokeWidth || 2,
-      fill: 'transparent',
-      left: start.x,
-      top: start.y,
-      angle: angle,
-      originX: 'left',
-      originY: 'center',
-      ...objectDefaults,
-    })
+    arrow.set('path', (fabric.util as any).parsePath(arrowPathStr))
+    arrow.set({ left: start.x, top: start.y, angle: angle })
+    arrow.dirty = true
+    arrow.setCoords()
+    canvasRef.value.renderAll()
+    saveCanvas()
+  })
 
-    ;(newArrow as any).isArrow = true
-    ;(newArrow as any).arrowStart = start
-    ;(newArrow as any).arrowEnd = end
-    ;(newArrow as any).arrowStartStyle = startStyle
-    ;(newArrow as any).arrowEndStyle = newStyle
+  watch(() => shapeStore.fillColor, (newColor) => {
+    if (!canvasRef.value || !props.active) return
+    const activeObject = canvasRef.value.getActiveObject()
+    if (!activeObject || !isArrowObject(activeObject)) return
 
-    canvasRef.value.add(newArrow)
-    canvasRef.value.setActiveObject(newArrow)
+    ;(activeObject as any).arrowColor = (!newColor || newColor === 'transparent' || newColor === 'rgba(0,0,0,0)') ? '#000000' : newColor
     canvasRef.value.renderAll()
     saveCanvas()
   })
@@ -517,6 +517,7 @@ export function useArrows(
     arrowPreviewPointer.value = null
     modifyingArrow.value = null
     modifyingEnd.value = null
+    isModifyingEndpoint.value = false
   }
 
   return {
