@@ -118,20 +118,22 @@ describe('TextOptionBar.vue', () => {
     expect(spy).toHaveBeenCalledWith('Large')
   })
 
-  it('clicking add text button calls addTextZone from blocks store', async () => {
+  it('clicking add text button triggers a shape add request via shapeStore', async () => {
     const { useBlocksStore } = await import('../../stores/blockStores')
-    const store = useBlocksStore()
-    // Set up state so addTextZone can actually run (non-null selectedIndex + non-empty text)
-    store.selectedIndex = 0
-    store.blocks[0]!.text = '<p>content</p>'
+    const { useShapeStore } = await import('../../stores/shapeStore')
+    const blocksStore = useBlocksStore()
+    const shapeStore = useShapeStore()
+    // Set up state so the button action doesn't bail out early
+    blocksStore.selectedIndex = 0
 
     const wrapper = mount(TextOptionBar)
+    const before = shapeStore.addShapeRequest
     // addText button is the 4th format button (index 3)
     const addTextBtn = wrapper.findAll('.formatButton')[3]!
     await addTextBtn.trigger('click')
 
-    // addTextZone was called — a new text zone was appended
-    expect(store.blocks[0]!.textZones?.length).toBeGreaterThan(0)
+    // requestAddShape was called — the shape request counter incremented
+    expect(shapeStore.addShapeRequest).toBeGreaterThan(before)
   })
 
   it('clicking outside the color picker closes it', async () => {
